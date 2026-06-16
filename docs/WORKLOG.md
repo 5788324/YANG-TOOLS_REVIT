@@ -419,3 +419,46 @@ Codex 落地文档到仓库，并创建第一批开发任务。
 - Codex 审查 TASK-001 成果。
 - 审查通过后下发 TASK-002（ToolRouter 正式实现 + revit.status）。
 ```
+
+---
+
+## 2026-06-16 / TASK-001-REVIEW-01 / Hermes
+
+#### 本次目标
+
+Codex 退修单：将 test/TestHost 从主线 solution 移除，保留目录但标记 dev-only。
+
+#### 修改文件
+
+```text
+- YangTools.sln                              （移除 TestHost 项目引用）
+- test/README.md                             （新增：dev-only 说明）
+```
+
+#### 做了什么
+
+1. 执行 `dotnet sln remove test/TestHost/TestHost.csproj`，YangTools.sln 回归单项目。
+2. 方案 A：保留 test/TestHost/ 目录和源码，不删除。
+3. 新增 `test/README.md` 标记此目录为 dev-only，说明单独编译方式。
+4. 重新编译：dotnet build YangTools.sln → 0 warning, 0 error。
+
+#### 没做什么
+
+1. 没有修改 JsonUtils / McpServer 主体代码。
+2. 没有扩展到 TASK-002。
+3. 没有修改 MCP 协议。
+4. 没有新增 endpoint 或依赖。
+
+#### 测试结果
+
+```text
+- 编译：dotnet build YangTools.sln → 0 warning, 0 error ✓
+- dotnet sln list → 仅 YangTools.Revit ✓
+```
+
+#### 下一步
+
+```text
+- Codex 最终审查。
+- 通过后合并到 main，下发 TASK-002。
+```

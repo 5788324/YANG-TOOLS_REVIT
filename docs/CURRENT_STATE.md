@@ -38,7 +38,7 @@ v0.1 只做最小闭环：
 ## 当前任务
 
 ```text
-TASK-001 已完成（Hermes 执行）。
+TASK-001 已完成（Hermes 执行），Codex 审查结论：小修后合并 → 退修已处理。
 下一任务：TASK-002（ToolRouter 正式实现 + revit.status，等待 Codex 下发）。
 ```
 

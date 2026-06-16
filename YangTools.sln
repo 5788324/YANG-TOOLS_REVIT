@@ -5,12 +5,6 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YangTools.Revit", "src\YangTools.Revit\YangTools.Revit.csproj", "{E4D7B099-7844-4430-AAA1-4A1A849FD88D}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{0C88DD14-F956-CE84-757C-A364CCF449FC}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestHost", "test\TestHost\TestHost.csproj", "{571FD25F-F1C8-4556-8837-E25D5E4CD65D}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,23 +27,8 @@ Global
 		{E4D7B099-7844-4430-AAA1-4A1A849FD88D}.Release|x64.Build.0 = Release|Any CPU
 		{E4D7B099-7844-4430-AAA1-4A1A849FD88D}.Release|x86.ActiveCfg = Release|Any CPU
 		{E4D7B099-7844-4430-AAA1-4A1A849FD88D}.Release|x86.Build.0 = Release|Any CPU
-		{571FD25F-F1C8-4556-8837-E25D5E4CD65D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{571FD25F-F1C8-4556-8837-E25D5E4CD65D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{571FD25F-F1C8-4556-8837-E25D5E4CD65D}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{571FD25F-F1C8-4556-8837-E25D5E4CD65D}.Debug|x64.Build.0 = Debug|Any CPU
-		{571FD25F-F1C8-4556-8837-E25D5E4CD65D}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{571FD25F-F1C8-4556-8837-E25D5E4CD65D}.Debug|x86.Build.0 = Debug|Any CPU
-		{571FD25F-F1C8-4556-8837-E25D5E4CD65D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{571FD25F-F1C8-4556-8837-E25D5E4CD65D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{571FD25F-F1C8-4556-8837-E25D5E4CD65D}.Release|x64.ActiveCfg = Release|Any CPU
-		{571FD25F-F1C8-4556-8837-E25D5E4CD65D}.Release|x64.Build.0 = Release|Any CPU
-		{571FD25F-F1C8-4556-8837-E25D5E4CD65D}.Release|x86.ActiveCfg = Release|Any CPU
-		{571FD25F-F1C8-4556-8837-E25D5E4CD65D}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{571FD25F-F1C8-4556-8837-E25D5E4CD65D} = {0C88DD14-F956-CE84-757C-A364CCF449FC}
 	EndGlobalSection
 EndGlobal
