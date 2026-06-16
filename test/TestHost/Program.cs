@@ -19,6 +19,9 @@ public static class TestHost
 
         var server = new McpServer(router);
 
+        // 反向注入：RevitStatusTool 需要 McpServer 引用以获取真实运行状态
+        statusTool.SetServer(server);
+
         Console.WriteLine($"Starting MCP server on {server.Endpoint}");
 
         try

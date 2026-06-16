@@ -68,15 +68,15 @@ TASK-002 ✅ 完成（ToolRouter 正式化 + revit.status 接入）。
 ## 正在做
 
 ```text
-等待 Codex 审查 TASK-001 成果，并下发 TASK-002。
+等待 Codex 审查 TASK-001 和 TASK-002 成果。
 ```
 
 ## 未完成
 
 - Revit 2024 插件实际加载验证
 - Ribbon / 最小按钮验证
-- ToolRouter / OperationLogger / TransactionRunner 正式实现
-- revit.status / revit.selection.read / revit.parameter.get / revit.parameter.set 正式实现
+- OperationLogger / TransactionRunner 正式实现
+- revit.selection.read / revit.parameter.get / revit.parameter.set 正式实现
 - 旧 Gemini 插件清单
 - v0.1-test / v0.1-stable 发布
 
@@ -91,11 +91,12 @@ TASK-002 ✅ 完成（ToolRouter 正式化 + revit.status 接入）。
 ## 最近一次 Codex 审查结论
 
 ```text
-TASK-000 已完全收口：Git、编译、主线同步均已完成。
-TASK-001 已由 Hermes 完成，等待 Codex 审查。
+TASK-000：已完全收口，Git、编译、主线同步均已完成。
+TASK-001：小修后合并（退修已处理，test/TestHost 已从 sln 移除）。
+TASK-002：待审查（ToolRouter 正式化 + revit.status 接入，编译 0w0e，curl 测试通过）。
 ```
 
 ## 下一步
 
-1. Codex 审查 TASK-001 成果。
-2. 审查通过后下发 TASK-002（ToolRouter + revit.status）。
+1. Codex 审查 TASK-001 和 TASK-002 成果。
+2. 审查通过后下发 TASK-003（OperationLogger）。
