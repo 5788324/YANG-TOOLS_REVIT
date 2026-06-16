@@ -22,51 +22,53 @@ GitHub 主线：5788324/YANG-TOOLS_REVIT
 ## 当前任务
 
 ```text
-当前暂停进入下一任务。
-先补齐本轮 Codex 审查日志与交接记录，再重新审查 TASK-001 / TASK-002。
+TASK-001 已合入主线：统一 McpRequest / McpResponse + /mcp/ 基础入口。
+TASK-002 已合入主线：ToolRouter 正式化 + revit.status 接入。
+下一任务待 Codex 下发：TASK-003（OperationLogger）。
 ```
 
 ## 已完成
 
 - TASK-000 已完成并已推送到 GitHub 主线。
+- TASK-001 已完成并已合入主线。
+- TASK-002 已完成并已合入主线。
 - 主线规则已固定：GitHub 唯一主线、Revit 2024、C# 主线、HTTP `/mcp/`、ExternalEvent 主线程边界。
 - 日志门槛已固定：缺 WORKLOG / HANDOFF / conversations 记录时，不允许合并。
 
 ## 正在做
 
 ```text
-执行日志规则加固：补齐本轮 WORKLOG / HANDOFF_TO_CODEX / conversations，并重新给出 TASK-001 / TASK-002 的正式审查结论。
+准备收口本轮 merge 结果，并下发 TASK-003。
 ```
 
 ## 未完成
 
 - Revit 2024 插件实际加载验证
 - Ribbon / 最小按钮验证
-- TASK-001 合并审查
-- TASK-002 合并审查
 - OperationLogger
 - TransactionRunner
 - revit.selection.read
 - revit.parameter.get
 - revit.parameter.set
+- 旧 Gemini 插件清单
+- v0.1-test / v0.1-stable 发布
 
 ## 主要风险
 
 1. 还没完成 Revit 2024 实机加载验证。
-2. 任何 Revit API 调用都不能从 HTTP 后台线程直接执行。
-3. Gemini 白天代码不能直接进主线。
-4. DeepSeek / Hermes 不允许修改 MCP 协议。
+2. `System.Web.Extensions` 在 Revit 加载环境中的兼容性仍未实证。
+3. `mcpServerRunning` 当前为“部分实装”：TestHost 已接入真实状态，主线 Revit 组合根后续仍需补 `SetServer()`。
+4. 任何 Revit API 调用都不能从 HTTP 后台线程直接执行。
 
 ## 最近一次 Codex 审查结论
 
 ```text
-按新日志门槛重审后，origin/hermes/task-001 已具备 WORKLOG / HANDOFF / conversations / CURRENT_STATE / TOOL_INDEX。
-因此允许进入代码审查。
-当前代码审查结论：TASK-001 / TASK-002 为“小修后合并”。
+TASK-001：允许合并。
+TASK-002：允许合并。
+当前已进入主线收口阶段。
 ```
 
 ## 下一步
 
-1. 完成本轮日志补记。
-2. 重新审查 `origin/hermes/task-001` 上的 TASK-001 / TASK-002。
-3. 审查通过后，再决定是否合并或下发下一任务。
+1. 完成本轮 merge 后的主线日志收口与 push。
+2. 正式下发 TASK-003（OperationLogger）。

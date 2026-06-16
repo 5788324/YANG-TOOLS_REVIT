@@ -1,113 +1,76 @@
 # HANDOFF_TO_CODEX
 
-DeepSeek / Gemini 完成任务后，必须填写本文档，交给 Codex 审查。
+DeepSeek / Gemini 完成任务后，必须填写本文件，交给 Codex 审查。
 
 ## 当前状态
 
 ```text
 TASK-000 已完成并已进入 GitHub 主线。
-当前暂停进入下一任务，先执行日志规则加固和补记。
-Codex 已复核远端 origin/hermes/task-001 上的 TASK-001 / TASK-002 代码与编译结果；
-在本地主线补齐 WORKLOG / HANDOFF / conversations 记录后，再给出正式审查结论。
+TASK-001 已完成并已合入主线。
+TASK-002 已完成并已合入主线。
+下一任务待下发：TASK-003 / OperationLogger。
 ```
 
-## TASK-000 完成摘要
+## TASK-002 交接摘要
 
 ```text
-1. GitHub 主线唯一性已固定为 5788324/YANG-TOOLS_REVIT。
-2. 本地 Git 工作树已初始化，origin 已指向 GitHub 仓库，分支统一为 main。
-3. .gitignore、.addin 模板、Revit 2024 API 引用路径策略、ExternalEvent 主线程边界已落地。
-4. dotnet build YangTools.sln 已通过。
-5. 远端初始提交已合并，README 以当前 YangTools 版本为主。
-6. merge commit 和 push 已完成。
+1. ToolRouter 已正式接入 McpServer.Dispatch() 链路。
+2. revit.status 已接入，返回 10 个字段：
+   - 4 个完全实装字段：status / projectVersion / registeredToolCount / mcpEndpoint
+   - 1 个部分实装字段：mcpServerRunning
+   - 5 个占位字段：revitContextAvailable / revitVersion / hasActiveDocument / documentName / documentPath
+3. TestHost 已验证 mcpServerRunning 可读取 McpServer.IsRunning。
+4. 主线 Revit 组合根后续仍需补 SetServer()。
+5. TASK-001 + TASK-002 最新提交已通过 Codex 最终审查，可合并。
 ```
 
-## 2026-06-16 / Codex / REVIEW-GATE-LOGS
+## 2026-06-16 / Codex / MERGE-001-002
 
-任务编号：TASK-001 / TASK-002 审查补记  
+任务编号：TASK-001 / TASK-002 合并收口  
 执行者：Codex  
-任务目标：补齐本轮审查日志，并将“缺日志不允许合并”固化到主线规则、模板和任务卡。  
+任务目标：将 `origin/hermes/task-001` 中已审查通过的 TASK-001 / TASK-002 合并到 `main`，并更新主线状态文档。  
 
 修改文件：
-- docs/AGENT_RULES.md
-- docs/DECISIONS.md
+- YangTools.sln
+- src/YangTools.Revit/Mcp/McpServer.cs
+- src/YangTools.Revit/Tools/RevitStatusTool.cs
+- src/YangTools.Revit/Tools/ToolRouter.cs
+- src/YangTools.Revit/Utils/JsonUtils.cs
+- src/YangTools.Revit/YangTools.Revit.csproj
 - docs/CURRENT_STATE.md
+- docs/TOOL_INDEX.md
 - docs/WORKLOG.md
 - tasks/HANDOFF_TO_CODEX.md
-- tasks/CODEX_REVIEW_CHECKLIST.md
-- tasks/TASK_TEMPLATE_DEEPSEEK.md
-- tasks/TASK_TEMPLATE_GEMINI.md
-- tasks/TASK-000.md
-- tasks/TASK-001.md
-- tasks/TASK-002.md
 - logs/conversations/2026-06-16.md
+- test/README.md
+- test/TestHost/Program.cs
+- test/TestHost/TestHost.csproj
 
 做了什么：
-1. 将“日志是交付物，不是可选项”写入主线规则。
-2. 将日志门槛写入 Codex 审查清单。
-3. 将日志要求写入任务模板和 TASK-001 / TASK-002 验收标准。
-4. 更新 CURRENT_STATE，暂停进入下一任务。
-5. 将本轮 Codex 审查动作补记到主线文档。
+1. 合并了 Hermes 已通过审查的 TASK-001 / TASK-002 代码。
+2. 保留了 Codex 主线的日志门槛与审查规则。
+3. 将 CURRENT_STATE 改为“TASK-001 / TASK-002 已合入主线”。
+4. 为下一步下发 TASK-003 做准备。
 
 没做什么：
-1. 没有修改业务代码。
-2. 没有合并 `origin/hermes/task-001`。
-3. 没有下发 TASK-003。
+1. 没有开始 TASK-003。
+2. 没有实现 Revit 2024 实机加载验证。
+3. 没有实现 ExternalEvent 正式接入。
 
 编译结果：
 ```text
-本轮未执行。当前修改仅涉及规则和日志文档。
+merge 后需再次执行 dotnet build YangTools.sln 验证。
 ```
 
 测试结果：
 ```text
-已完成主线规则补记。
-TASK-001 / TASK-002 将在本轮日志补齐后重新给出正式审查结论。
-```
-
-未测试内容：
-```text
-- Revit 2024 实机加载
-- 当前主线新的 dotnet build
+以 Codex 已复核的 Hermes 交付为准：
+- TASK-001：允许合并
+- TASK-002：允许合并
 ```
 
 已知风险：
 ```text
-- 远端 TASK-002 仍存在 CURRENT_STATE 文档前后不一致的问题。
-- 远端 revit.status 的 mcpServerRunning 当前是硬编码 true。
+- Revit 2024 实机未测
+- mcpServerRunning 当前为部分实装
 ```
-
-是否建议合并：
-```text
-当前不下结论，先补日志再重新审查。
-```
-
-需要 Codex 审查的问题：
-1. TASK-001 / TASK-002 的远端交付是否满足新的日志门槛。
-2. TASK-002 的文档一致性和状态字段语义是否需要退修。
-
-## 2026-06-16 / Codex / RE-REVIEW-RESULT
-
-任务编号：TASK-001 / TASK-002 重审  
-执行者：Codex  
-任务目标：按新日志门槛重新审查远端 `origin/hermes/task-001`。  
-
-做了什么：
-1. 先核对远端是否包含 `docs/WORKLOG.md`、`tasks/HANDOFF_TO_CODEX.md`、`logs/conversations/2026-06-16.md`。
-2. 再核对 `docs/CURRENT_STATE.md`、`docs/TOOL_INDEX.md` 是否按需更新。
-3. 在日志门槛通过后，重新审查 TASK-001 / TASK-002 的代码与编译状态。
-
-测试结果：
-```text
-- 日志门槛：通过
-- 远端编译：此前已复核通过
-```
-
-审查结论：
-```text
-小修后合并
-```
-
-阻塞/退修点：
-1. TASK-002 的 `docs/CURRENT_STATE.md` 前后状态仍不一致，不能直接作为新对话接手入口。
-2. `revit.status` 中 `mcpServerRunning` 当前为硬编码 true，语义需要明确为占位，或改成真实状态来源。

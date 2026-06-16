@@ -5,32 +5,31 @@
 ## 任务编号
 
 ```text
-REVIEW-HOLD-2026-06-16
+TASK-003（待 Codex 正式下发）
 ```
 
 ## 任务名称
 
 ```text
-暂停进入下一开发任务，先补齐日志并完成 TASK-001 / TASK-002 重审
+实现 OperationLogger，为每次 MCP 调用写入 logs/operations/YYYY-MM-DD.jsonl
 ```
 
 ## 任务目标
 
 ```text
-在继续任何新任务前，先确保主线 WORKLOG、HANDOFF_TO_CODEX、conversations、CURRENT_STATE 已补齐，并由 Codex 重新给出 TASK-001 / TASK-002 的正式审查结论。
+在 TASK-001 和 TASK-002 已合入主线后，准备进入下一个最小闭环能力：统一记录 MCP 操作日志。
 ```
 
 ## 执行者
 
 ```text
-Codex
+DeepSeek
 ```
 
 ## 当前要求
 
 ```text
-1. 不进入 TASK-003 或更后续任务。
-2. 不下发新的 DeepSeek / Gemini 开工指令。
-3. 先卡日志，再看代码。
-4. 仅在重审结论明确后，才恢复正常任务流转。
+1. 当前仅更新主线状态，不视为已经正式开工。
+2. 必须由 Codex 单独下发 TASK-003 任务卡后，DeepSeek 才能开始实现。
+3. 继续执行“先日志，后审查”的门槛。
 ```
