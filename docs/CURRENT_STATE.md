@@ -39,8 +39,9 @@ v0.1 只做最小闭环：
 
 ```text
 TASK-001 ✅ 完成（退修已处理，待 Codex 合并）。
-TASK-002 ✅ 完成（ToolRouter 正式化 + revit.status 接入）。
-下一任务：TASK-003（OperationLogger，等待 Codex 下发）。
+TASK-002 ✅ 完成（退修已处理）。
+TASK-003 ✅ 完成（OperationLogger 接入）。
+下一任务：TASK-004（TransactionRunner，等待 Codex 下发）。
 ```
 
 ## 已完成
@@ -64,18 +65,19 @@ TASK-002 ✅ 完成（ToolRouter 正式化 + revit.status 接入）。
 - [x] 最小可编译 C# / Revit 插件骨架验证通过
 - [x] **TASK-001：HTTP /mcp/ + JsonUtils + McpServer 完整实现**（Hermes，2026-06-16）
 - [x] **TASK-002：ToolRouter 正式化 + revit.status 接入**（Hermes，2026-06-16）
+- [x] **TASK-003：OperationLogger 实现**（Hermes，2026-06-16）
 
 ## 正在做
 
 ```text
-等待 Codex 审查 TASK-001 和 TASK-002 成果。
+等待 Codex 审查 TASK-001 / TASK-002 / TASK-003 成果。
 ```
 
 ## 未完成
 
 - Revit 2024 插件实际加载验证
 - Ribbon / 最小按钮验证
-- OperationLogger / TransactionRunner 正式实现
+- TransactionRunner 正式实现
 - revit.selection.read / revit.parameter.get / revit.parameter.set 正式实现
 - 旧 Gemini 插件清单
 - v0.1-test / v0.1-stable 发布
@@ -91,12 +93,13 @@ TASK-002 ✅ 完成（ToolRouter 正式化 + revit.status 接入）。
 ## 最近一次 Codex 审查结论
 
 ```text
-TASK-000：已完全收口，Git、编译、主线同步均已完成。
-TASK-001：小修后合并（退修已处理，test/TestHost 已从 sln 移除）。
-TASK-002：待审查（ToolRouter 正式化 + revit.status 接入，编译 0w0e，curl 测试通过）。
+TASK-000：已完全收口。
+TASK-001：小修后合并（退修已处理）。
+TASK-002：退修已处理，mcpServerRunning 标记修正为部分实装。
+TASK-003：待审查（OperationLogger 实现，编译 0w0e，6/6 日志写入测试通过）。
 ```
 
 ## 下一步
 
-1. Codex 审查 TASK-001 和 TASK-002 成果。
-2. 审查通过后下发 TASK-003（OperationLogger）。
+1. Codex 审查 TASK-001 / TASK-002 / TASK-003 成果。
+2. 审查通过后下发 TASK-004（TransactionRunner）。

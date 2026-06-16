@@ -16,6 +16,7 @@ namespace YangTools.Revit.Mcp;
 ///   → JSON body → McpRequest
 ///   → McpServer.Dispatch() → ToolRouter.Route()
 ///   → McpResponse → JSON body → HTTP response
+///   → OperationLogger.Log()  ← 所有路径均写日志
 ///
 /// 线程边界：
 ///   HTTP 监听线程只做请求接收、JSON 解析、响应返回。
@@ -115,36 +116,37 @@ public sealed class McpServer
                 break;
             }
 
-            // 异步处理请求，不阻塞后续请求
             ThreadPool.QueueUserWorkItem(_ => ProcessRequest(context));
         }
     }
 
     private void ProcessRequest(HttpListenerContext context)
     {
-        var request = context.Request;
-        var response = context.Response;
-        response.ContentType = "application/json; charset=utf-8";
+        var httpRequest = context.Request;
+        var httpResponse = context.Response;
+        httpResponse.ContentType = "application/json; charset=utf-8";
 
         try
         {
             // ── 1. 路径检查 ──
-            if (!request.Url!.AbsolutePath.Equals("/mcp/", StringComparison.OrdinalIgnoreCase))
+            if (!httpRequest.Url!.AbsolutePath.Equals("/mcp/", StringComparison.OrdinalIgnoreCase))
             {
-                WriteJson(response, 404, McpResponse.Failure(string.Empty, "未找到该路径。仅支持 POST /mcp/"));
+                RespondAndLog(httpResponse, 404,
+                    McpResponse.Failure(string.Empty, "未找到该路径。仅支持 POST /mcp/"));
                 return;
             }
 
             // ── 2. 方法检查 ──
-            if (!request.HttpMethod.Equals("POST", StringComparison.OrdinalIgnoreCase))
+            if (!httpRequest.HttpMethod.Equals("POST", StringComparison.OrdinalIgnoreCase))
             {
-                WriteJson(response, 405, McpResponse.Failure(string.Empty, $"不支持的 HTTP 方法：{request.HttpMethod}。仅支持 POST。"));
+                RespondAndLog(httpResponse, 405,
+                    McpResponse.Failure(string.Empty, $"不支持的 HTTP 方法：{httpRequest.HttpMethod}。仅支持 POST。"));
                 return;
             }
 
             // ── 3. 读取 body ──
             string body;
-            using (var reader = new StreamReader(request.InputStream, request.ContentEncoding))
+            using (var reader = new StreamReader(httpRequest.InputStream, httpRequest.ContentEncoding))
             {
                 body = reader.ReadToEnd();
             }
@@ -153,32 +155,42 @@ public sealed class McpServer
             var mcpRequest = JsonUtils.DeserializeRequest(body);
             if (mcpRequest == null)
             {
-                WriteJson(response, 400, McpResponse.Failure(string.Empty, "无法解析请求 JSON。请检查 body 格式。"));
+                RespondAndLog(httpResponse, 400,
+                    McpResponse.Failure(string.Empty, "无法解析请求 JSON。请检查 body 格式。"));
                 return;
             }
 
             // ── 5. 空 tool 检查 ──
             if (string.IsNullOrWhiteSpace(mcpRequest.Tool))
             {
-                WriteJson(response, 400, McpResponse.Failure(string.Empty, "tool 不能为空。"));
+                RespondAndLog(httpResponse, 400,
+                    McpResponse.Failure(string.Empty, "tool 不能为空。"), mcpRequest);
                 return;
             }
 
             // ── 6. 路由（同步，不访问 Revit Document）──
-            // 当前阶段 ToolRouter 只返回标准错误。
-            // 后续 TASK-002 起，部分 Tool 会通过 ExternalEvent 投递。
             var mcpResponse = Dispatch(mcpRequest);
 
-            // ── 7. 返回 ──
+            // ── 7. 返回 + 日志 ──
             int statusCode = mcpResponse.Ok ? 200 : 400;
-            WriteJson(response, statusCode, mcpResponse);
+            RespondAndLog(httpResponse, statusCode, mcpResponse, mcpRequest);
         }
         catch (Exception ex)
         {
-            // 不吞异常：记录并返回标准错误
-            var error = McpResponse.Failure(string.Empty, $"服务器内部错误：{ex.GetType().Name} - {ex.Message}");
-            WriteJson(response, 500, error);
+            var error = McpResponse.Failure(string.Empty,
+                $"服务器内部错误：{ex.GetType().Name} - {ex.Message}");
+            RespondAndLog(httpResponse, 500, error);
         }
+    }
+
+    /// <summary>
+    /// 写 HTTP 响应 + 记录操作日志（所有响应路径的统一出口）。
+    /// </summary>
+    private static void RespondAndLog(HttpListenerResponse httpResponse, int statusCode,
+        McpResponse mcpResponse, McpRequest? mcpRequest = null)
+    {
+        OperationLogger.Log(mcpRequest, mcpResponse);
+        WriteJson(httpResponse, statusCode, mcpResponse);
     }
 
     private static void WriteJson(HttpListenerResponse response, int statusCode, McpResponse mcpResponse)
