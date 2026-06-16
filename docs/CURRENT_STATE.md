@@ -1,6 +1,6 @@
 # CURRENT_STATE
 
-> 新 AI / 新对话最重要的项目状态摘要。请保持短，不要写成长篇历史。
+> 新 AI / 新对话最重要的项目状态摘要。保持短、真实、可接手。
 
 ## 当前版本
 
@@ -11,88 +11,62 @@ YangTools v0.1-dev
 ## 主测环境
 
 ```text
-Revit：2024
+Revit 2024
 主线语言：C#
 Python：临时脚本 / 旧插件迁移参考 / dev 调试
-MCP v0：HTTP 127.0.0.1:8081/mcp/
+MCP v0：POST http://127.0.0.1:8081/mcp/
 GitHub 主线：5788324/YANG-TOOLS_REVIT
-本地 Git 分支：main
+本地分支：main
 ```
-
-## 当前项目目标
-
-v0.1 只做最小闭环：
-
-1. Revit 2024 插件能加载。
-2. Ribbon 或最小按钮能出现。
-3. HTTP `/mcp/` 可用。
-4. ToolRouter 可用。
-5. OperationLogger 可用。
-6. TransactionRunner 可用。
-7. `revit.status` 可用。
-8. `revit.selection.read` 可用。
-9. `revit.parameter.get` 可用。
-10. `revit.parameter.set` 可用，并支持 dryRun、Transaction、Ctrl+Z 撤销。
-11. 日志与交接体系可用。
 
 ## 当前任务
 
 ```text
-TASK-000 已完成。
-下一任务：TASK-001（等待 Codex 正式下发给 DeepSeek）
+当前暂停进入下一任务。
+先补齐本轮 Codex 审查日志与交接记录，再重新审查 TASK-001 / TASK-002。
 ```
 
 ## 已完成
 
-- [x] 项目目录创建
-- [x] 基础文档创建
-- [x] MCP v0 协议固定
-- [x] 第一批任务卡创建
-- [x] YangTools_BASE v0.1-dev 创建
-- [x] GitHub 主线唯一性规则写入
-- [x] 本地 Git 工作树初始化
-- [x] origin 已指向 `https://github.com/5788324/YANG-TOOLS_REVIT.git`
-- [x] 本地分支统一为 `main`
-- [x] 已合并远端 `Initial commit`，README 以当前 YangTools 版本为主
-- [x] `logs/operations/*.jsonl` 默认不进 Git 规则写入
-- [x] `.gitignore` 已添加
-- [x] `.addin` 模板已准备
-- [x] Revit 2024 引用路径策略已准备
-- [x] 默认 Revit 2024 API DLL 路径存在实证
-- [x] Revit API 主线程 / ExternalEvent 边界已写入
-- [x] 最小可编译 C# / Revit 插件骨架验证通过
+- TASK-000 已完成并已推送到 GitHub 主线。
+- 主线规则已固定：GitHub 唯一主线、Revit 2024、C# 主线、HTTP `/mcp/`、ExternalEvent 主线程边界。
+- 日志门槛已固定：缺 WORKLOG / HANDOFF / conversations 记录时，不允许合并。
 
 ## 正在做
 
 ```text
-TASK-000 已收口，当前基线已推送到 GitHub 主线，准备正式下发 TASK-001。
+执行日志规则加固：补齐本轮 WORKLOG / HANDOFF_TO_CODEX / conversations，并重新给出 TASK-001 / TASK-002 的正式审查结论。
 ```
 
 ## 未完成
 
 - Revit 2024 插件实际加载验证
 - Ribbon / 最小按钮验证
-- HTTP `/mcp/` 正式实现
-- ToolRouter / OperationLogger / TransactionRunner 正式实现
-- revit.status / revit.selection.read / revit.parameter.get / revit.parameter.set 正式实现
-- 旧 Gemini 插件清单
-- v0.1-test / v0.1-stable 发布
+- TASK-001 合并审查
+- TASK-002 合并审查
+- OperationLogger
+- TransactionRunner
+- revit.selection.read
+- revit.parameter.get
+- revit.parameter.set
 
-## 最近风险
+## 主要风险
 
-1. 还没验证 Revit 2024 内实际加载插件。
-2. Gemini 白天代码不能直接进主线。
-3. DeepSeek / Hermes 不允许改 MCP 协议，不允许直接决定合并。
-4. 任何 Revit API 调用都不能从 HTTP 后台线程直接执行，必须经 ExternalEvent / 主线程调度。
+1. 还没完成 Revit 2024 实机加载验证。
+2. 任何 Revit API 调用都不能从 HTTP 后台线程直接执行。
+3. Gemini 白天代码不能直接进主线。
+4. DeepSeek / Hermes 不允许修改 MCP 协议。
 
 ## 最近一次 Codex 审查结论
 
 ```text
-TASK-000 已完全收口：Git、编译、主线同步均已完成。
-可以正式下发 DeepSeek 的 TASK-001。
+按新日志门槛重审后，origin/hermes/task-001 已具备 WORKLOG / HANDOFF / conversations / CURRENT_STATE / TOOL_INDEX。
+因此允许进入代码审查。
+当前代码审查结论：TASK-001 / TASK-002 为“小修后合并”。
 ```
 
 ## 下一步
 
-1. 正式下发 DeepSeek 的 TASK-001 开工指令。
-2. DeepSeek 完成后按 HANDOFF_TO_CODEX 回交。
+1. 完成本轮日志补记。
+2. 重新审查 `origin/hermes/task-001` 上的 TASK-001 / TASK-002。
+3. 审查通过后，再决定是否合并或下发下一任务。

@@ -15,7 +15,7 @@ GEMINI-TEMP-XXX
 ## 任务目标
 
 ```text
-解决用户当天工作中的具体问题。代码属于临时代码，不能直接进入主线。
+解决当天工作中的具体问题。代码属于临时代码，不允许直接进入主线。
 ```
 
 ## 允许行为
@@ -23,11 +23,11 @@ GEMINI-TEMP-XXX
 1. 可以写临时插件。
 2. 可以写临时 MCP Tool。
 3. 可以写 Python 验证脚本。
-4. 可以修当天工作需要的 Bug。
+4. 可以修当天需要的小 Bug。
 
 ## 禁止行为
 
-1. 不准私自修改 MCP 基础协议。
+1. 不准私自修改 MCP 协议。
 2. 不准新增独立 endpoint。
 3. 不准把临时代码标记为 stable。
 4. 不准自动保存、覆盖保存、同步中心模型。
@@ -36,16 +36,13 @@ GEMINI-TEMP-XXX
 
 ## 完成后必须输出
 
-1. 修改文件清单。
-2. 功能说明。
-3. 测试结果。
-4. 风险说明。
-5. `docs/WORKLOG.md` 记录。
-6. `tasks/HANDOFF_TO_CODEX.md` 交接说明。
-7. 按 `tasks/GEMINI_DAILY_PACKAGE.md` 输出源码打包。
-
-## 交接给 Codex 的重点
-
-```text
-这段代码是临时功能，请 Codex 审查是否能并入主线。
-```
+1. 修改文件清单
+2. 功能说明
+3. 测试结果
+4. 风险说明
+5. `docs/WORKLOG.md`
+6. `tasks/HANDOFF_TO_CODEX.md`
+7. `logs/conversations/YYYY-MM-DD.md`
+8. 如状态变化，更新 `docs/CURRENT_STATE.md`
+9. 如 Tool 状态变化，更新 `docs/TOOL_INDEX.md`
+10. 按 `tasks/GEMINI_DAILY_PACKAGE.md` 输出源码打包
