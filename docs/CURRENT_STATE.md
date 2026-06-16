@@ -65,12 +65,11 @@ TASK-000 已完成。
 ## 正在做
 
 ```text
-完成合并收口并准备 push 到 GitHub 主线，然后正式下发 TASK-001。
+TASK-000 已收口，当前基线已推送到 GitHub 主线，准备正式下发 TASK-001。
 ```
 
 ## 未完成
 
-- 当前合并结果推送到 GitHub 主线
 - Revit 2024 插件实际加载验证
 - Ribbon / 最小按钮验证
 - HTTP `/mcp/` 正式实现
@@ -81,20 +80,19 @@ TASK-000 已完成。
 
 ## 最近风险
 
-1. 本地 Git 和合并收口已完成，但 GitHub 推送是否成功还未验证。
-2. 还没验证 Revit 2024 内实际加载插件。
-3. Gemini 白天代码不能直接进主线。
-4. DeepSeek / Hermes 不允许改 MCP 协议，不允许直接决定合并。
-5. 任何 Revit API 调用都不能从 HTTP 后台线程直接执行，必须经 ExternalEvent / 主线程调度。
+1. 还没验证 Revit 2024 内实际加载插件。
+2. Gemini 白天代码不能直接进主线。
+3. DeepSeek / Hermes 不允许改 MCP 协议，不允许直接决定合并。
+4. 任何 Revit API 调用都不能从 HTTP 后台线程直接执行，必须经 ExternalEvent / 主线程调度。
 
 ## 最近一次 Codex 审查结论
 
 ```text
-TASK-000 已完成本地收口并通过编译。
-完成 GitHub push 后，即可正式下发 DeepSeek 的 TASK-001。
+TASK-000 已完全收口：Git、编译、主线同步均已完成。
+可以正式下发 DeepSeek 的 TASK-001。
 ```
 
 ## 下一步
 
-1. 完成合并提交并 push 到 `5788324/YANG-TOOLS_REVIT`。
-2. 成功后正式下发 DeepSeek 的 TASK-001 开工指令。
+1. 正式下发 DeepSeek 的 TASK-001 开工指令。
+2. DeepSeek 完成后按 HANDOFF_TO_CODEX 回交。
