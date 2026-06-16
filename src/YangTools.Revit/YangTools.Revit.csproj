@@ -10,6 +10,11 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
 
+  <!-- .NET Framework 内置 JSON 序列化，零 NuGet 依赖 -->
+  <ItemGroup>
+    <Reference Include="System.Web.Extensions" />
+  </ItemGroup>
+
   <ItemGroup Condition="Exists('$(RevitApiDir)\RevitAPI.dll')">
     <Reference Include="RevitAPI">
       <HintPath>$(RevitApiDir)\RevitAPI.dll</HintPath>

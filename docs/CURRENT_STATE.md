@@ -38,8 +38,8 @@ v0.1 只做最小闭环：
 ## 当前任务
 
 ```text
-TASK-000 已完成。
-下一任务：TASK-001（等待 Codex 正式下发给 DeepSeek）
+TASK-001 已完成（Hermes 执行）。
+下一任务：TASK-002（ToolRouter 正式实现 + revit.status，等待 Codex 下发）。
 ```
 
 ## 已完成
@@ -61,18 +61,18 @@ TASK-000 已完成。
 - [x] 默认 Revit 2024 API DLL 路径存在实证
 - [x] Revit API 主线程 / ExternalEvent 边界已写入
 - [x] 最小可编译 C# / Revit 插件骨架验证通过
+- [x] **TASK-001：HTTP /mcp/ + JsonUtils + McpServer 完整实现**（Hermes，2026-06-16）
 
 ## 正在做
 
 ```text
-TASK-000 已收口，当前基线已推送到 GitHub 主线，准备正式下发 TASK-001。
+等待 Codex 审查 TASK-001 成果，并下发 TASK-002。
 ```
 
 ## 未完成
 
 - Revit 2024 插件实际加载验证
 - Ribbon / 最小按钮验证
-- HTTP `/mcp/` 正式实现
 - ToolRouter / OperationLogger / TransactionRunner 正式实现
 - revit.status / revit.selection.read / revit.parameter.get / revit.parameter.set 正式实现
 - 旧 Gemini 插件清单
@@ -81,18 +81,19 @@ TASK-000 已收口，当前基线已推送到 GitHub 主线，准备正式下发
 ## 最近风险
 
 1. 还没验证 Revit 2024 内实际加载插件。
-2. Gemini 白天代码不能直接进主线。
-3. DeepSeek / Hermes 不允许改 MCP 协议，不允许直接决定合并。
-4. 任何 Revit API 调用都不能从 HTTP 后台线程直接执行，必须经 ExternalEvent / 主线程调度。
+2. System.Web.Extensions 在 Revit 加载环境中的兼容性未实证。
+3. Gemini 白天代码不能直接进主线。
+4. DeepSeek / Hermes 不允许改 MCP 协议，不允许直接决定合并。
+5. 任何 Revit API 调用都不能从 HTTP 后台线程直接执行，必须经 ExternalEvent / 主线程调度。
 
 ## 最近一次 Codex 审查结论
 
 ```text
 TASK-000 已完全收口：Git、编译、主线同步均已完成。
-可以正式下发 DeepSeek 的 TASK-001。
+TASK-001 已由 Hermes 完成，等待 Codex 审查。
 ```
 
 ## 下一步
 
-1. 正式下发 DeepSeek 的 TASK-001 开工指令。
-2. DeepSeek 完成后按 HANDOFF_TO_CODEX 回交。
+1. Codex 审查 TASK-001 成果。
+2. 审查通过后下发 TASK-002（ToolRouter + revit.status）。

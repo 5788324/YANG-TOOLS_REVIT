@@ -344,3 +344,78 @@ Codex 落地文档到仓库，并创建第一批开发任务。
 - merge commit 已完成：e854def
 - git push 已完成：origin/main 已同步
 ```
+
+---
+
+## 2026-06-16 / TASK-001 / Hermes
+
+#### 本次目标
+
+统一 McpRequest / McpResponse 结构，实现 JSON 序列化/反序列化，并打通 HTTP POST /mcp/ 基础入口。
+
+#### 修改文件
+
+```text
+- src/YangTools.Revit/Utils/JsonUtils.cs          （从占位重写为完整 JSON 工具）
+- src/YangTools.Revit/Mcp/McpServer.cs             （从占位重写为完整 HTTP MCP 服务器）
+- src/YangTools.Revit/YangTools.Revit.csproj        （添加 System.Web.Extensions 引用）
+- YangTools.sln                                     （添加 TestHost 测试项目）
+- test/TestHost/Program.cs                          （新增：MCP 测试主机）
+- test/TestHost/TestHost.csproj                     （新增：测试项目文件）
+```
+
+#### 做了什么
+
+1. JsonUtils 完整实现：基于 JavaScriptSerializer（零 NuGet 依赖），DeserializeRequest() 支持大小写不敏感 JSON 解析，SerializeResponse() 强制输出小写字段名 ok/tool/data/error/warnings。
+2. McpServer 完整实现：HttpListener + 后台线程 + Start/Stop/IsRunning + Dispatch() + 完整错误处理。
+3. 标准错误覆盖：空 tool、未知 tool、JSON 格式错误、非 POST 方法、空 body——全部返回标准 McpResponse JSON。
+4. 添加 test/TestHost 项目，注册一个 test.ping Tool，用于非 Revit 环境测试验证。
+5. csproj 新增 System.Web.Extensions 程序集引用（net48 内置，零 NuGet 下载）。
+
+#### 没做什么
+
+1. 没有实现真实 Revit Tool（revit.status/selection.read 等）。
+2. 没有访问 Revit Document。
+3. 没有调用 Revit API。
+4. 没有实现 ExternalEvent 投递机制。
+5. 没有修改 MCP 协议字段名。
+6. 没有引入 Newtonsoft.Json 或任何 NuGet 依赖。
+
+#### 测试结果
+
+```text
+- 编译：dotnet build YangTools.sln → 0 warning, 0 error ✓
+- Test 1: POST test.ping → 200 OK, JSON 小写字段 ✓
+- Test 2: POST unknown tool → 400, "未注册的 tool" ✓
+- Test 3: POST empty tool → 400, "tool 不能为空" ✓
+- Test 4: POST invalid JSON → 400, "无法解析请求 JSON" ✓
+- Test 5: GET /mcp/ → 405, "不支持的 HTTP 方法" ✓
+- Test 6: PascalCase keys → 200 OK, 大小写不敏感解析 ✓
+- Test 7: Empty body → 400, JSON 解析错误 ✓
+- Revit 2024：未测（TASK-001 不涉及 Revit API）
+```
+
+#### 已知问题
+
+```text
+- HttpListener 只注册了 /mcp/ 前缀，POST /other 路径由系统返回 HTML 404 而非 JSON 404。
+  这是 HttpListener 前缀机制的限制，不影响 /mcp/ 正常工作。如需覆盖其他路径，
+  需要额外前缀或通配注册（管理员权限），留待后续决定。
+- test/TestHost 是纯测试工具，不应进入主线源码。Codex 审查后决定保留位置或移除。
+```
+
+#### 需要 Codex 审查
+
+```text
+1. JsonUtils 使用 JavaScriptSerializer → 确认零 NuGet 策略满足 v0.1 需求。
+2. McpServer HTTP listener 线程模型 → 确认 Start/Stop 设计适合后续 ExternalEvent 集成。
+3. test/TestHost 是否应保留在仓库中，或移到单独测试方案。
+4. System.Web.Extensions 引用是否与 Revit 加载环境兼容（通常 Revit 自带此程序集）。
+```
+
+#### 下一步
+
+```text
+- Codex 审查 TASK-001 成果。
+- 审查通过后下发 TASK-002（ToolRouter 正式实现 + revit.status）。
+```
