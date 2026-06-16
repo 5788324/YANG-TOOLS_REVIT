@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>YangTools</Name>
+    <Assembly>{ASSEMBLY_PATH}\YangTools.Revit.dll</Assembly>
+    <AddInId>3F4B846C-0A21-4F4A-9B1B-6D9F5A8C3F10</AddInId>
+    <FullClassName>YangTools.Revit.App</FullClassName>
+    <VendorId>YANG</VendorId>
+    <VendorDescription>YangTools Revit plugin</VendorDescription>
+  </AddIn>
+</RevitAddIns>

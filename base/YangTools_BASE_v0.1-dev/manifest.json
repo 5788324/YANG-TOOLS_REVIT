@@ -1,0 +1,13 @@
+{
+  "name": "YangTools_BASE",
+  "version": "v0.1-dev",
+  "revitTarget": "2024",
+  "mainlineLanguage": "C#",
+  "mcpEndpoint": "http://127.0.0.1:8081/mcp/",
+  "status": "bootstrap",
+  "notes": [
+    "只包含项目骨架与启动文档",
+    "正式功能实现交给 TASK-001 到 TASK-008",
+    "Gemini 临时代码不得直接覆盖该基线"
+  ]
+}

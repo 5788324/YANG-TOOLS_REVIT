@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RevitYear>2024</RevitYear>
+    <RevitInstallDir Condition="'$(RevitInstallDir)' == ''">C:\Program Files\Autodesk\Revit 2024</RevitInstallDir>
+    <RevitApiDir Condition="'$(RevitApiDir)' == ''">$(RevitInstallDir)</RevitApiDir>
+  </PropertyGroup>
+</Project>
