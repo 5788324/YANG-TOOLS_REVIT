@@ -278,3 +278,62 @@ Codex 落地文档到仓库，并创建第一批开发任务。
 - 完成 TASK-000 的剩余 Git / 引用 / 可编译验证。
 - TASK-000 完成后，再下发 DeepSeek 的 TASK-001 开工指令。
 ```
+
+---
+
+## 2026-06-16 / TASK-000-CLOSEOUT / Codex
+
+#### 本次目标
+
+按用户确认方案合并远端初始提交，保持当前 YangTools README 为主，并完成 TASK-000 收口前验证。
+
+#### 修改文件
+
+```text
+- README.md
+- docs/CURRENT_STATE.md
+- docs/WORKLOG.md
+- tasks/HANDOFF_TO_CODEX.md
+- logs/conversations/2026-06-16.md
+```
+
+#### 做了什么
+
+1. 执行 `git pull origin main --allow-unrelated-histories`。
+2. 解决 `README.md` add/add 冲突，保留当前 YangTools 版本。
+3. 再次执行 `dotnet build YangTools.sln`，确认编译通过。
+4. 更新 TASK-000 收口状态文档。
+
+#### 没做什么
+
+1. 还没有验证 Revit 2024 内实际加载插件。
+2. 还没有正式下发 DeepSeek 的 TASK-001 指令。
+
+#### 测试结果
+
+```text
+- git pull：完成，只有 README.md 冲突，已解决
+- 编译：通过（0 warning, 0 error）
+- Revit 2024：未测
+```
+
+#### 已知问题
+
+```text
+- GitHub push 结果尚未确认。
+- Revit 2024 插件加载与 Ribbon 显示仍待实机验证。
+```
+
+#### 需要 Codex 审查
+
+```text
+1. push 成功后，TASK-000 即可视为完全收口。
+2. TASK-001 下发前无需再补规则层改动。
+```
+
+#### 下一步
+
+```text
+- 完成 merge commit / push。
+- push 成功后，正式下发 DeepSeek 的 TASK-001 开工指令。
+```

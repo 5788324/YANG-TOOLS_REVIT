@@ -53,6 +53,7 @@ TASK-000 已完成。
 - [x] 本地 Git 工作树初始化
 - [x] origin 已指向 `https://github.com/5788324/YANG-TOOLS_REVIT.git`
 - [x] 本地分支统一为 `main`
+- [x] 已合并远端 `Initial commit`，README 以当前 YangTools 版本为主
 - [x] `logs/operations/*.jsonl` 默认不进 Git 规则写入
 - [x] `.gitignore` 已添加
 - [x] `.addin` 模板已准备
@@ -64,12 +65,12 @@ TASK-000 已完成。
 ## 正在做
 
 ```text
-准备将当前骨架提交并同步到 GitHub 主线，然后正式下发 TASK-001。
+完成合并收口并准备 push 到 GitHub 主线，然后正式下发 TASK-001。
 ```
 
 ## 未完成
 
-- 当前骨架推送到 GitHub 主线
+- 当前合并结果推送到 GitHub 主线
 - Revit 2024 插件实际加载验证
 - Ribbon / 最小按钮验证
 - HTTP `/mcp/` 正式实现
@@ -80,7 +81,7 @@ TASK-000 已完成。
 
 ## 最近风险
 
-1. 虽然本地 Git 已就绪，但 GitHub 推送是否成功还未验证。
+1. 本地 Git 和合并收口已完成，但 GitHub 推送是否成功还未验证。
 2. 还没验证 Revit 2024 内实际加载插件。
 3. Gemini 白天代码不能直接进主线。
 4. DeepSeek / Hermes 不允许改 MCP 协议，不允许直接决定合并。
@@ -89,12 +90,11 @@ TASK-000 已完成。
 ## 最近一次 Codex 审查结论
 
 ```text
-TASK-000 已完成到“可进入正式开发”的程度。
-可以准备下发 DeepSeek 的 TASK-001，但 GitHub push 结果仍需最终确认。
+TASK-000 已完成本地收口并通过编译。
+完成 GitHub push 后，即可正式下发 DeepSeek 的 TASK-001。
 ```
 
 ## 下一步
 
-1. 提交当前骨架到本地 Git。
-2. 尝试 push 到 `5788324/YANG-TOOLS_REVIT`。
-3. 成功后正式下发 DeepSeek 的 TASK-001 开工指令。
+1. 完成合并提交并 push 到 `5788324/YANG-TOOLS_REVIT`。
+2. 成功后正式下发 DeepSeek 的 TASK-001 开工指令。
