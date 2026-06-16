@@ -38,8 +38,9 @@ v0.1 只做最小闭环：
 ## 当前任务
 
 ```text
-TASK-001 已完成（Hermes 执行），Codex 审查结论：小修后合并 → 退修已处理。
-下一任务：TASK-002（ToolRouter 正式实现 + revit.status，等待 Codex 下发）。
+TASK-001 ✅ 完成（退修已处理，待 Codex 合并）。
+TASK-002 ✅ 完成（ToolRouter 正式化 + revit.status 接入）。
+下一任务：TASK-003（OperationLogger，等待 Codex 下发）。
 ```
 
 ## 已完成
@@ -62,6 +63,7 @@ TASK-001 已完成（Hermes 执行），Codex 审查结论：小修后合并 →
 - [x] Revit API 主线程 / ExternalEvent 边界已写入
 - [x] 最小可编译 C# / Revit 插件骨架验证通过
 - [x] **TASK-001：HTTP /mcp/ + JsonUtils + McpServer 完整实现**（Hermes，2026-06-16）
+- [x] **TASK-002：ToolRouter 正式化 + revit.status 接入**（Hermes，2026-06-16）
 
 ## 正在做
 

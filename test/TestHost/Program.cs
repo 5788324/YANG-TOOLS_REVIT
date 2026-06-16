@@ -9,8 +9,14 @@ public static class TestHost
 {
     public static void Main()
     {
-        var tools = new IRevitTool[] { new PingTool() };
+        var statusTool = new RevitStatusTool();
+
+        var tools = new IRevitTool[] { statusTool, new PingTool() };
         var router = new ToolRouter(tools);
+
+        // 反向注入：RevitStatusTool 需要 ToolRouter 引用以获取 registeredToolCount
+        statusTool.SetRouter(router);
+
         var server = new McpServer(router);
 
         Console.WriteLine($"Starting MCP server on {server.Endpoint}");
@@ -19,7 +25,9 @@ public static class TestHost
         {
             server.Start();
             Console.WriteLine("Server started. Press Ctrl+C to stop.");
-            Console.WriteLine("Registered tools: " + router.RegisteredToolCount);
+            Console.WriteLine($"Registered tools: {router.RegisteredToolCount}");
+            Console.WriteLine("  - revit.status");
+            Console.WriteLine("  - test.ping");
             Console.WriteLine();
 
             var exit = new ManualResetEvent(false);

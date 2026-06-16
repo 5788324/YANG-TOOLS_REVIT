@@ -14,7 +14,7 @@ namespace YangTools.Revit.Mcp;
 /// 请求链路：
 ///   HTTP /mcp/ 请求
 ///   → JSON body → McpRequest
-///   → McpServer.Dispatch() → ToolRouter（预留）
+///   → McpServer.Dispatch() → ToolRouter.Route()
 ///   → McpResponse → JSON body → HTTP response
 ///
 /// 线程边界：

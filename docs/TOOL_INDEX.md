@@ -4,7 +4,7 @@
 
 | Tool | 状态 | 风险等级 | dryRun | 修改模型 | 实现文件 | 测试版本 | 说明 |
 |---|---|---|---|---|---|---|---|
-| revit.status | planned | ReadOnly | 否 | 否 | `src/YangTools.Revit/Tools/RevitStatusTool.cs` | Revit 2024 | 查询 Revit / 当前文档 / MCP 状态 |
+| revit.status | experimental | ReadOnly | 否 | 否 | `src/YangTools.Revit/Tools/RevitStatusTool.cs` | Revit 2024 | 查询 Revit / 当前文档 / MCP 状态。Revit 上下文字段当前为占位。 |
 | revit.selection.read | planned | ReadOnly | 否 | 否 | `src/YangTools.Revit/Tools/SelectionReadTool.cs` | Revit 2024 | 读取当前选择元素基础信息 |
 | revit.parameter.get | planned | ReadOnly | 否 | 否 | `src/YangTools.Revit/Tools/ParameterGetTool.cs` | Revit 2024 | 读取当前选择元素参数 |
 | revit.parameter.set | planned | BatchWrite | 是 | 是 | `src/YangTools.Revit/Tools/ParameterSetTool.cs` | Revit 2024 | 批量修改当前选择元素参数 |
