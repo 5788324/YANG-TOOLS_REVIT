@@ -65,7 +65,7 @@ Hermes（DeepSeek 等价代码工人）
 | projectVersion | ✅ 实装 | App.MainVersion |
 | registeredToolCount | ✅ 实装 | ToolRouter.RegisteredToolCount |
 | mcpEndpoint | ✅ 实装 | App.McpEndpoint |
-| mcpServerRunning | ✅ 实装 | true |
+| mcpServerRunning | ⚡ 部分实装 | TestHost 已接入 McpServer.IsRunning；主线组合根未实现，届时需补 SetServer() |
 | revitContextAvailable | ⚠️ 占位 | false（未接入 Revit ExternalApplication） |
 | revitVersion | ⚠️ 占位 | null |
 | hasActiveDocument | ⚠️ 占位 | false |

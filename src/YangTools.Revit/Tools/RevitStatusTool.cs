@@ -7,9 +7,13 @@ namespace YangTools.Revit.Tools;
 /// revit.status — 返回 YangTools 与 Revit 当前状态。
 ///
 /// 实装字段（有真实数据源）：
-///   status, projectVersion, registeredToolCount, mcpEndpoint, mcpServerRunning
-///   注：mcpServerRunning 需要 SetServer() 注入 McpServer 后才能返回真实状态；
-///   未注入时返回 false。
+///   status, projectVersion, registeredToolCount, mcpEndpoint
+///
+/// 部分实装字段：
+///   mcpServerRunning — 数据源为 McpServer.IsRunning；
+///   已在 test/TestHost 组合根通过 SetServer() 接入真实状态；
+///   主线 Revit 插件组合根（ExternalApplication）尚未实现，
+///   届时需在组合根补入 SetServer() 调用，否则退化为 false。
 ///
 /// 占位字段（需要 Revit API 上下文，当前不可用）：
 ///   revitContextAvailable, revitVersion, hasActiveDocument, documentName, documentPath
