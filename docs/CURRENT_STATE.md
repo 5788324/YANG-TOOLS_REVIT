@@ -38,7 +38,7 @@ TASK-002 已合入主线：ToolRouter 正式化 + revit.status 接入。
 ## 正在做
 
 ```text
-准备收口本轮 merge 结果，并下发 TASK-003。
+TASK-001 / TASK-002 已收口并已推送到 GitHub 主线，准备正式下发 TASK-003。
 ```
 
 ## 未完成
@@ -70,5 +70,5 @@ TASK-002：允许合并。
 
 ## 下一步
 
-1. 完成本轮 merge 后的主线日志收口与 push。
-2. 正式下发 TASK-003（OperationLogger）。
+1. 正式下发 TASK-003（OperationLogger）。
+2. DeepSeek 完成后按日志门槛回交。
