@@ -1,0 +1,156 @@
+<Window x:Class="YangTools.Revit.UI.SolidGeneratorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="实体提取"
+        Width="600" MinWidth="560" SizeToContent="Height"
+        MinHeight="400"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource WindowBg}"
+        Foreground="{DynamicResource PrimaryText}"
+        FontFamily="Microsoft YaHei UI, Microsoft YaHei, Segoe UI"
+        AllowsTransparency="True"
+        WindowStyle="None"
+        BorderThickness="1"
+        BorderBrush="{DynamicResource WindowBorder}"
+        Loaded="Window_Loaded">
+
+    <Window.Resources>
+        <Style TargetType="{x:Type ComboBoxItem}">
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="10,7"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ComboBoxItem}">
+                        <Border x:Name="itemBd" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="itemBd" Property="Background" Value="{DynamicResource AccentColor}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource AccentText}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="itemBd" Property="Background" Value="{DynamicResource AccentHover}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource AccentText}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="56"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="56"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="{DynamicResource TitleBarGradient}">
+            <Grid Margin="18,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center" Orientation="Horizontal"
+                            MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                    <TextBlock Text="实体提取(Solid)" FontWeight="Bold" FontSize="18" Foreground="{DynamicResource TitleText}"/>
+                    <TextBlock Text=" | 提取图元几何体生成实体族" FontSize="13" Foreground="{DynamicResource TitleText}" Margin="8,3,0,0"/>
+                </StackPanel>
+                <Button Grid.Column="1" Width="32" Height="32"
+                        Content="X" FontSize="15" FontWeight="Bold"
+                        Foreground="{DynamicResource TitleText}" Cursor="Hand"
+                        Click="CloseButton_Click">
+                    <Button.Template>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Border x:Name="closebd" Background="Transparent" CornerRadius="4">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="closebd" Property="Background" Value="{DynamicResource DangerBg}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <Grid Margin="22,18">
+                <Border Background="{DynamicResource PanelBg}" CornerRadius="8" BorderThickness="1" BorderBrush="{DynamicResource WindowBorder}" Padding="18">
+                    <StackPanel>
+
+                        <TextBlock Text="源图元选择" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource PrimaryText}" Margin="0,0,0,8"/>
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock x:Name="TxtElement" Text="未选择图元" VerticalAlignment="Center" FontSize="13"
+                                       TextTrimming="CharacterEllipsis" Margin="0,0,10,0"
+                                       Foreground="{DynamicResource SecondaryText}"/>
+                            <Button Grid.Column="1" Content="选择图元" Style="{DynamicResource StandardButton}" Padding="15,4" Click="BtnSelectElement_Click"/>
+                        </Grid>
+
+                        <TextBlock Text="新建族名称" FontSize="13" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,4"/>
+                        <TextBox x:Name="TxtFamilyName" Text="GeneratedSolidFamily" FontSize="14" Padding="6" Background="{DynamicResource GridHover}" BorderBrush="{DynamicResource BtnBorder}" Margin="0,0,0,12"/>
+
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,5,0">
+                                <TextBlock Text="族类别" FontSize="13" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,4"/>
+                                <ComboBox x:Name="CmbCategory" FontSize="14" Padding="6" Background="{DynamicResource GridHover}" BorderBrush="{DynamicResource BtnBorder}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Margin="5,0,0,0">
+                                <TextBlock Text="目标标高（保持原高度）" FontSize="13" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,4"/>
+                                <ComboBox x:Name="CmbLevel" FontSize="14" Padding="6" Background="{DynamicResource GridHover}" BorderBrush="{DynamicResource BtnBorder}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <TextBlock Text="材质（可选，留空=按类别/默认材质）" FontSize="13" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,4"/>
+                        <ComboBox x:Name="CmbMaterial" IsEditable="True" IsTextSearchEnabled="True"
+                                  FontSize="14" Padding="6" Background="{DynamicResource GridHover}"
+                                  BorderBrush="{DynamicResource BtnBorder}" Margin="0,0,0,4"/>
+                        <TextBlock Text="留空使用默认材质；指定材质时必须写入并回读成功，否则不提交。"
+                                   FontSize="11" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,12"/>
+
+                        <TextBlock Text="目标标高只决定实例关联，实体世界位置和高度来自原始几何；提取后校验 XYZ 包围盒与总体积。"
+                                   TextWrapping="Wrap" FontSize="11" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,12"/>
+                        <TextBlock Text="族模板路径" FontSize="13" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,4"/>
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="TxtTemplatePath" FontSize="14" Padding="6" Background="{DynamicResource GridHover}" BorderBrush="{DynamicResource BtnBorder}"/>
+                            <Button Grid.Column="1" Content="浏览..." Style="{DynamicResource StandardButton}" Margin="10,0,0,0" Padding="15,4" Click="BtnBrowseTemplate_Click"/>
+                        </Grid>
+
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </ScrollViewer>
+
+        <Border Grid.Row="2" Background="{DynamicResource BottomBarBg}" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource WindowBorder}">
+            <Grid Margin="18,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="TxtStatus" Text="准备就绪" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource SuccessColor}"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="取消" Style="{DynamicResource StandardButton}" IsCancel="True" Click="CloseButton_Click" Margin="0,0,10,0"/>
+                    <Button x:Name="BtnGenerate" Content="生成" Style="{DynamicResource PrimaryButton}" IsDefault="True" Click="BtnGenerate_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

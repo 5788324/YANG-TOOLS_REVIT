@@ -1,0 +1,185 @@
+{
+  "checks": [
+    {
+      "name": "GR01 GUI XAML parse",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI command exists",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI steel panel",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI grouped create",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI order 100",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI user title no stage tag",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI modeless registry",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI theme init",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI document binding",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI external event",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI no outer transaction group",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI pick via external event",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI rebar selection filter",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI model line filter",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI edge filter",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI stable edge reference",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI control pick labels",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI path kind choices",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI zone grid",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI normal quick add",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI dense quick add",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI reorder zones",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI editable max spacing",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI optional manual spacing",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI preview columns",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI managed geometry disclosure",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI preview uses service",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI preview dryrun",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI create service",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI fingerprint handoff",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI expected control UIDs",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI path request reuse",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI zone request reuse",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI no CreateFreeForm duplication",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI no planner duplication",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI no transaction duplication",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI no update expansion",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI no 2027 expansion",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI input invalidates preview",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI create requires preview",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI service stale guard preserved",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI create disables after commit",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI one set wording",
+      "ok": true
+    },
+    {
+      "name": "GR01 GUI undo wording",
+      "ok": true
+    }
+  ],
+  "summary": {
+    "passed": 44,
+    "failed": 0,
+    "total": 44
+  }
+}

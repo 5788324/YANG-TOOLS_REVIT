@@ -1,0 +1,169 @@
+{
+  "checks": [
+    {
+      "name": "GR01 V102 XAML parse",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 named main scroll",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 zone wheel hook",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 wheel handler",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 inner scroll detection",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 outer scroll fallback",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 visual fallback",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 direction UI",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 direction by controls",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 zone zero from start",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 no path direction UI",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 path semantics help",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 core path reversed retained",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 effective length UI",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 basis total label",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 model line raw length cached",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 effective length from result",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 effective display refresh",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 length mode header",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 length mode text",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 pending auto length",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 auto length editing disabled",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 units visible",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 validation text",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 validate zones",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 over allocation immediate",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 preview readiness",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 preview disabled until ready",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 preview tooltip reason",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 CS0165 reason initialized",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 max spacing live guard",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 swap ids and refresh",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 insert after selected",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 title no internal stage",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 user subtitle",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 managed disclosure kept",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 no GUI CreateFreeForm",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 no GUI planner",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 no GUI transaction",
+      "ok": true
+    },
+    {
+      "name": "GR01 V102 one core CreateFreeForm",
+      "ok": true
+    }
+  ],
+  "summary": {
+    "passed": 40,
+    "failed": 0,
+    "total": 40
+  }
+}

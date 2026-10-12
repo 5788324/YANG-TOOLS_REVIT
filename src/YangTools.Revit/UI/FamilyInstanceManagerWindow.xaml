@@ -1,0 +1,265 @@
+<Window x:Class="YangTools.Revit.UI.FamilyInstanceManagerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="族实例管理" Height="800" Width="1360" MinHeight="660" MinWidth="1160"
+        WindowStartupLocation="CenterOwner"
+        AllowsTransparency="True" WindowStyle="None"
+        Background="Transparent">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <Style TargetType="{x:Type DataGrid}">
+                <Setter Property="Background" Value="{DynamicResource WindowBg}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource WindowBorder}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="RowBackground" Value="{DynamicResource GridRowBg}"/>
+                <Setter Property="AlternatingRowBackground" Value="{DynamicResource GridAltRowBg}"/>
+                <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource GridLine}"/>
+                <Setter Property="VerticalGridLinesBrush" Value="{DynamicResource GridLine}"/>
+                <Setter Property="AutoGenerateColumns" Value="False"/>
+                <Setter Property="CanUserAddRows" Value="False"/>
+                <Setter Property="HeadersVisibility" Value="Column"/>
+                <Setter Property="SelectionMode" Value="Extended"/>
+                <Setter Property="SelectionUnit" Value="FullRow"/>
+                <Setter Property="EnableRowVirtualization" Value="True"/>
+                <Setter Property="EnableColumnVirtualization" Value="True"/>
+                <Setter Property="RowHeight" Value="30"/>
+                <Setter Property="ColumnHeaderHeight" Value="36"/>
+                <Setter Property="MinColumnWidth" Value="82"/>
+                <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
+                <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+            </Style>
+
+            <Style TargetType="{x:Type DataGridColumnHeader}">
+                <Setter Property="Background" Value="{DynamicResource GridHeaderBg}"/>
+                <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Padding" Value="8,6"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource GridLine}"/>
+                <Setter Property="BorderThickness" Value="0,0,1,1"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            </Style>
+
+            <Style x:Key="TypeGroupStyle" TargetType="{x:Type GroupItem}">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type GroupItem}">
+                            <StackPanel>
+                                <Border Background="{DynamicResource BtnBg}" BorderBrush="{DynamicResource BtnBorder}" BorderThickness="0,1,0,1" Padding="10,5">
+                                    <TextBlock FontWeight="Bold" Foreground="{DynamicResource PrimaryText}">
+                                        <Run Text="类型: " />
+                                        <Run Text="{Binding Name, Mode=OneWay}" />
+                                        <Run Text="  (" />
+                                        <Run Text="{Binding ItemCount, Mode=OneWay}" />
+                                        <Run Text=" 个实例)" />
+                                    </TextBlock>
+                                </Border>
+                                <ItemsPresenter />
+                            </StackPanel>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Border Background="{DynamicResource WindowBg}" BorderBrush="{DynamicResource WindowBorder}" BorderThickness="1" CornerRadius="8">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="42"/>
+                <RowDefinition Height="86"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="52"/>
+            </Grid.RowDefinitions>
+
+            <Border CornerRadius="7,7,0,0" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown" Background="{DynamicResource TitleBarGradient}">
+                <Grid>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="15,0">
+                        <TextBlock Text="族实例管理" Foreground="{DynamicResource TitleText}" FontSize="16" FontWeight="Bold"/>
+                        <TextBlock Text=" Instance Manager V2.1" Foreground="{DynamicResource TitleText}" Opacity="0.78" FontSize="13" Margin="6,2,0,0"/>
+                    </StackPanel>
+                    <Button HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" Width="30" Height="30" Background="Transparent" BorderThickness="0" Click="CloseButton_Click" Padding="0">
+                        <Button.Template>
+                            <ControlTemplate TargetType="{x:Type Button}">
+                                <Border x:Name="bg" Background="Transparent" CornerRadius="15">
+                                    <Path Data="M 10,10 L 20,20 M 20,10 L 10,20" Stroke="{DynamicResource TitleText}" StrokeThickness="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bg" Property="Background" Value="{DynamicResource DangerBg}"/></Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- 全局筛选 + 批量操作区。两行固定高度，避免控件随着参数列数量上下跳动。 -->
+            <Border Grid.Row="1" Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource WindowBorder}" BorderThickness="0,0,0,1" Padding="10,6">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="34"/>
+                        <RowDefinition Height="34"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="160"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="190"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="180"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Text="范围" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryText}" Margin="0,0,6,0"/>
+                    <ComboBox Grid.Column="1" x:Name="ScopeComboBox" Height="28" SelectionChanged="ScopeChanged"/>
+                    <TextBlock Grid.Column="2" Text="类型过滤" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryText}" Margin="16,0,6,0"/>
+                    <ComboBox Grid.Column="3" x:Name="TypeFilterComboBox" Height="28" SelectionChanged="QuickFilterChanged"/>
+                    <TextBlock Grid.Column="4" Text="标高过滤" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryText}" Margin="16,0,6,0"/>
+                    <ComboBox Grid.Column="5" x:Name="LevelFilterComboBox" Height="28" SelectionChanged="QuickFilterChanged"/>
+                    <Button Grid.Column="6" Content="刷新" Width="72" Height="28" HorizontalAlignment="Right" Click="Refresh_Click"/>
+
+                    <StackPanel Grid.Row="1" Grid.ColumnSpan="7" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="批量换型" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryText}" Margin="0,0,6,0"/>
+                        <ComboBox x:Name="TargetTypeComboBox" Width="220" Height="28" DisplayMemberPath="DisplayName" SelectedValuePath="TypeId"/>
+                        <Button Content="应用类型" Width="88" Height="28" Margin="6,0,18,0" Style="{DynamicResource PrimaryButton}" Click="BatchChangeType_Click"/>
+
+                        <TextBlock Text="批量参数" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryText}" Margin="0,0,6,0"/>
+                        <ComboBox x:Name="BatchParameterComboBox" Width="230" Height="28" DisplayMemberPath="DisplayName" SelectedValuePath="Key"/>
+                        <TextBox x:Name="BatchParameterValueBox" Width="190" Height="28" Margin="6,0,6,0" Padding="6,3" ToolTip="按项目当前显示单位输入，例如 1500 mm"/>
+                        <CheckBox x:Name="OnlyEmptyCheckBox" Content="仅填空值" VerticalAlignment="Center" Margin="4,0,8,0"/>
+                        <Button Content="批量写入" Width="88" Height="28" Click="BatchSetParameter_Click"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <TabControl x:Name="MainTabControl" Grid.Row="2" Background="Transparent" BorderThickness="0" Margin="0,8,0,0" SelectionChanged="MainTabControl_SelectionChanged">
+                <TabControl.Resources>
+                    <Style TargetType="{x:Type TabItem}">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="{x:Type TabItem}">
+                                    <Border Name="Border" Padding="15,7" Margin="2,0" BorderBrush="{DynamicResource WindowBorder}" BorderThickness="1,1,1,0" CornerRadius="4,4,0,0" Background="{DynamicResource PanelBg}">
+                                        <ContentPresenter x:Name="ContentSite" VerticalAlignment="Center" HorizontalAlignment="Center" ContentSource="Header" Margin="0,1"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="Border" Property="Background" Value="{DynamicResource WindowBg}"/>
+                                            <Setter Property="FontWeight" Value="Bold"/>
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="False">
+                                            <Setter TargetName="Border" Property="Background" Value="{DynamicResource BtnBg}"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource SecondaryText}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </TabControl.Resources>
+
+                <TabItem Header="常规载入族">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="46"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Border Grid.Row="0" Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource WindowBorder}" BorderThickness="0,0,0,1" Padding="10,6">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="330"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="250"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="族" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryText}" Margin="0,0,6,0"/>
+                                <ComboBox Grid.Column="1" x:Name="FamilyFilterComboBox" Height="30" SelectionChanged="FamilyFilterChanged"/>
+                                <TextBlock Grid.Column="2" Text="搜索" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryText}" Margin="16,0,6,0"/>
+                                <TextBox Grid.Column="3" x:Name="SearchBox" Height="30" Padding="6,4" TextChanged="SearchChanged"/>
+                                <Button Grid.Column="4" Content="选择图元" Width="92" Height="30" Margin="16,0,0,0" Style="{DynamicResource PrimaryButton}" Click="SelectElements_Click" ToolTip="隐藏窗口后在 Revit 中选取实例；完成后自动切换到“当前选择”范围"/>
+                            </Grid>
+                        </Border>
+
+                        <DataGrid x:Name="InstanceDataGrid" Grid.Row="1" Margin="10" CellEditEnding="InstanceDataGrid_CellEditEnding" SelectionChanged="DataGrid_SelectionChanged" Visibility="Collapsed" FrozenColumnCount="5">
+                            <DataGrid.GroupStyle><GroupStyle ContainerStyle="{StaticResource TypeGroupStyle}" /></DataGrid.GroupStyle>
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="元素ID" Binding="{Binding InstanceIdValue}" Width="92" MinWidth="82" MaxWidth="110" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="类型" Binding="{Binding TypeName}" Width="190" MinWidth="150" MaxWidth="280" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="标高" Binding="{Binding LevelName}" Width="130" MinWidth="110" MaxWidth="190" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="主体" Binding="{Binding HostName}" Width="180" MinWidth="130" MaxWidth="260" IsReadOnly="True"/>
+                                <DataGridCheckBoxColumn Header="固定" Binding="{Binding IsPinned}" Width="70" MinWidth="64" MaxWidth="80" IsReadOnly="True"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <StackPanel x:Name="EmptyStatePanel" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock Text="📋" FontSize="42" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                            <TextBlock Text="请从上方选择一个族" FontSize="18" Foreground="{DynamicResource SecondaryText}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="可按范围、类型、标高过滤，并对选中行批量换型或批量写参数" FontSize="13" Foreground="{DynamicResource SecondaryText}" HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                        </StackPanel>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="系统族">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="46"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Border Grid.Row="0" Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource WindowBorder}" BorderThickness="0,0,0,1" Padding="10,6">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="330"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="250"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="系统类别" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryText}" Margin="0,0,6,0"/>
+                                <ComboBox Grid.Column="1" x:Name="SystemCategoryComboBox" Height="30" SelectionChanged="SystemCategoryChanged"/>
+                                <TextBlock Grid.Column="2" Text="搜索" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryText}" Margin="16,0,6,0"/>
+                                <TextBox Grid.Column="3" x:Name="SystemSearchBox" Height="30" Padding="6,4" TextChanged="SystemSearchChanged"/>
+                            </Grid>
+                        </Border>
+
+                        <DataGrid x:Name="SystemDataGrid" Grid.Row="1" Margin="10" CellEditEnding="SystemDataGrid_CellEditEnding" SelectionChanged="DataGrid_SelectionChanged" Visibility="Collapsed" FrozenColumnCount="5">
+                            <DataGrid.GroupStyle><GroupStyle ContainerStyle="{StaticResource TypeGroupStyle}" /></DataGrid.GroupStyle>
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="元素ID" Binding="{Binding InstanceIdValue}" Width="92" MinWidth="82" MaxWidth="110" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="系统类型" Binding="{Binding TypeName}" Width="190" MinWidth="150" MaxWidth="280" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="标高" Binding="{Binding LevelName}" Width="130" MinWidth="110" MaxWidth="190" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="主体/宿主" Binding="{Binding HostName}" Width="180" MinWidth="130" MaxWidth="260" IsReadOnly="True"/>
+                                <DataGridCheckBoxColumn Header="固定" Binding="{Binding IsPinned}" Width="70" MinWidth="64" MaxWidth="80" IsReadOnly="True"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <StackPanel x:Name="SystemEmptyStatePanel" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock Text="🧱" FontSize="42" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                            <TextBlock Text="请选择系统类别" FontSize="18" Foreground="{DynamicResource SecondaryText}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="系统类别根据当前项目实际存在的可管理实例动态生成" FontSize="13" Foreground="{DynamicResource SecondaryText}" HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                        </StackPanel>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+
+            <Border Grid.Row="3" Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource WindowBorder}" BorderThickness="0,1,0,0" Padding="10,5">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="InstanceStatusText" Text="结果 0 · 选中 0" Foreground="{DynamicResource SecondaryText}" VerticalAlignment="Center"/>
+                    <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                        <StackPanel Orientation="Horizontal">
+                            <Button ToolTip="在视图中选择并定位" Style="{DynamicResource IconButton}" Click="SelectInView_Click" Foreground="{DynamicResource InfoColor}"><TextBlock Text="&#xE71C;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
+                            <Button ToolTip="重置参数列" Style="{DynamicResource IconButton}" Click="ResetColumns_Click"><TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
+                            <Button ToolTip="导出 Excel" Style="{DynamicResource IconButton}" Click="ExportExcel_Click"><TextBlock Text="&#xEDE1;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
+                            <Button ToolTip="导入 Excel" Style="{DynamicResource IconButton}" Click="ImportExcel_Click" Foreground="{DynamicResource AccentColor}"><TextBlock Text="&#xE8B5;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
+                            <Button ToolTip="删除选中实例" Style="{DynamicResource IconButton}" Click="Delete_Click" Foreground="{DynamicResource DangerBg}"><TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

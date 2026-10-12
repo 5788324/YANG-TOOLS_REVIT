@@ -1,0 +1,1318 @@
+{
+  "schema_version": "yangcad-rvt-exchange/1.0",
+  "generated_utc": "2026-08-31T03:04:56.4307703Z",
+  "source_document": "D:\\Program Files\\Users\\mielcad73\\.gemini\\antigravity\\brain\\7fb446ff-7341-472c-8216-829114668716\\scratch\\RVT_Exchange_P0_Sample\\Controlled_P0_Sample.dwg",
+  "output_dwg": "D:\\Program Files\\Users\\mielcad73\\.gemini\\antigravity\\brain\\7fb446ff-7341-472c-8216-829114668716\\scratch\\RVT_Exchange_P0_Sample\\Controlled_P0_Sample_RVT.dwg",
+  "layers": [
+    {
+      "LayerName": "#0.25 Continuous Red",
+      "Category": "geometry",
+      "Signature": "G|0.25|Continuous|Red",
+      "Traits": {
+        "category": "geometry",
+        "color": "Red",
+        "source_dxf": "LINE",
+        "lineweight_mm": 0.25,
+        "linetype": "Continuous"
+      }
+    },
+    {
+      "LayerName": "#0.25 Continuous White",
+      "Category": "geometry",
+      "Signature": "G|0.25|Continuous|White",
+      "Traits": {
+        "category": "geometry",
+        "color": "White",
+        "source_dxf": "LWPOLYLINE",
+        "lineweight_mm": 0.25,
+        "linetype": "Continuous"
+      }
+    },
+    {
+      "LayerName": "#0.25 DASHED Red",
+      "Category": "geometry",
+      "Signature": "G|0.25|DASHED|Red",
+      "Traits": {
+        "category": "geometry",
+        "color": "Red",
+        "source_dxf": "ARC",
+        "lineweight_mm": 0.25,
+        "linetype": "DASHED"
+      }
+    },
+    {
+      "LayerName": "#0.50 Continuous White",
+      "Category": "geometry",
+      "Signature": "G|0.50|Continuous|White",
+      "Traits": {
+        "category": "geometry",
+        "color": "White",
+        "source_dxf": "LWPOLYLINE",
+        "lineweight_mm": 0.5,
+        "linetype": "Continuous"
+      }
+    },
+    {
+      "LayerName": "#0.50 DASHED White",
+      "Category": "geometry",
+      "Signature": "G|0.50|DASHED|White",
+      "Traits": {
+        "category": "geometry",
+        "color": "White",
+        "source_dxf": "CIRCLE",
+        "lineweight_mm": 0.5,
+        "linetype": "DASHED"
+      }
+    },
+    {
+      "LayerName": "RVT-D ALIGNED H0.18 Standard",
+      "Category": "dimension",
+      "Signature": "D|ALIGNED|0.18|Standard",
+      "Traits": {
+        "category": "dimension",
+        "color": "White",
+        "source_dxf": "DIMENSION",
+        "dimension_kind": "aligned",
+        "dimension_style": "Standard",
+        "text_height": 0.18
+      }
+    },
+    {
+      "LayerName": "RVT-D LINEAR H0.18 Standard",
+      "Category": "dimension",
+      "Signature": "D|LINEAR|0.18|Standard",
+      "Traits": {
+        "category": "dimension",
+        "color": "White",
+        "source_dxf": "DIMENSION",
+        "dimension_kind": "linear",
+        "dimension_style": "Standard",
+        "text_height": 0.18
+      }
+    },
+    {
+      "LayerName": "RVT-D RADIUS H0.18 Standard",
+      "Category": "dimension",
+      "Signature": "D|RADIUS|0.18|Standard",
+      "Traits": {
+        "category": "dimension",
+        "color": "White",
+        "source_dxf": "DIMENSION",
+        "dimension_kind": "radius",
+        "dimension_style": "Standard",
+        "text_height": 0.18
+      }
+    },
+    {
+      "LayerName": "RVT-H ANSI31 S2 A45 White",
+      "Category": "hatch",
+      "Signature": "H|ANSI31|2|45|White",
+      "Traits": {
+        "category": "hatch",
+        "color": "White",
+        "source_dxf": "HATCH",
+        "pattern": "ANSI31",
+        "pattern_type": "PreDefined",
+        "scale": 2,
+        "angle_deg": 45,
+        "is_gradient": false
+      }
+    },
+    {
+      "LayerName": "RVT-H SOLID S1 A0 White",
+      "Category": "hatch",
+      "Signature": "H|SOLID|1|0|White",
+      "Traits": {
+        "category": "hatch",
+        "color": "White",
+        "source_dxf": "HATCH",
+        "pattern": "SOLID",
+        "pattern_type": "PreDefined",
+        "scale": 1,
+        "angle_deg": 0,
+        "is_gradient": false
+      }
+    },
+    {
+      "LayerName": "RVT-ML H3.5 UNKNOWN",
+      "Category": "leader",
+      "Signature": "ML|3.5|UNKNOWN|",
+      "Traits": {
+        "category": "leader",
+        "color": "White",
+        "source_dxf": "MULTILEADER",
+        "text_height": 3.5,
+        "font": "UNKNOWN",
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "superscript": false,
+        "subscript": false,
+        "stacked": false,
+        "mixed_format": false
+      }
+    },
+    {
+      "LayerName": "RVT-T H2.5 simplex.shx",
+      "Category": "text",
+      "Signature": "T|2.5|simplex.shx|",
+      "Traits": {
+        "category": "text",
+        "color": "White",
+        "source_dxf": "TEXT",
+        "text_height": 2.5,
+        "font": "simplex.shx",
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "superscript": false,
+        "subscript": false,
+        "stacked": false,
+        "mixed_format": false
+      }
+    },
+    {
+      "LayerName": "RVT-T H3.5 MIXEDFONT B-MIXED",
+      "Category": "text",
+      "Signature": "T|3.5|MIXEDFONT|B,MIXED",
+      "Traits": {
+        "category": "text",
+        "color": "White",
+        "source_dxf": "MTEXT",
+        "text_height": 3.5,
+        "font": "MIXEDFONT",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "superscript": false,
+        "subscript": false,
+        "stacked": false,
+        "mixed_format": true
+      }
+    },
+    {
+      "LayerName": "RVT-T H3.5 MIXEDFONT B-SUP-STACK-MIXED",
+      "Category": "text",
+      "Signature": "T|3.5|MIXEDFONT|B,SUP,STACK,MIXED",
+      "Traits": {
+        "category": "text",
+        "color": "White",
+        "source_dxf": "MTEXT",
+        "text_height": 3.5,
+        "font": "MIXEDFONT",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "superscript": true,
+        "subscript": false,
+        "stacked": true,
+        "mixed_format": true
+      }
+    },
+    {
+      "LayerName": "RVT-T H3.5 MIXEDFONT I-MIXED",
+      "Category": "text",
+      "Signature": "T|3.5|MIXEDFONT|I,MIXED",
+      "Traits": {
+        "category": "text",
+        "color": "White",
+        "source_dxf": "MTEXT",
+        "text_height": 3.5,
+        "font": "MIXEDFONT",
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "superscript": false,
+        "subscript": false,
+        "stacked": false,
+        "mixed_format": true
+      }
+    },
+    {
+      "LayerName": "RVT-T H3.5 simplex.shx U-MIXED",
+      "Category": "text",
+      "Signature": "T|3.5|simplex.shx|U,MIXED",
+      "Traits": {
+        "category": "text",
+        "color": "White",
+        "source_dxf": "MTEXT",
+        "text_height": 3.5,
+        "font": "simplex.shx",
+        "bold": false,
+        "italic": false,
+        "underline": true,
+        "superscript": false,
+        "subscript": false,
+        "stacked": false,
+        "mixed_format": true
+      }
+    },
+    {
+      "LayerName": "RVT-T H5 simplex.shx",
+      "Category": "text",
+      "Signature": "T|5|simplex.shx|",
+      "Traits": {
+        "category": "text",
+        "color": "White",
+        "source_dxf": "TEXT",
+        "text_height": 5,
+        "font": "simplex.shx",
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "superscript": false,
+        "subscript": false,
+        "stacked": false,
+        "mixed_format": false
+      }
+    }
+  ],
+  "entities": [
+    {
+      "Handle": "171",
+      "DxfType": "LINE",
+      "Category": "geometry",
+      "OriginalLayer": "0",
+      "ExchangeLayer": "#0.25 Continuous Red",
+      "Owner": "layout:*Model_Space",
+      "Data": {
+        "geometry_kind": "line",
+        "start": [
+          0,
+          0,
+          0
+        ],
+        "end": [
+          100,
+          0,
+          0
+        ]
+      },
+      "type": "LINE",
+      "kind": "LINE",
+      "entity_type": "LINE"
+    },
+    {
+      "Handle": "172",
+      "DxfType": "LWPOLYLINE",
+      "Category": "geometry",
+      "OriginalLayer": "0",
+      "ExchangeLayer": "#0.50 Continuous White",
+      "Owner": "layout:*Model_Space",
+      "Data": {
+        "geometry_kind": "polyline",
+        "closed": true,
+        "vertices": [
+          {
+            "point": [
+              0,
+              10
+            ],
+            "bulge": 0
+          },
+          {
+            "point": [
+              50,
+              10
+            ],
+            "bulge": 0
+          },
+          {
+            "point": [
+              50,
+              50
+            ],
+            "bulge": 0
+          },
+          {
+            "point": [
+              0,
+              50
+            ],
+            "bulge": 0
+          }
+        ]
+      },
+      "type": "LWPOLYLINE",
+      "kind": "LWPOLYLINE",
+      "entity_type": "LWPOLYLINE"
+    },
+    {
+      "Handle": "173",
+      "DxfType": "ARC",
+      "Category": "geometry",
+      "OriginalLayer": "0",
+      "ExchangeLayer": "#0.25 DASHED Red",
+      "Owner": "layout:*Model_Space",
+      "Data": {
+        "geometry_kind": "arc",
+        "center": [
+          100,
+          50,
+          0
+        ],
+        "radius": 30,
+        "start_angle_deg": 0,
+        "end_angle_deg": 180
+      },
+      "type": "ARC",
+      "kind": "ARC",
+      "entity_type": "ARC"
+    },
+    {
+      "Handle": "175",
+      "DxfType": "CIRCLE",
+      "Category": "geometry",
+      "OriginalLayer": "0",
+      "ExchangeLayer": "#0.50 DASHED White",
+      "Owner": "layout:*Model_Space",
+      "Data": {
+        "geometry_kind": "circle",
+        "center": [
+          150,
+          50,
+          0
+        ],
+        "radius": 20
+      },
+      "type": "CIRCLE",
+      "kind": "CIRCLE",
+      "entity_type": "CIRCLE"
+    },
+    {
+      "Handle": "176",
+      "DxfType": "TEXT",
+      "Category": "text",
+      "OriginalLayer": "0",
+      "ExchangeLayer": "RVT-T H2.5 simplex.shx",
+      "Owner": "layout:*Model_Space",
+      "Data": {
+        "text": "Standard Text Height 2.5",
+        "raw_text": "Standard Text Height 2.5",
+        "inline_fonts": [],
+        "text_height": 2.5,
+        "text_style": "Standard",
+        "font": "simplex.shx",
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "overline": false,
+        "strike_through": false,
+        "superscript": false,
+        "subscript": false,
+        "stacked": false,
+        "mixed_format": false,
+        "oblique_deg": 0,
+        "width_factor": 1,
+        "position": [
+          0,
+          70,
+          0
+        ],
+        "rotation_deg": 0
+      },
+      "type": "TEXT",
+      "kind": "TEXT",
+      "entity_type": "TEXT"
+    },
+    {
+      "Handle": "177",
+      "DxfType": "TEXT",
+      "Category": "text",
+      "OriginalLayer": "0",
+      "ExchangeLayer": "RVT-T H5 simplex.shx",
+      "Owner": "layout:*Model_Space",
+      "Data": {
+        "text": "Large Text Height 5.0",
+        "raw_text": "Large Text Height 5.0",
+        "inline_fonts": [],
+        "text_height": 5,
+        "text_style": "Standard",
+        "font": "simplex.shx",
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "overline": false,
+        "strike_through": false,
+        "superscript": false,
+        "subscript": false,
+        "stacked": false,
+        "mixed_format": false,
+        "oblique_deg": 0,
+        "width_factor": 1,
+        "position": [
+          0,
+          80,
+          0
+        ],
+        "rotation_deg": 0
+      },
+      "type": "TEXT",
+      "kind": "TEXT",
+      "entity_type": "TEXT"
+    },
+    {
+      "Handle": "178",
+      "DxfType": "MTEXT",
+      "Category": "text",
+      "OriginalLayer": "0",
+      "ExchangeLayer": "RVT-T H3.5 MIXEDFONT B-MIXED",
+      "Owner": "layout:*Model_Space",
+      "Data": {
+        "text": "Bold MText",
+        "raw_text": "{\\fArial|b1|i0|c0|p34;Bold MText}",
+        "inline_fonts": [
+          "Arial"
+        ],
+        "text_height": 3.5,
+        "text_style": "Standard",
+        "font": "MIXEDFONT",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "overline": false,
+        "strike_through": false,
+        "superscript": false,
+        "subscript": false,
+        "stacked": false,
+        "mixed_format": true,
+        "oblique_deg": 0,
+        "width_factor": 1,
+        "position": [
+          0,
+          95,
+          0
+        ],
+        "rotation_deg": 0,
+        "width": 0
+      },
+      "type": "MTEXT",
+      "kind": "MTEXT",
+      "entity_type": "MTEXT"
+    },
+    {
+      "Handle": "179",
+      "DxfType": "MTEXT",
+      "Category": "text",
+      "OriginalLayer": "0",
+      "ExchangeLayer": "RVT-T H3.5 MIXEDFONT I-MIXED",
+      "Owner": "layout:*Model_Space",
+      "Data": {
+        "text": "Italic MText",
+        "raw_text": "{\\fArial|b0|i1|c0|p34;Italic MText}",
+        "inline_fonts": [
+          "Arial"
+        ],
+        "text_height": 3.5,
+        "text_style": "Standard",
+        "font": "MIXEDFONT",
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "overline": false,
+        "strike_through": false,
+        "superscript": false,
+        "subscript": false,
+        "stacked": false,
+        "mixed_format": true,
+        "oblique_deg": 0,
+        "width_factor": 1,
+        "position": [
+          0,
+          105,
+          0
+        ],
+        "rotation_deg": 0,
+        "width": 0
+      },
+      "type": "MTEXT",
+      "kind": "MTEXT",
+      "entity_type": "MTEXT"
+    },
+    {
+      "Handle": "17A",
+      "DxfType": "MTEXT",
+      "Category": "text",
+      "OriginalLayer": "0",
+      "ExchangeLayer": "RVT-T H3.5 simplex.shx U-MIXED",
+      "Owner": "layout:*Model_Space",
+      "Data": {
+        "text": "Underlined MText",
+        "raw_text": "{\\LUnderlined MText\\l}",
+        "inline_fonts": [],
+        "text_height": 3.5,
+        "text_style": "Standard",
+        "font": "simplex.shx",
+        "bold": false,
+        "italic": false,
+        "underline": true,
+        "overline": false,
+        "strike_through": false,
+        "superscript": false,
+        "subscript": false,
+        "stacked": false,
+        "mixed_format": true,
+        "oblique_deg": 0,
+        "width_factor": 1,
+        "position": [
+          0,
+          115,
+          0
+        ],
+        "rotation_deg": 0,
+        "width": 0
+      },
+      "type": "MTEXT",
+      "kind": "MTEXT",
+      "entity_type": "MTEXT"
+    },
+    {
+      "Handle": "17B",
+      "DxfType": "MTEXT",
+      "Category": "text",
+      "OriginalLayer": "0",
+      "ExchangeLayer": "RVT-T H3.5 MIXEDFONT B-SUP-STACK-MIXED",
+      "Owner": "layout:*Model_Space",
+      "Data": {
+        "text": "Mixed Bold and 1/2 Stacked",
+        "raw_text": "Mixed {\\fArial|b1;Bold} and {\\S1^2;} Stacked",
+        "inline_fonts": [
+          "Arial"
+        ],
+        "text_height": 3.5,
+        "text_style": "Standard",
+        "font": "MIXEDFONT",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "overline": false,
+        "strike_through": false,
+        "superscript": true,
+        "subscript": false,
+        "stacked": true,
+        "mixed_format": true,
+        "oblique_deg": 0,
+        "width_factor": 1,
+        "position": [
+          0,
+          125,
+          0
+        ],
+        "rotation_deg": 0,
+        "width": 0
+      },
+      "type": "MTEXT",
+      "kind": "MTEXT",
+      "entity_type": "MTEXT"
+    },
+    {
+      "Handle": "17C",
+      "DxfType": "DIMENSION",
+      "Category": "dimension",
+      "OriginalLayer": "0",
+      "ExchangeLayer": "RVT-D LINEAR H0.18 Standard",
+      "Owner": "layout:*Model_Space",
+      "Data": {
+        "dimension_kind": "linear",
+        "dimension_style": "Standard",
+        "measurement": 100,
+        "dimension_text": "",
+        "text_height": 0.18,
+        "text_position": [
+          50,
+          -20,
+          0
+        ],
+        "text_rotation_deg": 0,
+        "dim_scale": 1,
+        "arrow_size": 0.18,
+        "definition_points": [
+          {
+            "role": "DimBlockPosition",
+            "point": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "role": "DimLinePoint",
+            "point": [
+              100,
+              -20,
+              0
+            ]
+          },
+          {
+            "role": "XLine1Point",
+            "point": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "role": "XLine2Point",
+            "point": [
+              100,
+              0,
+              0
+            ]
+          }
+        ]
+      },
+      "type": "DIMENSION",
+      "kind": "DIMENSION",
+      "entity_type": "DIMENSION"
+    },
+    {
+      "Handle": "18C",
+      "DxfType": "DIMENSION",
+      "Category": "dimension",
+      "OriginalLayer": "0",
+      "ExchangeLayer": "RVT-D ALIGNED H0.18 Standard",
+      "Owner": "layout:*Model_Space",
+      "Data": {
+        "dimension_kind": "aligned",
+        "dimension_style": "Standard",
+        "measurement": 64.0312423743285,
+        "dimension_text": "",
+        "text_height": 0.18,
+        "text_position": [
+          20.12195122,
+          36.09756098,
+          0
+        ],
+        "text_rotation_deg": 0,
+        "dim_scale": 1,
+        "arrow_size": 0.18,
+        "definition_points": [
+          {
+            "role": "DimBlockPosition",
+            "point": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "role": "DimLinePoint",
+            "point": [
+              45.12195122,
+              56.09756098,
+              0
+            ]
+          },
+          {
+            "role": "XLine1Point",
+            "point": [
+              0,
+              10,
+              0
+            ]
+          },
+          {
+            "role": "XLine2Point",
+            "point": [
+              50,
+              50,
+              0
+            ]
+          }
+        ]
+      },
+      "type": "DIMENSION",
+      "kind": "DIMENSION",
+      "entity_type": "DIMENSION"
+    },
+    {
+      "Handle": "19A",
+      "DxfType": "DIMENSION",
+      "Category": "dimension",
+      "OriginalLayer": "0",
+      "ExchangeLayer": "RVT-D RADIUS H0.18 Standard",
+      "Owner": "layout:*Model_Space",
+      "Data": {
+        "dimension_kind": "radius",
+        "dimension_style": "Standard",
+        "measurement": 20,
+        "dimension_text": "",
+        "text_height": 0.18,
+        "text_position": [
+          190,
+          50,
+          0
+        ],
+        "text_rotation_deg": 0,
+        "dim_scale": 1,
+        "arrow_size": 0.18,
+        "definition_points": [
+          {
+            "role": "Center",
+            "point": [
+              150,
+              50,
+              0
+            ]
+          },
+          {
+            "role": "ChordPoint",
+            "point": [
+              170,
+              50,
+              0
+            ]
+          },
+          {
+            "role": "DimBlockPosition",
+            "point": [
+              0,
+              0,
+              0
+            ]
+          }
+        ]
+      },
+      "type": "DIMENSION",
+      "kind": "DIMENSION",
+      "entity_type": "DIMENSION"
+    },
+    {
+      "Handle": "1A5",
+      "DxfType": "MULTILEADER",
+      "Category": "leader",
+      "OriginalLayer": "0",
+      "ExchangeLayer": "RVT-ML H3.5 UNKNOWN",
+      "Owner": "layout:*Model_Space",
+      "Data": {
+        "text": "MLeader Note",
+        "raw_text": "MLeader Note",
+        "inline_fonts": [],
+        "text_height": 3.5,
+        "text_style": "",
+        "font": "UNKNOWN",
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "overline": false,
+        "strike_through": false,
+        "superscript": false,
+        "subscript": false,
+        "stacked": false,
+        "mixed_format": false,
+        "oblique_deg": 0,
+        "width_factor": 1,
+        "leader_kind": "mleader",
+        "leader_lines": [
+          {
+            "leader_index": 0,
+            "line_index": 0,
+            "vertices": [
+              [
+                100,
+                100,
+                0
+              ],
+              [
+                120,
+                120,
+                0
+              ]
+            ]
+          }
+        ],
+        "content_type": "MTextContent",
+        "arrow_size": 0.18,
+        "dogleg_length": 0.36,
+        "text_location": [
+          120.45,
+          121.77864939,
+          0
+        ]
+      },
+      "type": "MULTILEADER",
+      "kind": "MULTILEADER",
+      "entity_type": "MULTILEADER"
+    },
+    {
+      "Handle": "1A8",
+      "DxfType": "LWPOLYLINE",
+      "Category": "geometry",
+      "OriginalLayer": "0",
+      "ExchangeLayer": "#0.25 Continuous White",
+      "Owner": "layout:*Model_Space",
+      "Data": {
+        "geometry_kind": "polyline",
+        "closed": true,
+        "vertices": [
+          {
+            "point": [
+              200,
+              0
+            ],
+            "bulge": 0
+          },
+          {
+            "point": [
+              250,
+              0
+            ],
+            "bulge": 0
+          },
+          {
+            "point": [
+              250,
+              50
+            ],
+            "bulge": 0
+          },
+          {
+            "point": [
+              200,
+              50
+            ],
+            "bulge": 0
+          }
+        ]
+      },
+      "type": "LWPOLYLINE",
+      "kind": "LWPOLYLINE",
+      "entity_type": "LWPOLYLINE"
+    },
+    {
+      "Handle": "1A9",
+      "DxfType": "HATCH",
+      "Category": "hatch",
+      "OriginalLayer": "0",
+      "ExchangeLayer": "RVT-H SOLID S1 A0 White",
+      "Owner": "layout:*Model_Space",
+      "Data": {
+        "pattern": "SOLID",
+        "pattern_type": "PreDefined",
+        "scale": 1,
+        "angle_deg": 0,
+        "loop_count": 1,
+        "is_gradient": false,
+        "boundary_loops": [
+          {
+            "index": 0,
+            "loop_type": "Default",
+            "kind": "curves",
+            "curves": [
+              {
+                "curve_type": "LineSegment2d",
+                "Length": 50,
+                "EndPoint": [
+                  250,
+                  0
+                ],
+                "MidPoint": [
+                  225,
+                  0
+                ],
+                "StartPoint": [
+                  200,
+                  0
+                ],
+                "Direction": [
+                  1,
+                  0
+                ],
+                "PointOnLine": [
+                  200,
+                  0
+                ],
+                "HasEndPoint": "True",
+                "HasStartPoint": "True",
+                "AutoDelete": "False",
+                "IsDisposed": "False"
+              },
+              {
+                "curve_type": "LineSegment2d",
+                "Length": 50,
+                "EndPoint": [
+                  250,
+                  50
+                ],
+                "MidPoint": [
+                  250,
+                  25
+                ],
+                "StartPoint": [
+                  250,
+                  0
+                ],
+                "Direction": [
+                  0,
+                  1
+                ],
+                "PointOnLine": [
+                  250,
+                  0
+                ],
+                "HasEndPoint": "True",
+                "HasStartPoint": "True",
+                "AutoDelete": "False",
+                "IsDisposed": "False"
+              },
+              {
+                "curve_type": "LineSegment2d",
+                "Length": 50,
+                "EndPoint": [
+                  200,
+                  50
+                ],
+                "MidPoint": [
+                  225,
+                  50
+                ],
+                "StartPoint": [
+                  250,
+                  50
+                ],
+                "Direction": [
+                  -1,
+                  0
+                ],
+                "PointOnLine": [
+                  250,
+                  50
+                ],
+                "HasEndPoint": "True",
+                "HasStartPoint": "True",
+                "AutoDelete": "False",
+                "IsDisposed": "False"
+              },
+              {
+                "curve_type": "LineSegment2d",
+                "Length": 50,
+                "EndPoint": [
+                  200,
+                  0
+                ],
+                "MidPoint": [
+                  200,
+                  25
+                ],
+                "StartPoint": [
+                  200,
+                  50
+                ],
+                "Direction": [
+                  0,
+                  -1
+                ],
+                "PointOnLine": [
+                  200,
+                  50
+                ],
+                "HasEndPoint": "True",
+                "HasStartPoint": "True",
+                "AutoDelete": "False",
+                "IsDisposed": "False"
+              }
+            ]
+          }
+        ],
+        "extents_min": [
+          200,
+          0,
+          0
+        ],
+        "extents_max": [
+          250,
+          50,
+          0
+        ]
+      },
+      "type": "HATCH",
+      "kind": "HATCH",
+      "entity_type": "HATCH"
+    },
+    {
+      "Handle": "1AA",
+      "DxfType": "LWPOLYLINE",
+      "Category": "geometry",
+      "OriginalLayer": "0",
+      "ExchangeLayer": "#0.25 Continuous White",
+      "Owner": "layout:*Model_Space",
+      "Data": {
+        "geometry_kind": "polyline",
+        "closed": true,
+        "vertices": [
+          {
+            "point": [
+              200,
+              60
+            ],
+            "bulge": 0
+          },
+          {
+            "point": [
+              250,
+              60
+            ],
+            "bulge": 0
+          },
+          {
+            "point": [
+              250,
+              110
+            ],
+            "bulge": 0
+          },
+          {
+            "point": [
+              200,
+              110
+            ],
+            "bulge": 0
+          }
+        ]
+      },
+      "type": "LWPOLYLINE",
+      "kind": "LWPOLYLINE",
+      "entity_type": "LWPOLYLINE"
+    },
+    {
+      "Handle": "1AB",
+      "DxfType": "HATCH",
+      "Category": "hatch",
+      "OriginalLayer": "0",
+      "ExchangeLayer": "RVT-H ANSI31 S2 A45 White",
+      "Owner": "layout:*Model_Space",
+      "Data": {
+        "pattern": "ANSI31",
+        "pattern_type": "PreDefined",
+        "scale": 2,
+        "angle_deg": 45,
+        "loop_count": 1,
+        "is_gradient": false,
+        "boundary_loops": [
+          {
+            "index": 0,
+            "loop_type": "Default",
+            "kind": "curves",
+            "curves": [
+              {
+                "curve_type": "LineSegment2d",
+                "Length": 50,
+                "EndPoint": [
+                  250,
+                  60
+                ],
+                "MidPoint": [
+                  225,
+                  60
+                ],
+                "StartPoint": [
+                  200,
+                  60
+                ],
+                "Direction": [
+                  1,
+                  0
+                ],
+                "PointOnLine": [
+                  200,
+                  60
+                ],
+                "HasEndPoint": "True",
+                "HasStartPoint": "True",
+                "AutoDelete": "False",
+                "IsDisposed": "False"
+              },
+              {
+                "curve_type": "LineSegment2d",
+                "Length": 50,
+                "EndPoint": [
+                  250,
+                  110
+                ],
+                "MidPoint": [
+                  250,
+                  85
+                ],
+                "StartPoint": [
+                  250,
+                  60
+                ],
+                "Direction": [
+                  0,
+                  1
+                ],
+                "PointOnLine": [
+                  250,
+                  60
+                ],
+                "HasEndPoint": "True",
+                "HasStartPoint": "True",
+                "AutoDelete": "False",
+                "IsDisposed": "False"
+              },
+              {
+                "curve_type": "LineSegment2d",
+                "Length": 50,
+                "EndPoint": [
+                  200,
+                  110
+                ],
+                "MidPoint": [
+                  225,
+                  110
+                ],
+                "StartPoint": [
+                  250,
+                  110
+                ],
+                "Direction": [
+                  -1,
+                  0
+                ],
+                "PointOnLine": [
+                  250,
+                  110
+                ],
+                "HasEndPoint": "True",
+                "HasStartPoint": "True",
+                "AutoDelete": "False",
+                "IsDisposed": "False"
+              },
+              {
+                "curve_type": "LineSegment2d",
+                "Length": 50,
+                "EndPoint": [
+                  200,
+                  60
+                ],
+                "MidPoint": [
+                  200,
+                  85
+                ],
+                "StartPoint": [
+                  200,
+                  110
+                ],
+                "Direction": [
+                  0,
+                  -1
+                ],
+                "PointOnLine": [
+                  200,
+                  110
+                ],
+                "HasEndPoint": "True",
+                "HasStartPoint": "True",
+                "AutoDelete": "False",
+                "IsDisposed": "False"
+              }
+            ]
+          }
+        ],
+        "extents_min": [
+          200,
+          60,
+          0
+        ],
+        "extents_max": [
+          250,
+          110,
+          0
+        ]
+      },
+      "type": "HATCH",
+      "kind": "HATCH",
+      "entity_type": "HATCH"
+    },
+    {
+      "Handle": "A2",
+      "DxfType": "LINE",
+      "Category": "geometry",
+      "OriginalLayer": "0",
+      "ExchangeLayer": "#0.25 Continuous White",
+      "Owner": "block:AeccTickLine",
+      "Data": {
+        "geometry_kind": "line",
+        "start": [
+          0,
+          1,
+          0
+        ],
+        "end": [
+          0,
+          -1,
+          0
+        ]
+      },
+      "type": "LINE",
+      "kind": "LINE",
+      "entity_type": "LINE"
+    },
+    {
+      "Handle": "B3",
+      "DxfType": "CIRCLE",
+      "Category": "geometry",
+      "OriginalLayer": "0",
+      "ExchangeLayer": "#0.25 Continuous White",
+      "Owner": "block:AeccTickCircle",
+      "Data": {
+        "geometry_kind": "circle",
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "radius": 0.5
+      },
+      "type": "CIRCLE",
+      "kind": "CIRCLE",
+      "entity_type": "CIRCLE"
+    },
+    {
+      "Handle": "1AF",
+      "DxfType": "CIRCLE",
+      "Category": "geometry",
+      "OriginalLayer": "0",
+      "ExchangeLayer": "#0.25 Continuous White",
+      "Owner": "block:TEST_BLOCK_NORMAL",
+      "Data": {
+        "geometry_kind": "circle",
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "radius": 10
+      },
+      "type": "CIRCLE",
+      "kind": "CIRCLE",
+      "entity_type": "CIRCLE"
+    },
+    {
+      "Handle": "1B4",
+      "DxfType": "CIRCLE",
+      "Category": "geometry",
+      "OriginalLayer": "0",
+      "ExchangeLayer": "#0.25 Continuous White",
+      "Owner": "block:TEST_BLOCK_BYBLOCK",
+      "Data": {
+        "geometry_kind": "circle",
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "radius": 10
+      },
+      "type": "CIRCLE",
+      "kind": "CIRCLE",
+      "entity_type": "CIRCLE"
+    }
+  ],
+  "warnings": [
+    "ByBlock 外观无法在块定义层面完全解析，已使用来源图层作为 fallback；数量=4",
+    "存在混合格式 MText，已标记 MIXED；数量=4",
+    "跳过匿名/系统块定义（含尺寸匿名块等）；数量=5",
+    "source-clone-classification-count-drift"
+  ]
+}

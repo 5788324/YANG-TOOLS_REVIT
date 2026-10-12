@@ -1,0 +1,105 @@
+<Window x:Class="YangTools.Revit.UI.DistributeTextWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="文本等距分布"
+        Width="540" MinWidth="500" SizeToContent="Height" MaxHeight="760"
+        WindowStartupLocation="CenterOwner" WindowStyle="None" ResizeMode="NoResize"
+        Background="{DynamicResource WindowBg}" BorderBrush="{DynamicResource WindowBorder}" BorderThickness="1">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="52"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="{DynamicResource TitleBarGradient}" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+            <Grid Margin="16,0,10,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="文本等距分布" Style="{DynamicResource WindowTitle}"/>
+                    <TextBlock Text="按文本插入点排序、分布或对齐" Foreground="{DynamicResource TitleText}" FontSize="11"/>
+                </StackPanel>
+                <Button Grid.Column="1" Content="?" Width="30" Height="28" Margin="0,0,6,0"
+                        Style="{DynamicResource StandardButton}" ToolTip="功能说明" Click="HelpButton_Click"/>
+                <Button Grid.Column="2" Style="{DynamicResource CloseButton}" Click="BtnCancel_Click"/>
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="18,16,18,12">
+                <Border Style="{DynamicResource CardBorder}" Margin="0,0,0,12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                            <TextBlock Text="文本选择" Style="{DynamicResource SectionTitle}" Margin="0,0,0,4"/>
+                            <TextBlock x:Name="TxtSelectionStatus" Text="未选择文本" Foreground="{DynamicResource DangerBg}"
+                                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                        <Button Grid.Column="1" Content="选择文本" MinWidth="92" Height="32"
+                                Style="{DynamicResource StandardButton}" Click="BtnSelectTexts_Click"/>
+                    </Grid>
+                </Border>
+
+                <Border Style="{DynamicResource CardBorder}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Text="排序方式" Style="{DynamicResource FieldLabel}" VerticalAlignment="Center"/>
+                        <ComboBox x:Name="CmbSortBy" Grid.Row="0" Grid.Column="1" SelectedValuePath="Tag" Margin="0,0,0,10">
+                            <ComboBoxItem Content="拾取返回顺序（框选时不保证逐个顺序）" Tag="SelectionOrder"/>
+                            <ComboBoxItem Content="X 坐标递增（从左到右）" Tag="XAsc"/>
+                            <ComboBoxItem Content="X 坐标递减（从右到左）" Tag="XDesc"/>
+                            <ComboBoxItem Content="Y 坐标递减（从上到下）" Tag="YDesc"/>
+                            <ComboBoxItem Content="Y 坐标递增（从下到上）" Tag="YAsc"/>
+                        </ComboBox>
+
+                        <TextBlock Grid.Row="1" Text="操作模式" Style="{DynamicResource FieldLabel}" VerticalAlignment="Center"/>
+                        <ComboBox x:Name="CmbOperationMode" Grid.Row="1" Grid.Column="1" SelectedValuePath="Tag" Margin="0,0,0,10"
+                                  SelectionChanged="CmbOperationMode_SelectionChanged">
+                            <ComboBoxItem Content="垂直等距，并对齐 X（常用竖排）" Tag="VerticalAlignedX"/>
+                            <ComboBoxItem Content="水平等距，并对齐 Y（常用横排）" Tag="HorizontalAlignedY"/>
+                            <ComboBoxItem Content="仅沿 Y 等距，保留各自 X" Tag="VerticalKeepX"/>
+                            <ComboBoxItem Content="仅沿 X 等距，保留各自 Y" Tag="HorizontalKeepY"/>
+                            <ComboBoxItem Content="仅对齐 X，不改变 Y" Tag="AlignXOnly"/>
+                            <ComboBoxItem Content="仅对齐 Y，不改变 X" Tag="AlignYOnly"/>
+                        </ComboBox>
+
+                        <TextBlock Grid.Row="2" Text="插入点间距（mm）" Style="{DynamicResource FieldLabel}" VerticalAlignment="Center"/>
+                        <TextBox x:Name="TxtSpacing" Grid.Row="2" Grid.Column="1" Margin="0,0,0,10"/>
+
+                        <TextBlock Grid.Row="3" Text="实际效果" Style="{DynamicResource FieldLabel}" VerticalAlignment="Top"/>
+                        <TextBlock x:Name="TxtModeExplanation" Grid.Row="3" Grid.Column="1"
+                                   TextWrapping="Wrap" Style="{DynamicResource SecondaryLabel}"/>
+                    </Grid>
+                </Border>
+
+                <TextBlock Margin="2,10,2,0" Style="{DynamicResource SecondaryLabel}" TextWrapping="Wrap"
+                           Text="说明：这里对齐的是 TextNote.Coord 插入点，不是可见文字边框；排序后的第一个文本保持原位并作为基准。"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="2" Style="{DynamicResource BottomBar}">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="功能说明" Width="92" Margin="0,0,10,0" Style="{DynamicResource StandardButton}" Click="HelpButton_Click"/>
+                <Button Content="取消" Width="82" Margin="0,0,10,0" Style="{DynamicResource StandardButton}" Click="BtnCancel_Click"/>
+                <Button Content="确定" Width="90" Style="{DynamicResource PrimaryButton}" Click="BtnOk_Click" IsDefault="True"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

@@ -1,0 +1,173 @@
+{
+  "checks": [
+    {
+      "name": "GR01 UX XAML parse",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX ZAxis request default",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX ZAxis core resolver",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX ZAxis uses control centers",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX ZAxis auto length from Z",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX ZAxis no model element requirement",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX ZAxis path reversed still available",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX legacy ModelLine kept",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX legacy Edge kept",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX AutoLength model",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX auto normalizer",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX single auto guard",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX over allocation guard",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX short remainder guard",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX planner gets normalized zones",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX planner remains independent",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX fingerprint auto stable",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX GUI default ZAxis",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX GUI ZAxis first option",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX GUI disables path pick on ZAxis",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX GUI default auto normal zone",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX GUI auto mode control",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX GUI auto length readonly edit",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX GUI live auto deduction",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX GUI live allocation summary",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX GUI swap controls",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX GUI zone order message",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX GUI request sends auto flag",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX GUI ZAxis no picked path required",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX GUI preview resolves auto length",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX MCP ZAxis accepted",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX MCP ZAxis payload",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX MCP auto length input",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX MCP auto count guard",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX broker auto flag",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX still one CreateFreeForm",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX no GUI CreateFreeForm",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX no GUI transaction",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX managed geometry disclosure",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX command tooltip mentions Z axis",
+      "ok": true
+    },
+    {
+      "name": "GR01 UX frozen auto remainder 4300",
+      "ok": true
+    }
+  ],
+  "summary": {
+    "passed": 41,
+    "failed": 0,
+    "total": 41
+  }
+}

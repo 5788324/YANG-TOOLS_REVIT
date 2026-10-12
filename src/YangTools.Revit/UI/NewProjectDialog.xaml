@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window x:Class="YangTools.Revit.UI.NewProjectDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="添加临时项目" Height="270" Width="520" MinHeight="250" MinWidth="480"
+        WindowStyle="None" ResizeMode="NoResize"
+        Background="{DynamicResource WindowBg}" Foreground="{DynamicResource PrimaryText}"
+        BorderBrush="{DynamicResource WindowBorder}" BorderThickness="1"
+        WindowStartupLocation="CenterOwner">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="48"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="{DynamicResource TitleBarGradient}"
+                MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+            <Grid Margin="14,0,8,0">
+                <TextBlock Text="添加临时项目" Style="{DynamicResource WindowTitle}"/>
+                <Button HorizontalAlignment="Right" Style="{DynamicResource CloseButton}" Click="CancelButton_Click"/>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="20,18,20,12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="86"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="项目名称" Style="{DynamicResource FieldLabel}"/>
+            <TextBox x:Name="ProjectNameBox" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2"
+                     Style="{DynamicResource StandardTextBox}" Margin="0,0,0,12"/>
+
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="插件目录" Style="{DynamicResource FieldLabel}"/>
+            <TextBox x:Name="FolderPathBox" Grid.Row="1" Grid.Column="1"
+                     Style="{DynamicResource StandardTextBox}" Margin="0,0,8,12"/>
+            <Button Grid.Row="1" Grid.Column="2" Content="浏览…" Style="{DynamicResource StandardButton}"
+                    Margin="0,0,0,12" Click="BrowseButton_Click"/>
+
+            <TextBlock Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"
+                       Text="每个临时项目对应一个独立插件目录。项目结束后可移除配置；磁盘文件不会自动删除。"
+                       Style="{DynamicResource SecondaryLabel}" TextWrapping="Wrap"/>
+        </Grid>
+
+        <Border Grid.Row="2" Style="{DynamicResource BottomBar}">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="取消" Width="86" Margin="0,0,10,0" Style="{DynamicResource StandardButton}"
+                        Click="CancelButton_Click" IsCancel="True"/>
+                <Button Content="添加" Width="86" Style="{DynamicResource PrimaryButton}"
+                        Click="ConfirmButton_Click" IsDefault="True"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

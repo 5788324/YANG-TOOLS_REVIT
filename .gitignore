@@ -1,24 +1,47 @@
-# Build outputs
+# ========================
+# YangTools Revit Plugin
+# .gitignore
+# ========================
+
+# --- 编译与发布输出 ---
 bin/
 obj/
-.vs/
-
-# User-specific files
-*.user
-*.suo
-*.userosscache
-*.sln.docstates
-
-# Revit addin local deployment
-artifacts/addins-local/
-
-# Runtime logs stay local by default
-logs/operations/*.jsonl
-
-# Temp packages from Gemini / DeepSeek
+**/bin/**
+**/obj/**
+artifacts/
+deploy/
+installer/payload/
 *.zip
-*.7z
+*.cache
 
-# OS files
+# --- IDE / 编辑器 ---
+.vs/
+.vscode/
+*.suo
+*.user
+*.sln.docstates
+*.DotSettings.user
+
+# --- NuGet ---
+packages/
+*.nupkg
+
+# --- OS 系统文件 ---
 Thumbs.db
-Desktop.ini
+desktop.ini
+.DS_Store
+
+# --- Revit 临时文件 ---
+*.0001.rvt
+*.0002.rvt
+*.0003.rvt
+*.rfa.backup
+*.rvt.backup
+
+# --- 日志 ---
+*.log
+
+# --- AI 工具本地数据 ---
+.gemini/
+.codex/
+.agents/

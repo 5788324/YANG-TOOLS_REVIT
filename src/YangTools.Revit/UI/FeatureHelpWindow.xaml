@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window x:Class="YangTools.Revit.UI.FeatureHelpWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="功能说明" Width="650" Height="560" MinWidth="520" MinHeight="420"
+        WindowStartupLocation="CenterOwner" WindowStyle="None" ResizeMode="CanResizeWithGrip"
+        Background="{DynamicResource WindowBg}" Foreground="{DynamicResource PrimaryText}"
+        BorderBrush="{DynamicResource WindowBorder}" BorderThickness="1">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="52"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="{DynamicResource TitleBarGradient}"
+                MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+            <Grid Margin="16,0,10,0">
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock x:Name="TitleText" Text="功能说明" Style="{DynamicResource WindowTitle}"/>
+                    <TextBlock x:Name="SubtitleText" Text="用途、操作步骤与注意事项"
+                               Foreground="{DynamicResource TitleText}" FontSize="10" Opacity="0.82"/>
+                </StackPanel>
+                <Button HorizontalAlignment="Right" Style="{DynamicResource CloseButton}" Click="CloseButton_Click"/>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="1" Margin="16,14,16,10" Style="{DynamicResource CardBorder}">
+            <TextBox x:Name="ContentTextBox" IsReadOnly="True" AcceptsReturn="True"
+                     TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                     HorizontalScrollBarVisibility="Disabled" BorderThickness="0"
+                     Background="Transparent" Foreground="{DynamicResource PrimaryText}"
+                     FontSize="13" Padding="4"/>
+        </Border>
+
+        <Border Grid.Row="2" Style="{DynamicResource BottomBar}">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="复制全部" Width="92" Margin="0,0,10,0"
+                        Style="{DynamicResource StandardButton}" Click="CopyButton_Click"/>
+                <Button Content="关闭" Width="82" Style="{DynamicResource PrimaryButton}"
+                        Click="CloseButton_Click" IsCancel="True"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

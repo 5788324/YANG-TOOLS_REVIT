@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+"""RC2F ProjectAsset line-style editor contracts (source/UI, not Revit runtime)."""
+from pathlib import Path
+import json,re,sys,xml.etree.ElementTree as ET
+root=Path(__file__).resolve().parents[1]
+u=(root/'src/YangTools.Revit/UI/ProjectAssetManagerWindow.xaml.cs').read_text(encoding='utf-8-sig')
+s=(root/'src/YangTools.Revit/Core/ProjectAssets/ProjectAssetLineStyleEditService.cs').read_text(encoding='utf-8-sig')
+x=(root/'src/YangTools.Revit/UI/ProjectAssetManagerWindow.xaml').read_text(encoding='utf-8-sig')
+checks=[]
+def ck(label,val): checks.append((label,bool(val)))
+ui=u[u.index('private void LineStyleDataGrid_CellEditEnding('):u.index('private void FilledRegionDataGrid_CellEditEnding(')]
+for name in ('ProjectAssetLineStyleEditService','ProjectAssetLineStyleEditRequest','ProjectAssetLineStyleEditResult','ProjectAssetLineStyleEditKind'):
+ ck('Typed object: '+name, name in s)
+for prop in ('CategoryId','NewName','LineWeight','Kind'):
+ ck('Request field '+prop,re.search(r'public\s+\S+\s+'+prop+r'\s*\{',s))
+for prop in ('Changed','Name','LineWeight'):
+ ck('Result field '+prop, re.search(r'public\s+\S+\s+'+prop+r'\s*\{',s))
+for name in ('Name','LineWeight'):
+ ck('Service operation '+name,'ProjectAssetLineStyleEditKind.'+name in s)
+ ck('UI operation '+name,'ProjectAssetLineStyleEditKind.'+name in ui)
+ck('Service no WPF dependency',not any(x in s for x in ('using System.Windows','Dispatcher.','TaskDialog.Show','DataGrid','LineStyleViewModel')))
+ck('Service checks document validity','!document.IsValidObject' in s)
+ck('Service checks read-only','document.IsReadOnly' in s)
+ck('Only OST_Lines subcategory lookup','BuiltInCategory.OST_Lines' in s and 'lines?.SubCategories.Cast<Category>()' in s)
+ck('Negative IDs accepted for category resolution','request.CategoryId.GetIdValue()' in s and 'document.GetElement(request.CategoryId)' not in s)
+ck('Built-in style rename disallowed','if (request.CategoryId.GetIdValue() < 0)' in s)
+ck('Built-in style weight allowed','if (request.CategoryId.GetIdValue() < 0)' in s[s.index('if (request.Kind == ProjectAssetLineStyleEditKind.Name)'):s.index('else if (request.Kind == ProjectAssetLineStyleEditKind.LineWeight)')])
+ck('Empty name rejected','string.IsNullOrWhiteSpace(newName)' in s)
+ck('Name trimmed','request.NewName.Trim()' in s)
+ck('Weight lower bound','request.LineWeight < 1' in s)
+ck('Weight upper bound','request.LineWeight > 16' in s)
+ck('No-change name returns before transaction','if (string.Equals(newName, result.Name, StringComparison.Ordinal))' in s)
+ck('No-change weight returns before transaction','if (request.LineWeight == result.LineWeight)' in s)
+ck('One Transaction',s.count('new Transaction(')==1 and 'new TransactionGroup(' not in s)
+ck('Transaction starts and verifies status','transaction.Start() != TransactionStatus.Started' in s)
+ck('Transaction commit checked','transaction.Commit() != TransactionStatus.Committed' in s)
+ck('Rollback checked','transaction.RollBack() != TransactionStatus.RolledBack' in s)
+ck('Uncertain rollback surfaced','回滚结果无法确认' in s)
+ck('Changed after verified commit',s.index('result.Changed = true;') > s.index('transaction.Commit()'))
+ck('GraphicsStyle rename','graphicsStyle.Name = request.NewName.Trim();' in s)
+ck('Weight API','category.SetLineWeight(request.LineWeight, GraphicsStyleType.Projection)' in s)
+ck('WPF event single handler',u.count('private void LineStyleDataGrid_CellEditEnding(')==1)
+ck('WPF event no direct transaction','new Transaction(' not in ui)
+ck('WPF event no active-doc drift','app.ActiveUIDocument.Document' not in ui)
+ck('WPF event uses frozen request','ProjectAssetLineStyleEditRequest' in ui and 'CategoryId = vm.Id' in ui)
+ck('WPF event uses originating document','ProjectAssetLineStyleEditService.Execute(_doc, request)' in ui)
+ck('WPF original closed guard','if (_isClosed || e.EditAction != DataGridEditAction.Commit)' in ui)
+ck('WPF queued close guard','if (_isClosed || versionAtRequest != _tabLoadVersion' in ui)
+ck('WPF tab identity guard','tabAtRequest != _currentTabName' in ui)
+ck('WPF row identity guard','LineStyleList.Contains(rowAtRequest)' in ui)
+ck('WPF tab must be LineStyles','_currentTabName != "LineStyles"' in ui)
+ck('WPF failure displayed','TaskDialog.Show("线样式编辑失败", ex.Message)' in ui)
+ck('WPF commit then VM update',ui.index('ProjectAssetLineStyleEditService.Execute(_doc, request)') < ui.index('rowAtRequest.Name = result.Name'))
+ck('WPF no user edit mode trap','e.Cancel = true' not in ui)
+ck('WPF never fake success before edit','showSuccess: false' in ui)
+ck('WPF distinguish commit vs refresh failure','线样式编辑已提交，但界面刷新失败' in ui)
+ck('LineStyle two XAML binding Explicit','Name, UpdateSourceTrigger=Explicit' in x and 'LineWeight, UpdateSourceTrigger=Explicit' in x)
+ck('LineStyle XAML routed to handler','CellEditEnding="LineStyleDataGrid_CellEditEnding"' in x)
+ck('FillRegion XAML routed, unchanged', 'CellEditEnding="FilledRegionDataGrid_CellEditEnding"' in x)
+ck('Original color handlers preserved',all(token in u for token in ('private void LineStyleColor_Click','private void FilledRegionColor_Click','private void FillPattern_DropDownClosed','private void LinePattern_DropDownClosed')))
+ck('At least 44 original suites retained',len([p for p in (root/'tools').glob('Test-*.py') if p.name!='Test-ProjectAssetRC2F.py'])>=44)
+ck('43 original XAML present',len(list((root/'src/YangTools.Revit').rglob('*.xaml')))==43)
+try:
+ for path in (root/'src/YangTools.Revit').rglob('*.xaml'):ET.parse(path)
+ ck('All XAML parses',True)
+except ET.ParseError:ck('All XAML parses',False)
+ck('No unrelated MCP in service', 'Mcp' not in s and 'Rebar' not in s)
+failed=[name for name,good in checks if not good]
+print(json.dumps({'suite':'RC2F ProjectAsset LineStyle edit/UI source contracts','passed':len(checks)-len(failed),'total':len(checks),'failed':failed,'caveat':'Source assertions only; no C# compilation or Revit runtime exercised'},ensure_ascii=False,indent=2))
+sys.exit(bool(failed))

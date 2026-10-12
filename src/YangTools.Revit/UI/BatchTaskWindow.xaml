@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window x:Class="YangTools.Revit.UI.BatchTaskWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="批处理与云链接"
+        Height="860" Width="1320" MinHeight="720" MinWidth="1120"
+        WindowStartupLocation="CenterOwner"
+        Closing="Window_Closing"
+        Background="{DynamicResource WindowBg}"
+        Foreground="{DynamicResource PrimaryText}">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <Style TargetType="{x:Type ComboBox}">
+            <Setter Property="MinHeight" Value="30"/>
+            <Setter Property="Margin" Value="3"/>
+        </Style>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style TargetType="{x:Type CheckBox}">
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
+            <Setter Property="Margin" Value="0,3,12,3"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid x:Name="RootLayout" Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="190"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <DockPanel Margin="0,0,0,8">
+            <StackPanel>
+                <TextBlock Text="批处理与云链接" Style="{DynamicResource WindowTitle}"/>
+                <TextBlock Text="多模型 / 云模型批量发布 NWC、IFC、DWG、PDF；Revit 2021 使用虚拟打印机打印 PDF。"
+                           Foreground="{DynamicResource SecondaryText}" Margin="0,3,0,0"/>
+            </StackPanel>
+        </DockPanel>
+
+        <Border Grid.Row="1" Style="{DynamicResource CardBorder}" Margin="0,0,0,8" Padding="10,7">
+            <TextBlock TextWrapping="Wrap"
+                       Text="云模型：点击“添加已打开模型（含云）”可加入当前 Revit 会话中已打开的 Autodesk Docs/BIM 360 模型；YangTools 会保存其 Cloud ModelPath 信息，批处理时可直接使用或重新打开。原生 ACC 项目浏览不在 Revit API 本身能力范围内。外部本地工作共享模型仅为导出而分离打开，完成后不保存关闭。"/>
+        </Border>
+
+        <Border Grid.Row="2" Style="{DynamicResource CardBorder}" Margin="0,0,0,8">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="40"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <DockPanel>
+                    <TextBlock Text="目标模型" FontWeight="SemiBold" Margin="0,0,12,0"/>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button Content="添加 RVT" Click="BtnAddDocument_Click" Width="88"/>
+                        <Button Content="添加已打开模型（含云）" Click="BtnAddOpenDocuments_Click" Width="150"/>
+                        <Button Content="预检" Click="BtnPreflight_Click" Width="74" ToolTip="逐模型检查视图/图纸、导出设置、NWC Exporter、PDF 打印设置，不产生输出文件。"/>
+                    </StackPanel>
+                </DockPanel>
+                <DataGrid Grid.Row="1" ItemsSource="{Binding Documents}" AutoGenerateColumns="False"
+                          CanUserAddRows="False" RowHeight="30" ColumnHeaderHeight="34"
+                          Style="{DynamicResource SharedDataGridStyle}"
+                          HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                    <DataGrid.Columns>
+                        <DataGridCheckBoxColumn Header="启用" Binding="{Binding Enabled}" Width="54" MinWidth="50"/>
+                        <DataGridTextColumn Header="模型" Binding="{Binding DisplayName}" Width="250" MinWidth="180"/>
+                        <DataGridTextColumn Header="来源" Binding="{Binding SourceDescription}" Width="100" MinWidth="90"/>
+                        <DataGridTextColumn Header="路径 / Cloud ModelPath" Binding="{Binding LocationDescription}" Width="*" MinWidth="260"/>
+                        <DataGridTemplateColumn Header="操作" Width="64" MinWidth="60">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Content="移除" Click="BtnRemoveDocument_Click" Padding="6,2">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Background" Value="{DynamicResource BtnBg}"/>
+                                                <Setter Property="BorderBrush" Value="{DynamicResource BtnBorder}"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource BtnText}"/>
+                                                <Setter Property="BorderThickness" Value="1"/>
+                                                <Setter Property="Cursor" Value="Hand"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsCurrentDocument}" Value="True">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="360"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{DynamicResource CardBorder}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="40"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <DockPanel>
+                        <TextBlock Text="链接到当前文档" FontWeight="SemiBold"/>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Button Content="添加" Click="BtnAddFile_Click" Width="64"/>
+                            <Button Content="清空" Click="BtnClearLinks_Click" Width="64"/>
+                        </StackPanel>
+                    </DockPanel>
+                    <StackPanel Grid.Row="1" Margin="0,0,0,6">
+                        <TextBlock Text="支持 RVT / DWG / DXF 的本地、网络盘或 Desktop Connector 已同步路径。此区域只修改当前文档。"
+                                   TextWrapping="Wrap" Foreground="{DynamicResource SecondaryText}" FontSize="11"/>
+                        <WrapPanel Margin="0,4,0,0">
+                            <CheckBox IsChecked="{Binding LinkSkipIfExists}" Content="跳过已存在链接"/>
+                            <CheckBox IsChecked="{Binding LinkPinned}" Content="固定新链接"/>
+                        </WrapPanel>
+                    </StackPanel>
+                    <DataGrid Grid.Row="2" ItemsSource="{Binding Links}" AutoGenerateColumns="False"
+                              CanUserAddRows="False" Style="{DynamicResource SharedDataGridStyle}"
+                              RowHeight="30" ColumnHeaderHeight="34" MinHeight="170">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="文件名" Binding="{Binding FileName}" Width="*" MinWidth="220"/>
+                            <DataGridTemplateColumn Header="移除" Width="60">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate><Button Content="移除" Click="BtnRemoveLink_Click" Padding="6,2"/></DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="2" Style="{DynamicResource CardBorder}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="76"/>
+                            <ColumnDefinition Width="*" MinWidth="300"/>
+                            <ColumnDefinition Width="70"/>
+                            <ColumnDefinition Width="70"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="输出目录"/>
+                        <TextBox Grid.Column="1" Text="{Binding OutputFolder, UpdateSourceTrigger=PropertyChanged}" MinHeight="30"/>
+                        <Button Grid.Column="2" Content="浏览" Click="BtnBrowseOutput_Click" Width="66"/>
+                        <Button Grid.Column="3" Content="打开" Click="BtnOpenOutput_Click" Width="66"/>
+                    </Grid>
+                    <StackPanel Grid.Row="1">
+                        <WrapPanel Margin="76,0,0,2">
+                            <CheckBox IsChecked="{Binding UseDocumentSubfolders}" Content="每个模型独立子目录"/>
+                            <CheckBox IsChecked="{Binding OverwriteExisting}" Content="覆盖已有同名文件"/>
+                            <CheckBox IsChecked="{Binding OpenOutputFolderWhenDone}" Content="完成后打开目录"/>
+                        </WrapPanel>
+                        <TextBlock Margin="76,0,0,6" Foreground="{DynamicResource SecondaryText}" FontSize="11" TextWrapping="Wrap"
+                                   Text="命名占位符：{模型名}、{模型文件名}、{图纸号}、{图纸名}、{视图名}、{序号}、{日期}。DWG / 非合并 PDF / 非合并打印 PDF 会逐视图输出，从而保证文件名可控。"/>
+                    </StackPanel>
+
+                    <TabControl Grid.Row="2" Margin="0,2,0,0">
+                        <TabItem Header="NWC">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="10">
+                                <CheckBox IsChecked="{Binding EnableNwc}" Content="启用 NWC 导出" FontWeight="SemiBold"/>
+                                <Grid IsEnabled="{Binding EnableNwc}" Margin="0,6,0,0">
+                                    <Grid.RowDefinitions><RowDefinition Height="36"/><RowDefinition Height="36"/><RowDefinition Height="36"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="88"/><ColumnDefinition Width="*"/><ColumnDefinition Width="88"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                    <TextBlock Text="导出范围"/><ComboBox Grid.Column="1" ItemsSource="{Binding Available3DViews}" IsEditable="True" Text="{Binding SelectedNwc3DView, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <TextBlock Grid.Column="2" Text="坐标"/><ComboBox Grid.Column="3" ItemsSource="{Binding AvailableNwcCoordinates}" SelectedItem="{Binding SelectedNwcCoordinates}"/>
+                                    <TextBlock Grid.Row="1" Text="文件名"/><TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding NwcFileName, UpdateSourceTrigger=PropertyChanged}" MinHeight="30"/>
+                                    <TextBlock Grid.Row="2" Text="常用选项"/>
+                                    <WrapPanel Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3">
+                                        <CheckBox IsChecked="{Binding NwcExportLinks}" Content="导出 RVT 链接"/>
+                                        <CheckBox IsChecked="{Binding NwcConvertElementProperties}" Content="元素属性"/>
+                                        <CheckBox IsChecked="{Binding NwcExportElementIds}" Content="元素 ID"/>
+                                        <CheckBox IsChecked="{Binding NwcExportRoomAsAttribute}" Content="房间属性"/>
+                                        <CheckBox IsChecked="{Binding NwcExportRoomGeometry}" Content="房间几何"/>
+                                        <CheckBox IsChecked="{Binding NwcDivideFileIntoLevels}" Content="按标高拆分"/>
+                                    </WrapPanel>
+                                    <TextBlock Grid.Row="3" Grid.ColumnSpan="4" Foreground="{DynamicResource SecondaryText}" TextWrapping="Wrap"
+                                               Text="可选“整个模型”或指定三维视图；“各模型自动三维视图”优先匹配 {3D} / 协调 / Coordination / Navisworks / NWC，否则使用第一个非模板三维视图。"/>
+                                </Grid>
+                            </StackPanel></ScrollViewer>
+                        </TabItem>
+
+                        <TabItem Header="IFC">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="10">
+                                <CheckBox IsChecked="{Binding EnableIfc}" Content="启用 IFC 导出" FontWeight="SemiBold"/>
+                                <Grid IsEnabled="{Binding EnableIfc}" Margin="0,6,0,0">
+                                    <Grid.RowDefinitions><RowDefinition Height="36"/><RowDefinition Height="36"/><RowDefinition Height="36"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="88"/><ColumnDefinition Width="*"/><ColumnDefinition Width="88"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                    <TextBlock Text="IFC 版本"/><ComboBox Grid.Column="1" ItemsSource="{Binding AvailableIfcVersions}" SelectedItem="{Binding SelectedIfcVersion}"/>
+                                    <TextBlock Grid.Column="2" Text="导出范围"/><ComboBox Grid.Column="3" ItemsSource="{Binding Available3DViews}" IsEditable="True" Text="{Binding SelectedIfc3DView, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <TextBlock Grid.Row="1" Text="文件名"/><TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding IfcFileName, UpdateSourceTrigger=PropertyChanged}" MinHeight="30"/>
+                                    <TextBlock Grid.Row="2" Text="空间边界"/><ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding AvailableIfcSpaceBoundaryLevels}" SelectedItem="{Binding IfcSpaceBoundaryLevel}"/>
+                                    <WrapPanel Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="2">
+                                        <CheckBox IsChecked="{Binding IfcExportBaseQuantities}" Content="基础数量"/>
+                                        <CheckBox IsChecked="{Binding IfcSplitWallsColumns}" Content="墙/柱按标高拆分"/>
+                                    </WrapPanel>
+                                    <TextBlock Grid.Row="3" Grid.ColumnSpan="4" Foreground="{DynamicResource SecondaryText}" TextWrapping="Wrap"
+                                               Text="仅暴露 Revit 官方 IFCExportOptions 稳定选项；复杂 Autodesk IFC Exporter 自定义 PropertySet/JSON 配置不在本轮伪造兼容。"/>
+                                </Grid>
+                            </StackPanel></ScrollViewer>
+                        </TabItem>
+
+                        <TabItem Header="DWG">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="10">
+                                <CheckBox IsChecked="{Binding EnableDwg}" Content="启用 DWG 导出" FontWeight="SemiBold"/>
+                                <Grid IsEnabled="{Binding EnableDwg}" Margin="0,6,0,0">
+                                    <Grid.RowDefinitions><RowDefinition Height="36"/><RowDefinition Height="36"/><RowDefinition Height="36"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="88"/><ColumnDefinition Width="*"/><ColumnDefinition Width="88"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                    <TextBlock Text="导出设置"/><ComboBox Grid.Column="1" ItemsSource="{Binding AvailableDwgSetups}" IsEditable="True" Text="{Binding SelectedDwgSetup, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <TextBlock Grid.Column="2" Text="范围"/><ComboBox Grid.Column="3" ItemsSource="{Binding AvailableViewSheetSets}" IsEditable="True" Text="{Binding SelectedDwgViewSheetSet, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <TextBlock Grid.Row="1" Text="坐标"/><ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding AvailableDwgCoordinateModes}" SelectedItem="{Binding SelectedDwgCoordinateMode}"/>
+                                    <CheckBox Grid.Row="1" Grid.Column="3" IsChecked="{Binding DwgMergedViews}" Content="合并视图到主 DWG"/>
+                                    <TextBlock Grid.Row="2" Text="文件名"/><TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding DwgFileName, UpdateSourceTrigger=PropertyChanged}" MinHeight="30"/>
+                                    <TextBlock Grid.Row="3" Grid.ColumnSpan="4" Foreground="{DynamicResource SecondaryText}" TextWrapping="Wrap"
+                                               Text="逐个视图/图纸调用 DWG Export，主 DWG 文件名按模板稳定生成；若导出设置生成 XRef，会一起记录到报告。"/>
+                                </Grid>
+                            </StackPanel></ScrollViewer>
+                        </TabItem>
+
+                        <TabItem Header="PDF 导出">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="10">
+                                <CheckBox IsChecked="{Binding EnablePdf}" IsEnabled="{Binding CanExportPdf}" Content="启用原生 PDF 导出（Revit 2022+）" FontWeight="SemiBold"/>
+                                <Grid IsEnabled="{Binding EnablePdf}" Margin="0,6,0,0">
+                                    <Grid.RowDefinitions><RowDefinition Height="36"/><RowDefinition Height="36"/><RowDefinition Height="36"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="88"/><ColumnDefinition Width="*"/><ColumnDefinition Width="88"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                    <TextBlock Text="PDF 设置"/><ComboBox Grid.Column="1" ItemsSource="{Binding AvailablePdfSetups}" IsEditable="True" Text="{Binding SelectedPdfSetup, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <TextBlock Grid.Column="2" Text="范围"/><ComboBox Grid.Column="3" ItemsSource="{Binding AvailableViewSheetSets}" IsEditable="True" Text="{Binding SelectedPdfViewSheetSet, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <TextBlock Grid.Row="1" Text="输出方式"/><CheckBox Grid.Row="1" Grid.Column="1" IsChecked="{Binding PdfCombine}" Content="合并为一个 PDF"/>
+                                    <TextBlock Grid.Row="2" Text="文件名"/><TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding PdfFileName, UpdateSourceTrigger=PropertyChanged}" MinHeight="30"/>
+                                    <TextBlock Grid.Row="3" Grid.ColumnSpan="4" Foreground="{DynamicResource SecondaryText}" TextWrapping="Wrap"
+                                               Text="不合并时不再依赖 Revit NamingRule：YangTools 每张图纸单独调用 Combine=true 导出，因此仍可严格使用本工具的文件名模板。"/>
+                                </Grid>
+                            </StackPanel></ScrollViewer>
+                        </TabItem>
+
+                        <TabItem Header="PDF 打印（2021+）">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="10">
+                                <CheckBox IsChecked="{Binding EnablePrintPdf}" Content="打印 PDF（虚拟 PDF 打印机，Revit 2021+）" FontWeight="SemiBold"/>
+                                <Grid IsEnabled="{Binding EnablePrintPdf}" Margin="0,6,0,0">
+                                    <Grid.RowDefinitions><RowDefinition Height="36"/><RowDefinition Height="36"/><RowDefinition Height="36"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="88"/><ColumnDefinition Width="*"/><ColumnDefinition Width="88"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                    <TextBlock Text="PDF 打印机"/><ComboBox Grid.Column="1" ItemsSource="{Binding AvailablePrintPdfPrinters}" IsEditable="True" Text="{Binding SelectedPrintPdfPrinterName, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <TextBlock Grid.Column="2" Text="范围"/><ComboBox Grid.Column="3" ItemsSource="{Binding AvailableViewSheetSets}" IsEditable="True" Text="{Binding SelectedPrintPdfViewSheetSet, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <TextBlock Grid.Row="1" Text="打印设置"/><ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding AvailablePrintPdfSetups}" IsEditable="True" Text="{Binding SelectedPrintPdfSetup, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <CheckBox Grid.Row="1" Grid.Column="3" IsChecked="{Binding PrintPdfCombine}" Content="合并为一个 PDF"/>
+                                    <TextBlock Grid.Row="2" Text="文件名"/><TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding PrintPdfFileName, UpdateSourceTrigger=PropertyChanged}" MinHeight="30"/>
+                                    <TextBlock Grid.Row="3" Grid.ColumnSpan="4" Foreground="{DynamicResource SecondaryText}" TextWrapping="Wrap"
+                                               Text="Revit 2021 只能走 PrintManager。部分打印驱动（尤其 Microsoft Print to PDF）可能弹出“另存为”，不适合无人值守；实机验收必须使用你实际公司的 PDF 打印机验证 PrintToFileName。"/>
+                                </Grid>
+                            </StackPanel></ScrollViewer>
+                        </TabItem>
+                    </TabControl>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Grid Grid.Row="4" Margin="0,10,0,0" Height="42">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <TextBlock x:Name="TxtProgress" Text="准备就绪" Foreground="{DynamicResource SecondaryText}" TextWrapping="Wrap" Margin="0,0,10,0"/>
+            <Button x:Name="BtnExecute" Grid.Column="1" Content="执行批处理" Click="BtnExecute_Click"
+                    Style="{DynamicResource PrimaryButton}" Width="150" Height="38"/>
+        </Grid>
+    </Grid>
+</Window>

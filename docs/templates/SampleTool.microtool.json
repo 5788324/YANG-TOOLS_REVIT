@@ -1,0 +1,16 @@
+{
+  "SchemaVersion": 1,
+  "DisplayName": "示例临时插件",
+  "FunctionDescription": "说明工具处理的对象、执行的动作和最终结果。",
+  "UsageInstructions": [
+    "打开目标项目和正确视图。",
+    "按要求选择元素或填写参数。",
+    "点击运行并检查结果。"
+  ],
+  "SupportedRevitVersions": "2024",
+  "EntryCommand": "YangTools.Temporary.Sample.RunCommand",
+  "RequiresSelection": true,
+  "WritesModel": true,
+  "UndoDescription": "操作可通过一个 Revit 撤销项恢复。",
+  "Notes": "补充限制、已知问题或输入要求。"
+}

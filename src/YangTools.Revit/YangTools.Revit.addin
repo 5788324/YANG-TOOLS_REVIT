@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>YangTools Revit 个人插件</Name>
+    <Assembly>YangTools/YangTools.Revit.dll</Assembly>
+    <FullClassName>YangTools.Revit.App</FullClassName>
+    <ClientId>f8425265-d41c-4b68-80e2-632b4b2cb829</ClientId>
+    <VendorId>YangTools</VendorId>
+    <VendorDescription>YangTools 个人 Revit 工具集</VendorDescription>
+  </AddIn>
+</RevitAddIns>

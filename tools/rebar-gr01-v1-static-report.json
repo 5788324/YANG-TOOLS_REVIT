@@ -1,0 +1,333 @@
+{
+  "checks": [
+    {
+      "name": "GR01 V1 path model",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 request model",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 result model",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 curve summary",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 bar sample",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 schema",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 engine explicit",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 managed constraint",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 native cover false",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 expected fingerprint",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 dryrun default",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 max bars 1000",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 max curves 100",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 service class",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 control same element reject",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 single position guard",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 same host guard",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 same bar type guard",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 same style guard",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 hook reject",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 termination reject",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 coupler reject",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 transformed centerline",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 line arc only",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 continuity guard",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 reverse matching",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 ModelLine path",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 Edge path",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 straight path guard",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 station projection",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 control path extent guard",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 path reversed semantic",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 zones reuse planner",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 t by station",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 XYZ lerp",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 line interpolation",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 arc interpolation",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 no silent arc line fallback",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 interpolated continuity",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 first middle last sample",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 explicit single create",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 style writeback",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 one transaction",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 rollback",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 no control delete",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 count readback",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 unconstrained readback",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 no server readback",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 host readback",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 type readback",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 style readback",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 all physical bar geometry readback",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 control unchanged",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 max deviation",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 sha fingerprint",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 stale preview reject",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 revalidate before create",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 dryrun no transaction return",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 product logging",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 broker preview command",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 broker create command",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 broker distribution path",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 broker zones",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 MCP preview tool",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 MCP create tool",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 MCP default dryrun",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 MCP fingerprint handoff",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 MCP ModelLine Edge",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 GUI ribbon grouped",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 GUI uses shared service",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 legacy spacing fields retained",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 uniform within max",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 no regular search failure",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 station dedupe",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 uniform 85 bars",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 Z2 uniform",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 Z4 uniform",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 all spacing <= max",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 interpolation t0 exact",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 interpolation t1 exact",
+      "ok": true
+    },
+    {
+      "name": "GR01 V1 interpolation t05 XYZ",
+      "ok": true
+    }
+  ],
+  "summary": {
+    "passed": 81,
+    "failed": 0,
+    "total": 81
+  }
+}

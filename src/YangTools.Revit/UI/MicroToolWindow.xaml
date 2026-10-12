@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window x:Class="YangTools.Revit.UI.MicroToolWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="临时插件箱" Height="680" Width="900" MinHeight="560" MinWidth="780"
+        WindowStartupLocation="CenterOwner" WindowStyle="None" ResizeMode="CanResizeWithGrip"
+        Background="{DynamicResource WindowBg}" Foreground="{DynamicResource PrimaryText}"
+        BorderBrush="{DynamicResource WindowBorder}" BorderThickness="1">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="52"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="{DynamicResource TitleBarGradient}"
+                MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+            <Grid Margin="16,0,10,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="临时插件箱" Style="{DynamicResource WindowTitle}"/>
+                    <TextBlock Text="按项目管理短期插件；每个入口应包含功能说明和使用步骤"
+                               Foreground="{DynamicResource TitleText}" FontSize="10" Opacity="0.82"/>
+                </StackPanel>
+                <Button Grid.Column="1" Content="?" Width="30" Height="28" Margin="0,0,6,0"
+                        VerticalAlignment="Center" Style="{DynamicResource StandardButton}"
+                        ToolTip="临时插件箱功能说明" Click="HelpButton_Click"/>
+                <Button Grid.Column="2" Style="{DynamicResource CloseButton}" Click="CloseButton_Click"/>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="16,14,16,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="285"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{DynamicResource CardBorder}" Margin="0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="临时项目 / 收藏仓库" Style="{DynamicResource SectionTitle}"/>
+                    <TextBlock x:Name="ProjectPathText" Grid.Row="1" Margin="0,5,0,10"
+                               Text="请选择一个仓库" TextWrapping="Wrap" Style="{DynamicResource SecondaryLabel}"/>
+
+                    <ListBox x:Name="ProjectsListBox" Grid.Row="2" Style="{DynamicResource StandardListBox}"
+                             SelectionChanged="ProjectsListBox_SelectionChanged">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="8,6">
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{Binding StatusText}" Style="{DynamicResource SecondaryLabel}"
+                                               TextTrimming="CharacterEllipsis" ToolTip="{Binding FullPath}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <WrapPanel Grid.Row="3" Margin="0,10,0,0">
+                        <Button Content="添加临时项目" Style="{DynamicResource StandardButton}" Margin="0,0,6,6"
+                                Click="NewProjectButton_Click"/>
+                        <Button x:Name="BtnRemoveProject" Content="移除项目" Style="{DynamicResource StandardButton}"
+                                Margin="0,0,6,6" Click="DeleteProjectButton_Click"/>
+                        <Button Content="打开文件夹" Style="{DynamicResource StandardButton}" Margin="0,0,0,6"
+                                Click="OpenProjectFolderButton_Click"/>
+                    </WrapPanel>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="2" Style="{DynamicResource CardBorder}" Margin="0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid>
+                        <TextBlock Text="可运行 DLL" Style="{DynamicResource SectionTitle}"/>
+                        <TextBlock x:Name="ToolCountText" HorizontalAlignment="Right" Style="{DynamicResource SecondaryLabel}"/>
+                    </Grid>
+                    <TextBlock Grid.Row="1" Margin="0,5,0,10"
+                               Text="推荐一 DLL 一功能。说明文件优先使用 &lt;DLL名&gt;.microtool.json。"
+                               Style="{DynamicResource SecondaryLabel}" TextWrapping="Wrap"/>
+
+                    <ListBox x:Name="ToolsListBox" Grid.Row="2" Style="{DynamicResource StandardListBox}"
+                             MinHeight="150" MouseDoubleClick="ToolsListBox_MouseDoubleClick"
+                             SelectionChanged="ToolsListBox_SelectionChanged">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="8,6">
+                                    <DockPanel LastChildFill="True">
+                                        <Border DockPanel.Dock="Right" Padding="5,1" Margin="8,0,0,0" CornerRadius="3"
+                                                Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource WindowBorder}" BorderThickness="1">
+                                            <TextBlock Text="{Binding DocumentationBadge}" FontSize="10"/>
+                                        </Border>
+                                        <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                    </DockPanel>
+                                    <TextBlock Text="{Binding DetailText}" Style="{DynamicResource SecondaryLabel}"
+                                               TextTrimming="CharacterEllipsis" ToolTip="{Binding FullPath}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <Border Grid.Row="3" Margin="0,10,0,0" Padding="10" Background="{DynamicResource PanelBg}"
+                            BorderBrush="{DynamicResource WindowBorder}" BorderThickness="1" CornerRadius="5">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid>
+                                <TextBlock Text="所选插件说明" FontWeight="SemiBold"/>
+                                <TextBlock x:Name="DocumentationStatusText" HorizontalAlignment="Right"
+                                           Style="{DynamicResource SecondaryLabel}" Text="未选择插件"/>
+                            </Grid>
+                            <TextBlock x:Name="FunctionDescriptionText" Grid.Row="1" Margin="0,6,0,5"
+                                       Text="选择一个 DLL 后显示功能说明。" TextWrapping="Wrap" MaxHeight="54"/>
+                            <TextBlock x:Name="UsageInstructionsText" Grid.Row="2" Margin="0,0,0,5"
+                                       Text="" TextWrapping="Wrap" MaxHeight="64" Style="{DynamicResource SecondaryLabel}"/>
+                            <TextBlock x:Name="CompatibilityText" Grid.Row="3" Text="" TextWrapping="Wrap"
+                                       Style="{DynamicResource SecondaryLabel}"/>
+                        </Grid>
+                    </Border>
+
+                    <WrapPanel Grid.Row="4" Margin="0,10,0,0" HorizontalAlignment="Right">
+                        <Button Content="刷新" Style="{DynamicResource StandardButton}" Margin="0,0,6,6"
+                                Click="RefreshButton_Click"/>
+                        <Button Content="插件说明" Style="{DynamicResource StandardButton}" Margin="0,0,6,6"
+                                Click="ToolHelpButton_Click"/>
+                        <Button Content="创建说明模板" Style="{DynamicResource StandardButton}" Margin="0,0,6,6"
+                                Click="CreateDocumentationButton_Click"/>
+                        <Button Content="打开位置" Style="{DynamicResource StandardButton}" Margin="0,0,6,6"
+                                Click="OpenToolFolderButton_Click"/>
+                        <Button x:Name="BtnCollect" Content="收藏到默认仓库" IsEnabled="False"
+                                Style="{DynamicResource StandardButton}" Margin="0,0,6,6"
+                                Click="CollectToolButton_Click"/>
+                        <Button Content="删除文件" Style="{DynamicResource DangerButton}" Margin="0,0,6,6"
+                                Click="DeletePluginButton_Click"/>
+                        <Button x:Name="BtnRun" Content="运行" IsEnabled="False" Style="{DynamicResource PrimaryButton}"
+                                Margin="0,0,0,6" Click="RunButton_Click" IsDefault="True"/>
+                    </WrapPanel>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="2" Style="{DynamicResource BottomBar}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock x:Name="StatusText" Text="准备就绪" Style="{DynamicResource SecondaryLabel}"
+                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,12,0"/>
+                    <Button Content="清理运行缓存" Style="{DynamicResource StandardButton}"
+                            Click="CleanupCacheButton_Click"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Content="开发规范" Margin="0,0,10,0" Style="{DynamicResource StandardButton}"
+                            Click="DeveloperGuideButton_Click"/>
+                    <Button Content="关闭" Style="{DynamicResource StandardButton}"
+                            Click="CloseButton_Click" IsCancel="True"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

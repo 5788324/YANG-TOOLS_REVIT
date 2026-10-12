@@ -1,31 +1,187 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFramework>net48</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>disable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
     <LangVersion>latest</LangVersion>
-    <RootNamespace>YangTools.Revit</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
     <AssemblyName>YangTools.Revit</AssemblyName>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <RootNamespace>YangTools.Revit</RootNamespace>
+    <Version>4.0.0</Version>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <FileVersion>4.0.0.0</FileVersion>
+    <InformationalVersion>4.0.0</InformationalVersion>
+    <Authors>Yang</Authors>
+    <Company>Yang</Company>
+    <Product>YangTools</Product>
+    <Title>YangTools Revit Plugin</Title>
+    <Description>YangTools - Revit productivity and automation toolkit.</Description>
+    <Copyright>Copyright © 2026 Yang</Copyright>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <!-- Revit API 必须编译为 64 位 -->
+    <Platforms>x64</Platforms>
+    <Configurations>2021;2022;2023;2024;2025;2026;2027</Configurations>
+    <!-- 将第三方 NuGet 包的 DLL 随主 DLL 一并输出，防止 Revit 找不到依赖 -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <!-- AppendTargetFrameworkToOutputPath avoids putting things in e.g. bin/x64/2021/net48 -->
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
 
-  <!-- .NET Framework 内置 JSON 序列化，零 NuGet 依赖 -->
   <ItemGroup>
-    <Reference Include="System.Web.Extensions" />
+    <Using Remove="System.Windows.Forms" />
   </ItemGroup>
 
-  <ItemGroup Condition="Exists('$(RevitApiDir)\RevitAPI.dll')">
-    <Reference Include="RevitAPI">
-      <HintPath>$(RevitApiDir)\RevitAPI.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
+  <!-- 针对 x64 平台设置输出路径与优化开关 -->
+  <PropertyGroup Condition="'$(Platform)' == 'x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <OutputPath>bin\x64\$(Configuration)\</OutputPath>
+  </PropertyGroup>
+
+  <!-- TargetFramework based on Configuration -->
+  <PropertyGroup Condition="'$(Configuration)' == '2021' Or '$(Configuration)' == '2022' Or '$(Configuration)' == '2023' Or '$(Configuration)' == '2024'">
+    <TargetFramework>net48</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == '2025' Or '$(Configuration)' == '2026'">
+    <TargetFramework>net8.0-windows</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == '2027'">
+    <TargetFramework>net10.0-windows</TargetFramework>
+  </PropertyGroup>
+
+  <!-- Defines for conditional compilation -->
+  <PropertyGroup Condition="'$(Configuration)' == '2021'">
+    <DefineConstants>REVIT2021;REVIT2021_OR_GREATER</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == '2022'">
+    <DefineConstants>REVIT2021_OR_GREATER;REVIT2022_OR_GREATER</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == '2023'">
+    <DefineConstants>REVIT2021_OR_GREATER;REVIT2022_OR_GREATER;REVIT2023_OR_GREATER</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == '2024'">
+    <DefineConstants>REVIT2021_OR_GREATER;REVIT2022_OR_GREATER;REVIT2023_OR_GREATER;REVIT2024_OR_GREATER</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == '2025'">
+    <DefineConstants>REVIT2021_OR_GREATER;REVIT2022_OR_GREATER;REVIT2023_OR_GREATER;REVIT2024_OR_GREATER;REVIT2025_OR_GREATER</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == '2026'">
+    <DefineConstants>REVIT2021_OR_GREATER;REVIT2022_OR_GREATER;REVIT2023_OR_GREATER;REVIT2024_OR_GREATER;REVIT2025_OR_GREATER;REVIT2026_OR_GREATER</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == '2027'">
+    <DefineConstants>REVIT2021_OR_GREATER;REVIT2022_OR_GREATER;REVIT2023_OR_GREATER;REVIT2024_OR_GREATER;REVIT2025_OR_GREATER;REVIT2026_OR_GREATER;REVIT2027_OR_GREATER</DefineConstants>
+  </PropertyGroup>
+
+  <!-- Reference specific Revit API version -->
+  <ItemGroup>
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="$(Configuration).*" PrivateAssets="All" />
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="$(Configuration).*" PrivateAssets="All" />
   </ItemGroup>
 
-  <ItemGroup Condition="Exists('$(RevitApiDir)\RevitAPIUI.dll')">
-    <Reference Include="RevitAPIUI">
-      <HintPath>$(RevitApiDir)\RevitAPIUI.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
+  <!-- net48 specifics -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Security" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="8.0.0" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
   </ItemGroup>
+
+
+  <!-- JSON 库与 Python 执行引擎用于 MCP 数据交换与动态脚本执行 -->
+  <ItemGroup>
+    <PackageReference Include="MiniExcel" Version="1.44.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="IronPython" Version="3.4.1" />
+  </ItemGroup>
+
+    <!-- 将运行时资源拷贝到输出目录 -->
+  <ItemGroup>
+    <Content Include="Icons\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Icons\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Content>
+    <Content Include="UI\Themes\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>UI\Themes\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Content>
+    <Content Include="UI\SharedStyles.xaml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>UI\SharedStyles.xaml</Link>
+    </Content>
+    <Content Include="..\..\MicroTool_Developer_Guide V3.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Docs\MicroTool_Developer_Guide V3.md</Link>
+    </Content>
+    <Content Include="..\..\docs\templates\SampleTool.microtool.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Docs\SampleTool.microtool.json</Link>
+    </Content>
+    <Content Include="..\..\LICENSE.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Docs\LICENSE.md</Link>
+    </Content>
+    <Content Include="..\..\NOTICE.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Docs\NOTICE.md</Link>
+    </Content>
+    <Content Include="..\..\THIRD_PARTY_NOTICES.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Docs\THIRD_PARTY_NOTICES.md</Link>
+    </Content>
+  </ItemGroup>
+
+  <!-- 防止把新版本覆盖解压到旧目录后，废弃命令继续被 SDK 默认通配符编译。 -->
+  <Target Name="FailOnStaleRemovedFiles" BeforeTargets="BeforeBuild">
+    <Error Condition="Exists('Commands\HelloWorldCommand.cs')"
+           Text="检测到旧源码残留 Commands\HelloWorldCommand.cs。请删除整个解压目录后重新解压源码包，禁止覆盖旧目录。" />
+    <Error Condition="Exists('Commands\McpStatusCommand.cs')"
+           Text="检测到旧源码残留 Commands\McpStatusCommand.cs。请删除整个解压目录后重新解压源码包，禁止覆盖旧目录。" />
+    <Error Condition="Exists('Commands\RibbonSettingsCommand.cs')"
+           Text="检测到旧源码残留 Commands\RibbonSettingsCommand.cs。请删除整个解压目录后重新解压源码包，禁止覆盖旧目录。" />
+    <Error Condition="Exists('UI\RibbonSettingsWindow.xaml')"
+           Text="检测到旧源码残留 UI\RibbonSettingsWindow.xaml。请删除整个解压目录后重新解压源码包，禁止覆盖旧目录。" />
+    <Error Condition="Exists('UI\RibbonSettingsWindow.xaml.cs')"
+           Text="检测到旧源码残留 UI\RibbonSettingsWindow.xaml.cs。请删除整个解压目录后重新解压源码包，禁止覆盖旧目录。" />
+    <Error Condition="Exists('Icons\hello_16.png') Or Exists('Icons\hello_32.png') Or Exists('Icons\mcp_server_16.png') Or Exists('Icons\mcp_server_32.png') Or Exists('Icons\ribbon_settings_16.png') Or Exists('Icons\ribbon_settings_32.png')"
+           Text="检测到已删除入口的旧图标残留。请删除整个解压目录后重新解压源码包，禁止覆盖旧目录。" />
+    <Error Condition="Exists('Commands\ManholeElevationCommand.cs') Or Exists('Commands\PipeModifyTypeACommand.cs')"
+           Text="检测到已删除的 MEP 工具命令残留。请删除整个解压目录后重新解压源码包，禁止覆盖旧目录。" />
+    <Error Condition="Exists('Icons\manhole_elevation_16.png') Or Exists('Icons\manhole_elevation_32.png') Or Exists('Icons\pipe_modify_16.png') Or Exists('Icons\pipe_modify_32.png')"
+           Text="检测到已删除的 MEP 工具图标残留。请删除整个解压目录后重新解压源码包，禁止覆盖旧目录。" />
+    <Error Condition="Exists('Core\DeepSeekClient.cs')"
+           Text="检测到已删除的旧 AI 网络客户端 Core\DeepSeekClient.cs。请删除整个解压目录后重新解压源码包，禁止覆盖旧目录。" />
+    <Error Condition="Exists('Commands\CopilotCommand.cs') Or Exists('Core\Assistant') Or Exists('Core\RevitApiSearcher.cs') Or Exists('UI\AssistantModeView.xaml') Or Exists('UI\AssistantModeView.xaml.cs') Or Exists('UI\AssistantDockablePaneProvider.cs') Or Exists('UI\CopilotPanel.xaml') Or Exists('UI\CopilotPanel.xaml.cs') Or Exists('Icons\copilot_16.png') Or Exists('Icons\copilot_32.png')"
+           Text="检测到已删除的 AI/摸鱼助手运行文件残留。请使用干净源码目录，禁止把旧助手代码覆盖回项目。" />
+    <Error Condition="Exists('UI\CopilotWindow.xaml') Or Exists('UI\CopilotWindow.xaml.cs') Or Exists('UI\AssistantWindow.xaml') Or Exists('UI\AssistantWindow.xaml.cs')"
+           Text="检测到历史 AI 窗口残留。AI/摸鱼助手已整体删除，请清理旧源码目录。" />
+    <Error Condition="Exists('Mcp\McpExternalEventHandler.cs') Or Exists('Mcp\McpHttpServer.cs')"
+           Text="检测到已删除的旧 MCP 执行器或 HTTP 服务残留。请删除整个解压目录后重新解压源码包，禁止覆盖旧目录。" />
+  </Target>
+
+  <!-- 仅显式传入 -p:DeployAfterBuild=true 时部署，普通构建不修改本机 Revit。 -->
+  <Target Name="CopyToRevitAddins" AfterTargets="Build" Condition="'$(DeployAfterBuild)' == 'true'">
+    <PropertyGroup>
+      <RevitAddinsDir>$(AppData)\Autodesk\Revit\Addins</RevitAddinsDir>
+    </PropertyGroup>
+
+    <Message Text="[Auto Deploy] 正在部署至 Revit $(Configuration) Addins 目录..." Importance="high" />
+    
+    <ItemGroup>
+      <DeployDlls Include="$(TargetDir)*.dll" />
+      <DeployPdbs Include="$(TargetDir)*.pdb" />
+      <IconFiles Include="$(TargetDir)Icons\**\*.*" />
+      <UiFiles Include="$(TargetDir)UI\**\*.*" />
+      <DocFiles Include="$(TargetDir)Docs\**\*.*" />
+    </ItemGroup>
+    
+    <Copy SourceFiles="YangTools.Revit.addin" DestinationFolder="$(RevitAddinsDir)\$(Configuration)\" ContinueOnError="true" />
+    <Copy SourceFiles="@(DeployDlls)" DestinationFolder="$(RevitAddinsDir)\$(Configuration)\YangTools\" ContinueOnError="true" />
+    <Copy SourceFiles="@(DeployPdbs)" DestinationFolder="$(RevitAddinsDir)\$(Configuration)\YangTools\" ContinueOnError="true" />
+    <Copy SourceFiles="@(IconFiles)" DestinationFolder="$(RevitAddinsDir)\$(Configuration)\YangTools\Icons\%(RecursiveDir)" ContinueOnError="true" />
+    <Copy SourceFiles="@(UiFiles)" DestinationFolder="$(RevitAddinsDir)\$(Configuration)\YangTools\UI\%(RecursiveDir)" ContinueOnError="true" />
+    <Copy SourceFiles="@(DocFiles)" DestinationFolder="$(RevitAddinsDir)\$(Configuration)\YangTools\Docs\%(RecursiveDir)" ContinueOnError="true" />
+  </Target>
+
 </Project>

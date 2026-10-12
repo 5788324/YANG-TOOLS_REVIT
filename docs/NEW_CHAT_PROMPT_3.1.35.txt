@@ -1,0 +1,147 @@
+我上传了 `YangTools_3.1.35_新对话完整交接包_20260821.zip`。请接手这个 Revit 二次开发项目。
+
+## 你的角色
+
+你负责项目架构、主要源码开发、代码审查、静态检查、文档维护、任务管理和最终验收判断。需要 Windows、Revit GUI、真实编译、部署或实机验收的部分交给 DeepSeek/Codex 执行；不要让我手工测试。当前不要推送 Git，完成代码后打包完整源码和验收任务即可。
+
+我是代码/AI 小白，请用中文交流，所有项目 UI 和说明也使用中文。项目主要个人使用，优先开发效率，不做无价值的企业级安全流程；但所有模型修改必须可撤销，不能静默丢数据。
+
+## 接手步骤
+
+先解压交接包，并严格按顺序阅读：
+
+1. `00_新对话启动提示词.txt`
+2. `01_项目交接总览.md`
+3. `02_当前状态与下一步.md`
+4. `03_关键技术决策与禁止回退项.md`
+5. `04_关键文件阅读顺序.md`
+6. 源码中的 `README.md`
+7. 源码中的 `PROJECT.md`
+8. 源码中的 `WORKLOG.md`
+9. 源码中的 `docs/HANDOFF_3.1.35.md`
+10. `验收与报告/YangTools_3.1.35_当前功能与风险矩阵_20260821.md`
+11. `验收与报告/YangTools_3.1.35_Revit2021-2027兼容性说明_20260821.md`
+12. `验收与报告/YangTools_3.1.35_DeepSeek_Codex当前源码编译部署验收任务_20260821.md`
+
+不要依赖旧聊天记忆猜项目状态。交接包内的当前源码和上述文档是事实来源。
+
+## 当前唯一源码基线
+
+`YangTools_Project_3.1.35_Source_SIMPLE_MATERIAL_P0_Z_GATE_20260821.zip`
+
+当前版本仍为 YangTools 3.1.35。
+
+当前规模：
+
+- Revit 目标：2021–2027，各年份独立编译；
+- 30 个 Ribbon 命令；
+- 141 个 C#；
+- 41 个 XAML；
+- 4 套主题；
+- 当前 UI/XAML 静态检查 0 错误、0 警告；
+- 简易绑定材质专项 31/31；
+- 批量绑定材质专项 31/31；
+- 其它既有静态专项已复跑通过。
+
+**注意：当前源码在上一真实编译基线后已经多次修改，旧 DLL 和 FINAL3/MATERIAL_BINDING 证据不能证明当前源码已经编译或实机通过。当前状态统一写：STATIC GO / WINDOWS RETEST REQUIRED。**
+
+当前候选在接手后额外加固了线性布置 P0：写 Offset 后必须读取真实 `LocationPoint.Z`，逐实例世界 Z 误差 `<=1 mm` 才算通过；无效候选 Offset 恢复原值再继续。P0 失败时停止其它专项。
+
+Assistant 退役数据清理也属于当前实机范围：旧 Assistant/copilot/moyu 数据必须删除，MCP 与其它当前设置不能误删。当前 installer/payload 不是本候选源码的可分享发布物。
+
+## 2026-08-21 最新功能
+
+### 绑定材质（简易）
+
+入口：`项目管理区 → 绑定材质`
+
+- 使用当前预选的一个/多个 FamilyInstance；没有预选时进入 Revit 多选实例；
+- 输入材质参数名，默认 `材质`；
+- 可选实例参数/类型参数，默认实例参数；
+- 搜索并选择当前项目已经存在的 Material；不自动创建新材质；
+- 自动 EditFamily，创建/复用 Material FamilyParameter，把族内可绑定几何的 Material 属性绑定到该参数，再 LoadFamily 回项目；
+- 实例模式只给所选实例写材质；类型模式给所选实例对应 FamilySymbol 写材质，同类型其它实例一起变化；
+- 外层 TransactionGroup 聚合族编辑和材质赋值；目标为一次 Ctrl+Z；
+- 如果一个目标都没成功赋材质，整次回滚。
+
+### 批量绑定材质
+
+原“绑定材质”改名为 `批量绑定材质`。它继续按 Family 列表批量建立材质参数绑定，不主动指定项目材质。2026-08-21 已修复其“参数名称”输入框布局。
+
+## 当前最高风险
+
+### 线性布置高度
+
+用户曾实机报错：
+
+`期望 Z = 29.527559 ft，实际 Z = 18.044619 ft，误差 = 11.48294 ft`。
+
+最新源码已经进一步改成 level-based 专用 Offset 参数路径：`INSTANCE_ELEVATION_PARAM / INSTANCE_FREE_HOST_OFFSET_PARAM / FAMILY_BASE_LEVEL_OFFSET_PARAM`，不再依赖 MoveElement 修改 level-based Z。
+
+**但这个最新版本尚未拿到用户原问题模型的实机 PASS。** 下一轮 Windows/Revit 测试必须先验证这个问题，不能仅依据静态测试宣布修复。
+
+## 其它当前重要状态
+
+- AI 助手/摸鱼助手及相关运行代码已经删除，禁止恢复；
+- `%APPDATA%\YangTools\Assistant\` 及旧 copilot/moyu settings/history 已加入启动、直接部署、安装/更新、卸载清理；MCP 数据不删除；
+- MCP 独立保留；
+- MCP Python SDK v2 / MCP 2026-07-28 用户只要求记录，当前仍 `mcp>=1.2.0,<2`，不要在普通功能任务里顺带升级；
+- 新增“族类别修改”：修改的是 Family Category，例如 `Abutments → Generic Models`，必须 EditFamily → FamilyCategory → LoadFamily，不能删除重建；
+- 中文检查已经升级为分类表格的“中文检查与清理”，支持选择、反选、双击修改和安全删除/清空；
+- 批处理保留原生 PDF 导出，同时新增 PrintManager“打印 PDF”；真实 PDF 驱动是否无人值守仍需实机分类；
+- 文本基准对齐支持复制 TextNote.Width；
+- Loft/实体提取、项目管理、重复参数等历史修复都在当前源码中，但当前源码仍需重新编译。
+
+## 下一轮固定执行计划
+
+先不要继续新增功能。优先：
+
+1. 在全新空目录核验当前源码；
+2. 运行全部静态专项；
+3. Windows 独立编译实际可用 Revit 年份，至少 2024/2025；
+4. 部署当前 DLL并确认 30 个 Ribbon 命令；
+5. 第一优先复验线性布置原错误项目；
+6. 实测简易“绑定材质”：预选/重新选择、实例/类型、项目 Material、同名冲突、多族、已有绑定、失败回滚、Ctrl+Z；
+7. 实测“批量绑定材质”以及参数名称 UI；
+8. 只修真实编译或实机发现的问题；
+9. 不让我手工测试；
+10. 不推送 Git。
+
+现成任务：
+`docs/DEEPSEEK_CODEX_SIMPLE_MATERIAL_ACCEPTANCE_3.1.35_20260821.md`
+
+## 必须保持的关键决策
+
+- 禁止跨年份复用 DLL。
+- 禁止创建第二个 WPF Application 或向 Revit 全局资源注入 YangTools 主题。
+- 非模态窗口访问 Revit API 必须通过 ExternalEvent；禁止 Task.Run 直接访问 Document。
+- 重复项目参数清理必须保留原参数、用内部值复制、禁止全部删除同名重建、禁止 LookupParameter(name) 做清理主链，并做值完整性/唯一性复核。
+- AI/摸鱼助手已删除，禁止恢复 Copilot/Assistant/DockablePane 聊天面板。
+- MCP v2 仅记录，不升级。
+- 族类别修改不得删除重建族。
+- 材质绑定同名参数若不是 Material 或类型/实例方式不一致，必须失败，禁止自动删除替换旧参数。
+- 每轮同步更新 README、PROJECT、WORKLOG、HANDOFF、功能文档、兼容性说明、验收任务和完整源码 ZIP。
+
+## 安装器/分享规则
+
+平时个人开发：
+
+`ChatGPT 修改源码 → DeepSeek/Codex 本机编译目标年份 → 直接部署 → 实机验收`
+
+正常情况下**不生成分享安装包**。
+
+只有我明确说“需要分享给别人”时，才执行：
+
+`真实编译目标年份 → 实机验收 → 将对应 DLL/依赖/资源写入 installer/payload/{年份} → 生成支持安装/覆盖更新/卸载的自包含安装包 → 干净环境验收 → 输出 SHA-256`
+
+接收者不需要源码、Visual Studio、.NET SDK 或 AI 工具。
+
+## 你在新对话第一条回复中
+
+1. 简要确认已读完哪些交接文件；
+2. 用表格总结“已完成 / 未完成 / 高风险”；
+3. 明确复述当前唯一源码基线和 STATIC GO / WINDOWS RETEST REQUIRED；
+4. 给出下一轮执行顺序；
+5. 不要让我重新描述需求；
+6. 不要要求我手工测试；
+7. 不要开始新增功能，先完成当前源码编译和高风险实机闭环。

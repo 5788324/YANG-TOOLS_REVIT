@@ -1,0 +1,115 @@
+{
+  "schema": "yangtools-mcp-router-v4.0.0/1",
+  "wire": "legacy-McpGateway-command-args-v1",
+  "sourceBaseline": "YangTools 3.1.38 RC0",
+  "commands": [
+    {
+      "name": "get_revit_status",
+      "domain": "core"
+    },
+    {
+      "name": "get_active_document",
+      "domain": "core"
+    },
+    {
+      "name": "get_selection",
+      "domain": "core"
+    },
+    {
+      "name": "get_element_parameters",
+      "domain": "core"
+    },
+    {
+      "name": "query_elements",
+      "domain": "core"
+    },
+    {
+      "name": "inspect_rebar",
+      "domain": "rebar"
+    },
+    {
+      "name": "list_rebar_types",
+      "domain": "rebar"
+    },
+    {
+      "name": "create_shape_rebar",
+      "domain": "rebar"
+    },
+    {
+      "name": "inspect_rebar_host_faces",
+      "domain": "rebar"
+    },
+    {
+      "name": "create_shape_rebar_on_face",
+      "domain": "rebar"
+    },
+    {
+      "name": "create_shape_rebar_varying_on_face",
+      "domain": "rebar"
+    },
+    {
+      "name": "modify_shape_rebar",
+      "domain": "rebar"
+    },
+    {
+      "name": "rebind_shape_rebar_constraints",
+      "domain": "rebar"
+    },
+    {
+      "name": "list_rebar_hook_types",
+      "domain": "rebar"
+    },
+    {
+      "name": "constrain_rebar_to_rebar",
+      "domain": "rebar"
+    },
+    {
+      "name": "modify_rebar_hooks",
+      "domain": "rebar"
+    },
+    {
+      "name": "create_free_form_rebar",
+      "domain": "rebar"
+    },
+    {
+      "name": "modify_free_form_rebar",
+      "domain": "rebar"
+    },
+    {
+      "name": "analyze_rebar_clearance",
+      "domain": "rebar"
+    },
+    {
+      "name": "list_rebar_coupler_types",
+      "domain": "rebar"
+    },
+    {
+      "name": "create_rebar_coupler",
+      "domain": "rebar"
+    },
+    {
+      "name": "probe_gradient_rebar_capabilities",
+      "domain": "rebar"
+    },
+    {
+      "name": "preview_gradient_spacing_plan",
+      "domain": "rebar"
+    },
+    {
+      "name": "probe_gradient_server_create",
+      "domain": "rebar"
+    },
+    {
+      "name": "preview_gradient_rebar_set",
+      "domain": "rebar"
+    },
+    {
+      "name": "create_gradient_rebar_set",
+      "domain": "rebar"
+    },
+    {
+      "name": "execute_revit_python",
+      "domain": "python"
+    }
+  ]
+}

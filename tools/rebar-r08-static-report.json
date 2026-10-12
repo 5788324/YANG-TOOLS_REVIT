@@ -1,0 +1,145 @@
+{
+  "checks": [
+    {
+      "name": "R08 models exist",
+      "ok": true
+    },
+    {
+      "name": "R08 schema versioned",
+      "ok": true
+    },
+    {
+      "name": "R08 defaults dry run",
+      "ok": true
+    },
+    {
+      "name": "R08 validates rebar id",
+      "ok": true
+    },
+    {
+      "name": "R08 only free form",
+      "ok": true
+    },
+    {
+      "name": "R08 validates expected uid",
+      "ok": true
+    },
+    {
+      "name": "R08 requires unconstrained",
+      "ok": true
+    },
+    {
+      "name": "R08 rejects server driven",
+      "ok": true
+    },
+    {
+      "name": "R08 uses native SetCurves",
+      "ok": true
+    },
+    {
+      "name": "R08 captures validation result",
+      "ok": true
+    },
+    {
+      "name": "R08 validates bars",
+      "ok": true
+    },
+    {
+      "name": "R08 validates point count",
+      "ok": true
+    },
+    {
+      "name": "R08 validates segment length",
+      "ok": true
+    },
+    {
+      "name": "R08 max bars guard",
+      "ok": true
+    },
+    {
+      "name": "R08 max points guard",
+      "ok": true
+    },
+    {
+      "name": "R08 identity guard unique id",
+      "ok": true
+    },
+    {
+      "name": "R08 identity guard host",
+      "ok": true
+    },
+    {
+      "name": "R08 bar count readback",
+      "ok": true
+    },
+    {
+      "name": "R08 preserves free form",
+      "ok": true
+    },
+    {
+      "name": "R08 transaction rollback",
+      "ok": true
+    },
+    {
+      "name": "R08 commit checked",
+      "ok": true
+    },
+    {
+      "name": "R08 before readback",
+      "ok": true
+    },
+    {
+      "name": "R08 after readback",
+      "ok": true
+    },
+    {
+      "name": "R08 broker command",
+      "ok": true
+    },
+    {
+      "name": "R08 broker parses bars",
+      "ok": true
+    },
+    {
+      "name": "R08 external MCP tool",
+      "ok": true
+    },
+    {
+      "name": "R08 external MCP dry run",
+      "ok": true
+    },
+    {
+      "name": "R08 UI command",
+      "ok": true
+    },
+    {
+      "name": "R08 UI shares typed service",
+      "ok": true
+    },
+    {
+      "name": "R08 cumulative ribbon 44",
+      "ok": true
+    },
+    {
+      "name": "R08 no custom server implementation",
+      "ok": true
+    },
+    {
+      "name": "R08 no shape driven accessor mutation",
+      "ok": true
+    },
+    {
+      "name": "R08 no coupler",
+      "ok": true
+    },
+    {
+      "name": "R08 no collision",
+      "ok": true
+    }
+  ],
+  "summary": {
+    "passed": 34,
+    "failed": 0,
+    "total": 34
+  }
+}

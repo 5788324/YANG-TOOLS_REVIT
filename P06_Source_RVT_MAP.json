@@ -1,0 +1,215 @@
+{
+  "schema_version": "yangcad-rvt-exchange/1.0",
+  "generated_utc": "2026-09-01T02:21:01.1829867Z",
+  "source_document": "D:\\Program Files\\Users\\mielcad73\\.gemini\\antigravity\\brain\\7fb446ff-7341-472c-8216-829114668716\\scratch\\P06_Revit_Test\\P06_Source.dwg",
+  "output_dwg": "D:\\Program Files\\Users\\mielcad73\\.gemini\\antigravity\\brain\\7fb446ff-7341-472c-8216-829114668716\\scratch\\P06_Revit_Test\\P06_Source_RVT.dwg",
+  "layers": [
+    {
+      "LayerName": "#0.25 Continuous Red",
+      "Category": "geometry",
+      "Signature": "G|0.25|Continuous|Red",
+      "Traits": {
+        "category": "geometry",
+        "color": "Red",
+        "source_dxf": "LINE",
+        "lineweight_mm": 0.25,
+        "linetype": "Continuous"
+      }
+    },
+    {
+      "LayerName": "#0.25 Continuous White",
+      "Category": "geometry",
+      "Signature": "G|0.25|Continuous|White",
+      "Traits": {
+        "category": "geometry",
+        "color": "White",
+        "source_dxf": "CIRCLE",
+        "lineweight_mm": 0.25,
+        "linetype": "Continuous"
+      }
+    },
+    {
+      "LayerName": "RVT-T H2.5 txt",
+      "Category": "text",
+      "Signature": "T|2.5|txt|",
+      "Traits": {
+        "category": "text",
+        "color": "White",
+        "source_dxf": "TEXT",
+        "text_height": 2.5,
+        "font": "txt",
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "superscript": false,
+        "subscript": false,
+        "stacked": false,
+        "mixed_format": false
+      }
+    },
+    {
+      "LayerName": "RVT-T H3 Tahoma",
+      "Category": "text",
+      "Signature": "T|3|Tahoma|",
+      "Traits": {
+        "category": "text",
+        "color": "White",
+        "source_dxf": "ATTDEF",
+        "text_height": 3,
+        "font": "Tahoma",
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "superscript": false,
+        "subscript": false,
+        "stacked": false,
+        "mixed_format": false
+      }
+    }
+  ],
+  "entities": [
+    {
+      "Handle": "12",
+      "DxfType": "LINE",
+      "Category": "geometry",
+      "OriginalLayer": "0",
+      "ExchangeLayer": "#0.25 Continuous Red",
+      "Owner": "layout:*Model_Space",
+      "Data": {
+        "geometry_kind": "line",
+        "start": [
+          0,
+          0,
+          0
+        ],
+        "end": [
+          100,
+          0,
+          0
+        ]
+      },
+      "type": "LINE",
+      "kind": "LINE",
+      "entity_type": "LINE"
+    },
+    {
+      "Handle": "2E",
+      "DxfType": "TEXT",
+      "Category": "text",
+      "OriginalLayer": "0",
+      "ExchangeLayer": "RVT-T H2.5 txt",
+      "Owner": "layout:*Model_Space",
+      "Data": {
+        "text": "Revit Prep Test Text",
+        "raw_text": "Revit Prep Test Text",
+        "inline_fonts": [],
+        "text_height": 2.5,
+        "text_style": "Standard",
+        "font": "txt",
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "overline": false,
+        "strike_through": false,
+        "superscript": false,
+        "subscript": false,
+        "stacked": false,
+        "mixed_format": false,
+        "oblique_deg": 0,
+        "width_factor": 1,
+        "position": [
+          0,
+          30,
+          0
+        ],
+        "rotation_deg": 0
+      },
+      "type": "TEXT",
+      "kind": "TEXT",
+      "entity_type": "TEXT"
+    },
+    {
+      "Handle": "24",
+      "DxfType": "CIRCLE",
+      "Category": "geometry",
+      "OriginalLayer": "0",
+      "ExchangeLayer": "#0.25 Continuous White",
+      "Owner": "block:标记 - 公制",
+      "Data": {
+        "geometry_kind": "circle",
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "radius": 6.35
+      },
+      "type": "CIRCLE",
+      "kind": "CIRCLE",
+      "entity_type": "CIRCLE"
+    },
+    {
+      "Handle": "26",
+      "DxfType": "LINE",
+      "Category": "geometry",
+      "OriginalLayer": "0",
+      "ExchangeLayer": "#0.25 Continuous White",
+      "Owner": "block:标记 - 公制",
+      "Data": {
+        "geometry_kind": "line",
+        "start": [
+          -31.75,
+          0,
+          0
+        ],
+        "end": [
+          -6.35,
+          0,
+          0
+        ]
+      },
+      "type": "LINE",
+      "kind": "LINE",
+      "entity_type": "LINE"
+    },
+    {
+      "Handle": "27",
+      "DxfType": "ATTDEF",
+      "Category": "text",
+      "OriginalLayer": "0",
+      "ExchangeLayer": "RVT-T H3 Tahoma",
+      "Owner": "block:标记 - 公制",
+      "Data": {
+        "text": "1",
+        "raw_text": "1",
+        "inline_fonts": [],
+        "text_height": 3,
+        "text_style": "宋体",
+        "font": "Tahoma",
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "overline": false,
+        "strike_through": false,
+        "superscript": false,
+        "subscript": false,
+        "stacked": false,
+        "mixed_format": false,
+        "oblique_deg": 0,
+        "width_factor": 1,
+        "position": [
+          -1.12625923,
+          -1.5,
+          0
+        ],
+        "rotation_deg": 0
+      },
+      "type": "ATTDEF",
+      "kind": "ATTDEF",
+      "entity_type": "ATTDEF"
+    }
+  ],
+  "warnings": [
+    "检测到动态块引用；动态块当前显示状态可能依赖 AutoCAD 匿名表示，RVT Exchange v1 不直接修改匿名定义，请在 Revit 导入前重点复核；数量=1"
+  ]
+}

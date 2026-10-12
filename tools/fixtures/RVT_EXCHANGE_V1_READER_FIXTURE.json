@@ -1,0 +1,438 @@
+{
+  "schema_version": "yangcad-rvt-exchange/1.0",
+  "units": "mm",
+  "origin": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "source_insunits": "Millimeters",
+  "entities": [
+    {
+      "Handle": "F001",
+      "DxfType": "LINE",
+      "Category": "geometry",
+      "OriginalLayer": "A-WALL",
+      "ExchangeLayer": "#0.25 Continuous White",
+      "Traits": {
+        "lineweight_mm": 0.25,
+        "linetype": "Continuous",
+        "color": "White"
+      },
+      "Data": {
+        "start": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "end": [
+          100.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    {
+      "Handle": "F002",
+      "DxfType": "LWPOLYLINE",
+      "Category": "geometry",
+      "OriginalLayer": "A-WALL",
+      "ExchangeLayer": "#0.25 Continuous White",
+      "Traits": {
+        "lineweight_mm": 0.25,
+        "linetype": "Continuous",
+        "color": "White"
+      },
+      "Data": {
+        "closed": true,
+        "vertices": [
+          {
+            "point": [
+              0.0,
+              10.0
+            ],
+            "bulge": 0.5
+          },
+          {
+            "point": [
+              50.0,
+              10.0
+            ],
+            "bulge": 0.0
+          },
+          {
+            "point": [
+              50.0,
+              40.0
+            ],
+            "bulge": 0.0
+          }
+        ]
+      }
+    },
+    {
+      "Handle": "F003",
+      "DxfType": "ARC",
+      "Category": "geometry",
+      "OriginalLayer": "A-CENTER",
+      "ExchangeLayer": "#0.18 DASHED White",
+      "Traits": {
+        "lineweight_mm": 0.18,
+        "linetype": "DASHED",
+        "color": "White"
+      },
+      "Data": {
+        "center": [
+          100.0,
+          50.0,
+          0.0
+        ],
+        "radius": 30.0,
+        "start_angle_deg": 0.0,
+        "end_angle_deg": 180.0
+      }
+    },
+    {
+      "Handle": "F004",
+      "DxfType": "CIRCLE",
+      "Category": "geometry",
+      "OriginalLayer": "A-CENTER",
+      "ExchangeLayer": "#0.18 Continuous White",
+      "Traits": {
+        "lineweight_mm": 0.18,
+        "linetype": "Continuous",
+        "color": "White"
+      },
+      "Data": {
+        "center": [
+          150.0,
+          50.0,
+          0.0
+        ],
+        "radius": 20.0
+      }
+    },
+    {
+      "Handle": "F005",
+      "DxfType": "TEXT",
+      "Category": "text",
+      "OriginalLayer": "A-TEXT",
+      "ExchangeLayer": "RVT-T H100 romans.shx",
+      "Traits": {
+        "text_height": 100.0,
+        "text_style": "RVT-T",
+        "font": "romans.shx"
+      },
+      "Data": {
+        "text": "TEXT 示例",
+        "position": [
+          0.0,
+          70.0,
+          0.0
+        ],
+        "rotation_deg": 0.0
+      }
+    },
+    {
+      "Handle": "F006",
+      "DxfType": "MTEXT",
+      "Category": "text",
+      "OriginalLayer": "A-TEXT",
+      "ExchangeLayer": "RVT-T H100 romans.shx",
+      "Traits": {
+        "text_height": 100.0,
+        "text_style": "RVT-T",
+        "font": "romans.shx"
+      },
+      "Data": {
+        "text": "第一行\n第二行",
+        "position": [
+          0.0,
+          90.0,
+          0.0
+        ],
+        "rotation_deg": 0.0,
+        "width": 80.0
+      }
+    },
+    {
+      "Handle": "F007",
+      "DxfType": "MULTILEADER",
+      "Category": "leader",
+      "OriginalLayer": "A-NOTE",
+      "ExchangeLayer": "RVT-ML H3.5 Arial",
+      "Traits": {
+        "text_height": 3.5,
+        "text_style": "RVT-ML",
+        "font": "Arial"
+      },
+      "Data": {
+        "text": "MLeader 示例",
+        "position": [
+          120.0,
+          120.0,
+          0.0
+        ],
+        "leader_vertex_order": "arrow_to_text",
+        "leader_lines": [
+          {
+            "vertex_order": "arrow_to_text",
+            "vertices": [
+              [
+                100.0,
+                100.0,
+                0.0
+              ],
+              [
+                110.0,
+                110.0,
+                0.0
+              ],
+              [
+                120.0,
+                120.0,
+                0.0
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "Handle": "F007B",
+      "DxfType": "LEADER",
+      "Category": "leader",
+      "OriginalLayer": "A-NOTE",
+      "ExchangeLayer": "RVT-L H2.5 Arial",
+      "Traits": {
+        "text_height": 2.5,
+        "text_style": "Standard",
+        "font": "Arial"
+      },
+      "Data": {
+        "text": "Leader 示例",
+        "position": [
+          180.0,
+          120.0,
+          0.0
+        ],
+        "leader_vertex_order": "arrow_to_text",
+        "leader_lines": [
+          {
+            "vertex_order": "arrow_to_text",
+            "vertices": [
+              [
+                160.0,
+                100.0,
+                0.0
+              ],
+              [
+                170.0,
+                110.0,
+                0.0
+              ],
+              [
+                180.0,
+                120.0,
+                0.0
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "Handle": "F008",
+      "DxfType": "HATCH",
+      "Category": "hatch",
+      "OriginalLayer": "A-HATCH",
+      "ExchangeLayer": "RVT-H SOLID S1 A0 White",
+      "Traits": {
+        "pattern": "SOLID",
+        "pattern_type": "PreDefined",
+        "scale": 1.0,
+        "angle_deg": 0.0
+      },
+      "Data": {
+        "pattern": "SOLID",
+        "boundary_loops": [
+          {
+            "kind": "curves",
+            "curves": [
+              {
+                "Type": "LINE",
+                "StartPoint": [
+                  200.0,
+                  0.0
+                ],
+                "EndPoint": [
+                  250.0,
+                  0.0
+                ]
+              },
+              {
+                "Type": "LINE",
+                "StartPoint": [
+                  250.0,
+                  0.0
+                ],
+                "EndPoint": [
+                  250.0,
+                  50.0
+                ]
+              },
+              {
+                "Type": "LINE",
+                "StartPoint": [
+                  250.0,
+                  50.0
+                ],
+                "EndPoint": [
+                  200.0,
+                  50.0
+                ]
+              },
+              {
+                "Type": "LINE",
+                "StartPoint": [
+                  200.0,
+                  50.0
+                ],
+                "EndPoint": [
+                  200.0,
+                  0.0
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "Handle": "F009",
+      "DxfType": "HATCH",
+      "Category": "hatch",
+      "OriginalLayer": "A-HATCH",
+      "ExchangeLayer": "RVT-H ANSI31 S1 A45 White",
+      "Traits": {
+        "pattern": "ANSI31",
+        "pattern_type": "PreDefined",
+        "scale": 1.0,
+        "angle_deg": 45.0
+      },
+      "Data": {
+        "pattern": "ANSI31",
+        "boundary_loops": [
+          {
+            "kind": "curves",
+            "curves": [
+              {
+                "Type": "LINE",
+                "StartPoint": [
+                  300.0,
+                  0.0
+                ],
+                "EndPoint": [
+                  350.0,
+                  0.0
+                ]
+              },
+              {
+                "Type": "LINE",
+                "StartPoint": [
+                  350.0,
+                  0.0
+                ],
+                "EndPoint": [
+                  350.0,
+                  50.0
+                ]
+              },
+              {
+                "Type": "LINE",
+                "StartPoint": [
+                  350.0,
+                  50.0
+                ],
+                "EndPoint": [
+                  300.0,
+                  50.0
+                ]
+              },
+              {
+                "Type": "LINE",
+                "StartPoint": [
+                  300.0,
+                  50.0
+                ],
+                "EndPoint": [
+                  300.0,
+                  0.0
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "Handle": "F010",
+      "DxfType": "DIMENSION",
+      "Category": "dimension",
+      "OriginalLayer": "A-DIMS",
+      "ExchangeLayer": "RVT-D LINEAR H2.5 Standard",
+      "Traits": {
+        "dimension_kind": "linear",
+        "dimension_style": "Standard",
+        "text_height": 2.5
+      },
+      "Data": {
+        "dimension_kind": "linear",
+        "dimension_style": "Standard",
+        "measurement": 100.0,
+        "display_text": "100",
+        "revit_rebuild_supported": true,
+        "definition_points": [
+          {
+            "role": "DimLinePoint",
+            "point": [
+              100.0,
+              -20.0,
+              0.0
+            ]
+          },
+          {
+            "role": "XLine1Point",
+            "point": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "role": "XLine2Point",
+            "point": [
+              100.0,
+              0.0,
+              0.0
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "counts": {
+    "LINE": 1,
+    "LWPOLYLINE": 1,
+    "ARC": 1,
+    "CIRCLE": 1,
+    "TEXT": 1,
+    "MTEXT": 1,
+    "MULTILEADER": 1,
+    "HATCH": 2,
+    "DIMENSION": 1,
+    "LEADER": 1
+  },
+  "unsupported_count": 0,
+  "warnings": []
+}

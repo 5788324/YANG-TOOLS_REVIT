@@ -1,0 +1,181 @@
+{
+  "checks": [
+    {
+      "name": "GR01 zone input model",
+      "ok": true
+    },
+    {
+      "name": "GR01 spacing request model",
+      "ok": true
+    },
+    {
+      "name": "GR01 spacing result model",
+      "ok": true
+    },
+    {
+      "name": "GR01 capability report model",
+      "ok": true
+    },
+    {
+      "name": "GR01 server probe model",
+      "ok": true
+    },
+    {
+      "name": "GR01 schema",
+      "ok": true
+    },
+    {
+      "name": "GR01 planner pure class",
+      "ok": true
+    },
+    {
+      "name": "GR01 legacy 5mm field retained",
+      "ok": true
+    },
+    {
+      "name": "GR01 legacy tail ratio field retained",
+      "ok": true
+    },
+    {
+      "name": "GR01 station merge default",
+      "ok": true
+    },
+    {
+      "name": "GR01 max zones",
+      "ok": true
+    },
+    {
+      "name": "GR01 max bars",
+      "ok": true
+    },
+    {
+      "name": "GR01 uniform within max strategy",
+      "ok": true
+    },
+    {
+      "name": "GR01 no legacy regular failure",
+      "ok": true
+    },
+    {
+      "name": "GR01 auto hard max guarantee",
+      "ok": true
+    },
+    {
+      "name": "GR01 manual spacing validation",
+      "ok": true
+    },
+    {
+      "name": "GR01 zone length mismatch",
+      "ok": true
+    },
+    {
+      "name": "GR01 station merge",
+      "ok": true
+    },
+    {
+      "name": "GR01 bar hard limit",
+      "ok": true
+    },
+    {
+      "name": "GR01 changed false planner",
+      "ok": true
+    },
+    {
+      "name": "GR01 capability reflection",
+      "ok": true
+    },
+    {
+      "name": "GR01 aligned guid probe",
+      "ok": true
+    },
+    {
+      "name": "GR01 surface guid probe",
+      "ok": true
+    },
+    {
+      "name": "GR01 custom spacing is probed not assumed",
+      "ok": true
+    },
+    {
+      "name": "GR01 external service registration probe",
+      "ok": true
+    },
+    {
+      "name": "GR01 capability read only",
+      "ok": true
+    },
+    {
+      "name": "GR01 server skeleton create",
+      "ok": true
+    },
+    {
+      "name": "GR01 server probe rollback",
+      "ok": true
+    },
+    {
+      "name": "GR01 server probe disclaimer",
+      "ok": true
+    },
+    {
+      "name": "GR01 broker capability command",
+      "ok": true
+    },
+    {
+      "name": "GR01 broker preview command",
+      "ok": true
+    },
+    {
+      "name": "GR01 broker server probe command",
+      "ok": true
+    },
+    {
+      "name": "GR01 MCP capability tool",
+      "ok": true
+    },
+    {
+      "name": "GR01 MCP preview tool",
+      "ok": true
+    },
+    {
+      "name": "GR01 MCP server probe tool",
+      "ok": true
+    },
+    {
+      "name": "GR01 no ribbon expansion",
+      "ok": true
+    },
+    {
+      "name": "GR01 reference Z1 100x10",
+      "ok": true
+    },
+    {
+      "name": "GR01 reference Z2 uniform <=200",
+      "ok": true
+    },
+    {
+      "name": "GR01 reference Z3 100x20",
+      "ok": true
+    },
+    {
+      "name": "GR01 reference Z4 uniform <=200",
+      "ok": true
+    },
+    {
+      "name": "GR01 reference Z5 100x10",
+      "ok": true
+    },
+    {
+      "name": "GR01 reference total 85 bars",
+      "ok": true
+    },
+    {
+      "name": "GR01 reference all <= max",
+      "ok": true
+    }
+  ],
+  "summary": {
+    "passed": 43,
+    "failed": 0,
+    "total": 43
+  }
+}

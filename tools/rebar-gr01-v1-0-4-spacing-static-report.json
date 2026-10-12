@@ -1,0 +1,133 @@
+{
+  "checks": [
+    {
+      "name": "V104 uniform strategy marker",
+      "ok": true
+    },
+    {
+      "name": "V104 ceil interval planner",
+      "ok": true
+    },
+    {
+      "name": "V104 actual spacing length over count",
+      "ok": true
+    },
+    {
+      "name": "V104 hard max guard",
+      "ok": true
+    },
+    {
+      "name": "V104 no legacy regular search",
+      "ok": true
+    },
+    {
+      "name": "V104 no active tail threshold",
+      "ok": true
+    },
+    {
+      "name": "V104 old wire fields retained",
+      "ok": true
+    },
+    {
+      "name": "V104 result strategy visible",
+      "ok": true
+    },
+    {
+      "name": "V104 zone mode visible",
+      "ok": true
+    },
+    {
+      "name": "V104 legacy fields not fingerprint determinants",
+      "ok": true
+    },
+    {
+      "name": "V104 fingerprint strategy marker",
+      "ok": true
+    },
+    {
+      "name": "V104 GUI explains uniform policy",
+      "ok": true
+    },
+    {
+      "name": "V104 MCP explains uniform policy",
+      "ok": true
+    },
+    {
+      "name": "V104 manual branch first",
+      "ok": true
+    },
+    {
+      "name": "V104 manual tail retained",
+      "ok": true
+    },
+    {
+      "name": "V104 manual max validation",
+      "ok": true
+    },
+    {
+      "name": "V104 projected bar precheck",
+      "ok": true
+    },
+    {
+      "name": "V104 production case max100 intervals",
+      "ok": true
+    },
+    {
+      "name": "V104 production case max100 actual",
+      "ok": true
+    },
+    {
+      "name": "V104 production case max100 bars",
+      "ok": true
+    },
+    {
+      "name": "V104 production case max200 intervals",
+      "ok": true
+    },
+    {
+      "name": "V104 production case max200 actual",
+      "ok": true
+    },
+    {
+      "name": "V104 production case max200 bars",
+      "ok": true
+    },
+    {
+      "name": "V104 manual100 intervals",
+      "ok": true
+    },
+    {
+      "name": "V104 manual100 tail",
+      "ok": true
+    },
+    {
+      "name": "V104 manual100 bars",
+      "ok": true
+    },
+    {
+      "name": "V104 five zone interval count",
+      "ok": true
+    },
+    {
+      "name": "V104 five zone bar count",
+      "ok": true
+    },
+    {
+      "name": "V104 five zone Z2 actual",
+      "ok": true
+    },
+    {
+      "name": "V104 five zone Z4 actual",
+      "ok": true
+    },
+    {
+      "name": "V104 all actual <= max",
+      "ok": true
+    }
+  ],
+  "summary": {
+    "passed": 31,
+    "failed": 0,
+    "total": 31
+  }
+}
