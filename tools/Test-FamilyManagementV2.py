@@ -14,6 +14,7 @@ def main() -> int:
     inst_c=read('src/YangTools.Revit/UI/FamilyInstanceManagerWindow.xaml.cs')
     inst_cell_c=read('src/YangTools.Revit/Core/FamilyInstances/FamilyInstanceCellEditService.cs')
     inst_batch_c=read('src/YangTools.Revit/Core/FamilyInstances/FamilyInstanceBatchParameterService.cs')
+    inst_excel_c=read('src/YangTools.Revit/Core/FamilyInstances/FamilyInstanceExcelImportService.cs')
     inst_type_c=read('src/YangTools.Revit/Core/FamilyInstances/FamilyInstanceBatchTypeService.cs')
     key_c=read('src/YangTools.Revit/Core/StableParameterKey.cs')
     usage_c=read('src/YangTools.Revit/Core/FamilyUsageService.cs')
@@ -74,7 +75,7 @@ def main() -> int:
     req(inst_c,'StableParameterKey.Collect','实例参数 union')
     req(fam_c,'StableParameterKey.Resolve(type, pKey)','族类型单元格按 key 写入')
     req(inst_cell_c,'StableParameterKey.Resolve(instance, request.ParameterKey)','实例单元格按 key 写入')
-    req(inst_c,'StableParameterKey.ResolveByDisplayLabel(element, item.Key)','实例 Excel 按稳定身份写入')
+    req(inst_excel_c,'StableParameterKey.ResolveByDisplayLabel(element, cell.Key)','实例 Excel 按稳定身份写入')
     forbid(inst_c,'LookupParameter(', '实例管理禁止 LookupParameter 主写入路径')
     # Usage and family actions
     for needle,label in [

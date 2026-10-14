@@ -10,6 +10,7 @@ using System.Windows.Input;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using YangTools.Revit.Core;
+using YangTools.Revit.Core.FamilyInstances;
 using YangTools.Revit.Models;
 
 namespace YangTools.Revit.UI
@@ -635,145 +636,59 @@ namespace YangTools.Revit.UI
         {
             var dialog = new Microsoft.Win32.OpenFileDialog { Filter = "Excel File (*.xlsx)|*.xlsx" };
             if (dialog.ShowDialog() != true) return;
+            if (_selectedFamilyId == null || _selectedFamilyId == ElementId.InvalidElementId)
+            {
+                TaskDialog.Show("提示", "请先选择要导入参数的族。");
+                return;
+            }
 
             string importPath = dialog.FileName;
+            ElementId expectedFamilyId = _selectedFamilyId;
+            string operationId = Guid.NewGuid().ToString("N");
             _handler.SetAction(app =>
             {
-                var doc = app.ActiveUIDocument.Document;
-                var failures = new List<string>();
-                int successCount = 0;
-                int skippedCount = 0;
-
                 try
                 {
                     var rows = MiniExcelLibs.MiniExcel.Query(importPath, useHeaderRow: true)
-                        .Cast<IDictionary<string, object>>()
-                        .ToList();
-
-                    using (TransactionGroup group = new TransactionGroup(doc, "批量导入族类型参数"))
+                        .Cast<IDictionary<string, object>>().ToList();
+                    FamilyTypeExcelImportResult result = FamilyTypeExcelImportService.Execute(
+                        _doc, expectedFamilyId, rows);
+                    // Readback/UI failures must never be reported as a failed or rolled-back
+                    // model change after the Revit transaction has already committed.
+                    Dispatcher.BeginInvoke(new Action(() =>
                     {
-                        if (group.Start() != TransactionStatus.Started)
+                        string status = result.Committed ? "整批提交成功" : "无需要更改的数据";
+                        string warning = result.ReadbackConfirmed ? string.Empty
+                            : "\n注意：" + result.ReadbackWarning;
+                        TaskDialog.Show("族类型参数导入结果",
+                            $"{status}\n已修改类型：{result.ChangedTypes}\n已写入参数：{result.WrittenParameters}\n" +
+                            $"空白行：{result.SkippedBlankRows}\n未变化行：{result.SkippedUnchangedRows}{warning}");
+                        if (IsLoaded && _selectedFamilyId == expectedFamilyId)
                         {
-                            throw new InvalidOperationException("无法启动批量导入事务组。");
-                        }
-
-                        try
-                        {
-                            for (int rowIndex = 0; rowIndex < rows.Count; rowIndex++)
+                            try { RequestRead(LoadTypeData, "刷新族类型数据"); }
+                            catch (Exception refreshError)
                             {
-                                var row = rows[rowIndex];
-                                if (!row.TryGetValue("图元ID", out object idObject) ||
-                                    idObject == null ||
-                                    !long.TryParse(idObject.ToString(), out long idValue))
-                                {
-                                    skippedCount++;
-                                    failures.Add($"第 {rowIndex + 2} 行：缺少有效的图元ID。");
-                                    continue;
-                                }
-
-                                Element element = doc.GetElement(ElementIdExtensions.CreateId(idValue));
-                                if (element == null)
-                                {
-                                    skippedCount++;
-                                    failures.Add($"第 {rowIndex + 2} 行：找不到族类型 {idValue}。");
-                                    continue;
-                                }
-
-                                using (Transaction transaction = new Transaction(doc, $"导入族类型 {idValue}"))
-                                {
-                                    if (transaction.Start() != TransactionStatus.Started)
-                                    {
-                                        skippedCount++;
-                                        failures.Add($"族类型 {idValue}：无法启动事务。");
-                                        continue;
-                                    }
-
-                                    try
-                                    {
-                                        if (row.TryGetValue("类型名称 (Type)", out object typeNameObject) && typeNameObject != null)
-                                        {
-                                            string newName = typeNameObject.ToString()?.Trim();
-                                            if (!string.IsNullOrWhiteSpace(newName) && element.Name != newName)
-                                            {
-                                                element.Name = newName;
-                                            }
-                                        }
-
-                                        foreach (var item in row)
-                                        {
-                                            if (item.Key == "图元ID" || item.Key == "类型名称 (Type)" || item.Value == null)
-                                            {
-                                                continue;
-                                            }
-
-                                            Parameter parameter = StableParameterKey.ResolveByDisplayLabel(element, item.Key);
-                                            if (parameter == null)
-                                            {
-                                                throw new InvalidOperationException($"不存在唯一可识别的参数“{item.Key}”。若存在重复同名参数，请使用本工具重新导出的 Excel 表头。");
-                                            }
-                                            if (parameter.IsReadOnly)
-                                            {
-                                                throw new InvalidOperationException($"参数“{item.Key}”为只读。");
-                                            }
-                                            if (!ParameterValueHelper.TrySetFromDisplayValue(parameter, item.Value.ToString(), out string setError))
-                                            {
-                                                throw new InvalidOperationException($"参数“{item.Key}”写入失败：{setError}");
-                                            }
-                                        }
-
-                                        if (transaction.Commit() != TransactionStatus.Committed)
-                                        {
-                                            throw new InvalidOperationException("事务提交失败。");
-                                        }
-                                        successCount++;
-                                    }
-                                    catch (Exception rowException)
-                                    {
-                                        if (transaction.GetStatus() == TransactionStatus.Started)
-                                        {
-                                            transaction.RollBack();
-                                        }
-                                        skippedCount++;
-                                        failures.Add($"族类型 {idValue}：{rowException.Message}");
-                                    }
-                                }
-                            }
-
-                            TransactionStatus groupStatus = successCount > 0
-                                ? group.Assimilate()
-                                : group.RollBack();
-                            if (successCount > 0 && groupStatus != TransactionStatus.Committed)
-                            {
-                                throw new InvalidOperationException("批量导入事务组合并失败。");
+                                DiagnosticLog.WriteError("族类型 Excel 提交后刷新", refreshError);
+                                TaskDialog.Show("提示", "数据已提交，但界面刷新失败，请重新打开窗口。");
                             }
                         }
-                        catch
-                        {
-                            if (group.GetStatus() == TransactionStatus.Started)
-                            {
-                                group.RollBack();
-                            }
-                            throw;
-                        }
-                    }
-
-                    Dispatcher.Invoke(() =>
-                    {
-                        string detail = failures.Count == 0
-                            ? string.Empty
-                            : "\n\n失败明细（最多 8 条）：\n" + string.Join("\n", failures.Take(8));
-                        TaskDialog.Show(
-                            "族类型参数导入结果",
-                            $"成功：{successCount} 行\n跳过/失败：{skippedCount} 行{detail}");
-                        if (_selectedFamilyId != null) RequestRead(LoadTypeData, "刷新族类型数据");
-                    });
+                    }));
                 }
                 catch (Exception ex)
                 {
-                    Dispatcher.Invoke(() => TaskDialog.Show("错误", "导入失败：" + ex.Message));
+                    DiagnosticLog.WriteError("族类型 Excel 整批导入", ex);
+                    Dispatcher.BeginInvoke(new Action(() => TaskDialog.Show("族类型导入失败", ex.Message)));
                 }
-            });
-            _externalEvent.Raise();
+            }, "族类型 Excel 整批导入", false, operationId,
+                reason => Dispatcher.BeginInvoke(new Action(() =>
+                    TaskDialog.Show("导入未执行", reason))));
+
+            ExternalEventRequest request = _externalEvent.Raise();
+            if (request != ExternalEventRequest.Accepted && request != ExternalEventRequest.Pending)
+            {
+                _handler.CancelPendingAction(operationId);
+                TaskDialog.Show("导入未排队", "Revit 未接受族类型导入请求：" + request + "。模型未修改。");
+            }
         }
 
         private void BatchRename_Click(object sender, RoutedEventArgs e)

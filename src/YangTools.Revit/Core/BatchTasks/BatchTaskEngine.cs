@@ -411,6 +411,8 @@ namespace YangTools.Revit.Core.BatchTasks
                     return;
                 }
 
+                if (!string.IsNullOrWhiteSpace(commitError))
+                    result.Warnings.Add("NWC：" + commitError);
                 string nwcScope = wholeModel ? "整个模型" : $"视图：{view!.Name}";
                 result.Successes.Add($"NWC：{expectedPath}（{nwcScope}；坐标：{viewModel.SelectedNwcCoordinates}）");
                 result.OutputFiles.AddRange(committed);
@@ -507,6 +509,8 @@ namespace YangTools.Revit.Core.BatchTasks
                     return;
                 }
 
+                if (!string.IsNullOrWhiteSpace(commitError))
+                    result.Warnings.Add("IFC：" + commitError);
                 string ifcScope = wholeModel ? "整个模型" : $"视图：{view!.Name}";
                 result.Successes.Add($"IFC：{expectedPath}（{ifcScope}；版本：{viewModel.SelectedIfcVersion}）");
                 result.OutputFiles.AddRange(committed);
@@ -605,6 +609,8 @@ namespace YangTools.Revit.Core.BatchTasks
                                 continue;
                             }
 
+                            if (!string.IsNullOrWhiteSpace(commitError))
+                                result.Warnings.Add($"DWG：{view.Name}：{commitError}");
                             success++;
                             foreach (string path in committed)
                                 result.OutputFiles.Add(path);
@@ -701,6 +707,7 @@ namespace YangTools.Revit.Core.BatchTasks
                             result.Errors.Add("PDF：" + error);
                             return;
                         }
+                        if (!string.IsNullOrWhiteSpace(error)) result.Warnings.Add("PDF：" + error);
                         result.OutputFiles.Add(finalPath);
                         result.Successes.Add($"PDF：{finalPath}（合并 {selection.ViewIds.Count} 个视图/图纸）");
                     }
@@ -727,6 +734,7 @@ namespace YangTools.Revit.Core.BatchTasks
                                 continue;
                             }
 
+                            if (!string.IsNullOrWhiteSpace(error)) result.Warnings.Add("PDF：" + error);
                             success++;
                             result.OutputFiles.Add(finalPath);
                             result.Successes.Add($"PDF：{view.Name} → {Path.GetFileName(finalPath)}");
@@ -830,7 +838,7 @@ namespace YangTools.Revit.Core.BatchTasks
             }
 
             if (!string.Equals(producedPath, finalPath, StringComparison.OrdinalIgnoreCase)
-                && !ReplaceOutputSafely(producedPath, finalPath, out error))
+                && !ReplaceOutputSafely(producedPath, finalPath, overwrite, out error))
                 return false;
 
             AddBatchOutputReservation(finalPath, batchOutputReservations);
@@ -926,6 +934,7 @@ namespace YangTools.Revit.Core.BatchTasks
                         result.Errors.Add("打印 PDF：" + error);
                         return;
                     }
+                    if (!string.IsNullOrWhiteSpace(error)) result.Warnings.Add("打印 PDF：" + error);
                     result.Successes.Add($"打印 PDF：{finalPath}（打印机：{printerName}；合并 {selection.ViewIds.Count} 项）");
                     result.OutputFiles.Add(finalPath);
                 }
@@ -952,6 +961,7 @@ namespace YangTools.Revit.Core.BatchTasks
                             continue;
                         }
 
+                        if (!string.IsNullOrWhiteSpace(error)) result.Warnings.Add("打印 PDF：" + error);
                         success++;
                         result.Successes.Add($"打印 PDF：{view.Name} → {Path.GetFileName(finalPath)}");
                         result.OutputFiles.Add(finalPath);
@@ -1079,7 +1089,7 @@ namespace YangTools.Revit.Core.BatchTasks
                 return false;
             }
 
-            if (!ReplaceOutputSafely(temporaryPath, finalPath, out error))
+            if (!ReplaceOutputSafely(temporaryPath, finalPath, overwrite, out error))
                 return false;
             AddBatchOutputReservation(finalPath, batchOutputReservations);
             return true;
@@ -1669,7 +1679,9 @@ namespace YangTools.Revit.Core.BatchTasks
                 overwrite,
                 batchOutputReservations);
             committedFiles = commit.CommittedFiles;
-            error = commit.Error;
+            error = commit.Success && commit.RecoveryMessages.Count > 0
+                ? string.Join("；", commit.RecoveryMessages)
+                : commit.Error;
             return commit.Success;
         }
 
@@ -1690,47 +1702,12 @@ namespace YangTools.Revit.Core.BatchTasks
             return SanitizeFileName($"{finalBaseName}.yangtools_tmp_{Guid.NewGuid():N}");
         }
 
-        private static bool ReplaceOutputSafely(string temporaryPath, string finalPath, out string error)
+        private static bool ReplaceOutputSafely(string temporaryPath, string finalPath, bool overwrite, out string error)
         {
-            error = string.Empty;
-            string backupPath = finalPath + $".yangtools_backup_{Guid.NewGuid():N}";
-            bool finalMovedToBackup = false;
-
-            try
-            {
-                if (File.Exists(finalPath))
-                {
-                    File.Move(finalPath, backupPath);
-                    finalMovedToBackup = true;
-                }
-
-                File.Move(temporaryPath, finalPath);
-
-                if (finalMovedToBackup)
-                    DeleteFileBestEffort(backupPath);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                try
-                {
-                    if (!File.Exists(finalPath) && finalMovedToBackup && File.Exists(backupPath))
-                    {
-                        File.Move(backupPath, finalPath);
-                        finalMovedToBackup = false;
-                    }
-                }
-                catch (Exception restoreEx)
-                {
-                    error = $"替换 PDF 失败，且原文件自动恢复失败。临时文件：{temporaryPath}；备份文件：{backupPath}；"
-                            + $"替换错误：{ex.Message}；恢复错误：{restoreEx.Message}";
-                    return false;
-                }
-
-                error = $"替换 PDF 失败，原文件已保留：{finalPath}；{ex.Message}";
-                DeleteFileBestEffort(temporaryPath);
-                return false;
-            }
+            PdfFileCommitResult commit = BatchFileCommitService.CommitPdf(
+                temporaryPath, finalPath, overwrite, new PhysicalBatchFileSystem());
+            error = commit.Success ? commit.Warning : commit.Error;
+            return commit.Success;
         }
 
         private static void DeleteFileBestEffort(string? path)

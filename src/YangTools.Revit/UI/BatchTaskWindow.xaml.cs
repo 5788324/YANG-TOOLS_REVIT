@@ -81,6 +81,13 @@ namespace YangTools.Revit.UI
                 BatchTaskRunResult overall = RunFullExportPreflight(request);
                 ShowPreflightResult(request.Documents.Count, overall);
             }
+            catch (Exception ex)
+            {
+                DiagnosticLog.WriteError("批处理全批预检", ex);
+                TxtProgress.Text = "预检中断";
+                MessageBox.Show("预检未完成：" + ex.Message, "预检失败",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
             finally
             {
                 SetBusyState(false, null);
@@ -253,8 +260,9 @@ namespace YangTools.Revit.UI
                 return;
             }
 
-            // 保存的是用户当前界面设置；真正执行只读取上面的不可变运行快照。
-            _viewModel.SaveUserSettings();
+            // 偏好设置保存失败不阻止一次性执行；运行只使用已冻结的快照。
+            try { _viewModel.SaveUserSettings(); }
+            catch (Exception settingsError) { DiagnosticLog.WriteError("批处理保存用户设置", settingsError); }
             SetBusyState(true, "正在执行，请不要关闭 Revit...");
 
             string operationId = Guid.NewGuid().ToString("N");
@@ -369,7 +377,19 @@ namespace YangTools.Revit.UI
                     }
                 }
 
+                // Completion-time UI helpers must not invalidate exports that already committed.
+                if (request.Options.OpenOutputFolderWhenDone && Directory.Exists(rootFolder))
+                {
+                    try { OpenFolder(rootFolder); }
+                    catch (Exception folderError)
+                    {
+                        DiagnosticLog.WriteError("批处理打开输出目录", folderError);
+                        overall.Warnings.Add("输出已完成，但无法自动打开目录：" + folderError.Message);
+                    }
+                }
                 reportPath = WriteReport(rootFolder, overall);
+                if (string.IsNullOrEmpty(reportPath))
+                    overall.Warnings.Add("报告文件写入失败，请查看 YangTools 诊断日志；此前已完成的导出不受影响。");
                 ShowCompletion(overall, reportPath);
 
                 DiagnosticLog.WriteProductOperation(
@@ -380,8 +400,6 @@ namespace YangTools.Revit.UI
                     $"Success={overall.SuccessCount}; Warning={overall.WarningCount}; Error={overall.ErrorCount}; Report={reportPath}",
                     batchRunId);
 
-                if (request.Options.OpenOutputFolderWhenDone && Directory.Exists(rootFolder))
-                    OpenFolder(rootFolder);
             }
             catch (Exception ex)
             {
@@ -414,6 +432,15 @@ namespace YangTools.Revit.UI
             if (!string.IsNullOrEmpty(reportPath))
                 text.AppendLine($"报告：{reportPath}");
 
+            if (result.Warnings.Count > 0)
+            {
+                text.AppendLine();
+                text.AppendLine("主要提示：");
+                foreach (string warning in result.Warnings.Take(6))
+                    text.AppendLine("• " + warning);
+                if (result.Warnings.Count > 6)
+                    text.AppendLine($"• 另有 {result.Warnings.Count - 6} 项，请查看报告。");
+            }
             if (result.Errors.Count > 0)
             {
                 text.AppendLine();
@@ -504,7 +531,12 @@ namespace YangTools.Revit.UI
                 return;
             }
 
-            _viewModel.SaveUserSettings();
+            try { _viewModel.SaveUserSettings(); }
+            catch (Exception ex)
+            {
+                DiagnosticLog.WriteError("关闭批处理窗口时保存设置", ex);
+                // Closing is still permitted: a preferences failure is not a failed export.
+            }
         }
     }
 }

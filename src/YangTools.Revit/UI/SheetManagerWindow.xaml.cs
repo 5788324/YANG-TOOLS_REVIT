@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -11,6 +11,7 @@ using System.Windows.Media;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using YangTools.Revit.Core;
+using YangTools.Revit.Core.Sheets;
 using YangTools.Revit.Models;
 
 namespace YangTools.Revit.UI
@@ -38,6 +39,21 @@ namespace YangTools.Revit.UI
         private List<string> _addedSheetParameters = new List<string>();
         private List<string> _titleblockParameterColumns = new List<string>();
         private readonly HashSet<long> _pendingTitleblockTypeChanges = new HashSet<long>();
+
+        private void ResetPendingTitleblockChange(long key, System.Windows.Controls.ComboBox comboBox,
+            TitleblockItemViewModel model, string reason = null)
+        {
+            if (!_isInitialized) return;
+            Dispatcher.Invoke(() =>
+            {
+                if (!_isInitialized) return;
+                _pendingTitleblockTypeChanges.Remove(key);
+                if (comboBox != null && comboBox.IsLoaded)
+                    comboBox.SelectedValue = model.TypeId;
+                if (!string.IsNullOrEmpty(reason))
+                    TitleblockStatusBarText.Text = "图框换型未执行：" + reason;
+            });
+        }
 
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged(string propName) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));
@@ -74,6 +90,7 @@ namespace YangTools.Revit.UI
 
         protected override void OnClosed(EventArgs e)
         {
+            _isInitialized = false;
             _readExternalEvent?.Dispose();
             _externalEvent?.Dispose();
             base.OnClosed(e);
@@ -141,26 +158,41 @@ namespace YangTools.Revit.UI
                     var sheetId = vm.SheetId;
                     _handler.SetAction(app =>
                     {
-                        var doc = app.ActiveUIDocument.Document;
+                        var doc = app.ActiveUIDocument?.Document;
+                        if (doc == null || !doc.Equals(_doc) || !doc.IsValidObject || doc.IsReadOnly)
+                            throw new InvalidOperationException("当前项目已切换、关闭或只读，请重新打开图纸管理器。");
                         var sheet = doc.GetElement(sheetId) as ViewSheet;
                         if (sheet == null)
                             throw new InvalidOperationException("图纸已经不存在，请刷新列表。");
 
+                        if (prop != "SheetNumber" && prop != "SheetName")
+                            throw new InvalidOperationException("不支持修改该图纸字段：" + prop);
                         string oldValue = prop == "SheetNumber" ? sheet.SheetNumber : sheet.Name;
+                        if (string.Equals(oldValue, newVal, StringComparison.Ordinal)) return;
                         try
                         {
                             using (Transaction t = new Transaction(doc, "修改图纸信息"))
                             {
-                                t.Start();
-                                if (prop == "SheetNumber" && sheet.SheetNumber != newVal) sheet.SheetNumber = newVal;
-                                else if (prop == "SheetName" && sheet.Name != newVal) sheet.Name = newVal;
-                                t.Commit();
+                                if (t.Start() != TransactionStatus.Started)
+                                    throw new InvalidOperationException("无法启动图纸信息修改事务。");
+                                if (prop == "SheetNumber") sheet.SheetNumber = newVal;
+                                else sheet.Name = newVal;
+                                if (t.Commit() != TransactionStatus.Committed)
+                                    throw new InvalidOperationException("图纸信息修改事务未成功提交，模型状态需要复核。");
                             }
                         }
                         catch
                         {
                             Dispatcher.Invoke(() => vm.SetSheetInfoSilently(prop, oldValue));
                             throw;
+                        }
+                        // A Revit failure processor may alter the value during commit.
+                        // Do not show the new value as confirmed until the model agrees.
+                        string actualValue = prop == "SheetNumber" ? sheet.SheetNumber : sheet.Name;
+                        if (!string.Equals(actualValue, newVal, StringComparison.Ordinal))
+                        {
+                            Dispatcher.Invoke(() => vm.SetSheetInfoSilently(prop, actualValue));
+                            throw new InvalidOperationException("图纸修改已提交，但结果与请求值不一致；已按模型实际值恢复显示。");
                         }
                     }, operationName: "修改图纸信息", showSuccess: false);
                     _externalEvent.Raise();
@@ -176,7 +208,9 @@ namespace YangTools.Revit.UI
                         var sheetId = vm.SheetId;
                         _handler.SetAction(app =>
                         {
-                            var doc = app.ActiveUIDocument.Document;
+                            var doc = app.ActiveUIDocument?.Document;
+                            if (doc == null || !doc.Equals(_doc) || !doc.IsValidObject || doc.IsReadOnly)
+                                throw new InvalidOperationException("项目已切换、关闭或只读，图纸参数未修改。");
                             var sheet = doc.GetElement(sheetId) as ViewSheet;
                             var param = sheet?.LookupParameter(pName);
                             if (sheet == null || param == null || param.IsReadOnly)
@@ -187,10 +221,12 @@ namespace YangTools.Revit.UI
                             {
                                 using (Transaction t = new Transaction(doc, "修改图纸参数"))
                                 {
-                                    t.Start();
+                                    if (t.Start() != TransactionStatus.Started)
+                                        throw new InvalidOperationException("无法启动图纸参数修改事务。");
                                     if (!ParameterValueHelper.TrySetFromDisplayValue(param, newVal, out string setError))
                                         throw new InvalidOperationException(setError);
-                                    t.Commit();
+                                    if (t.Commit() != TransactionStatus.Committed)
+                                        throw new InvalidOperationException("图纸参数修改未能提交，模型状态需要复核。");
                                 }
                             }
                             catch
@@ -308,7 +344,13 @@ namespace YangTools.Revit.UI
             {
                 try
                 {
-                    var doc = app.ActiveUIDocument.Document;
+                    var doc = app.ActiveUIDocument?.Document;
+                    if (doc == null || !doc.Equals(_doc) || !doc.IsValidObject || doc.IsReadOnly)
+                        throw new InvalidOperationException("项目已切换、关闭或只读，删除未执行。请重新打开管理器。");
+                    if (ids.Count == 0 || ids.Distinct().Count() != ids.Count ||
+                        ids.Any(id => id == null || doc.GetElement(id) == null))
+                        throw new InvalidOperationException("所选图元已失效或存在重复，请刷新列表后重试。");
+                    var previewDeletedIds = new HashSet<ElementId>();
                     int actualDeleteCount = 0;
                     bool proceed = true;
 
@@ -323,7 +365,10 @@ namespace YangTools.Revit.UI
                                 throw new InvalidOperationException("无法启动图纸删除预检事务。");
                             var deleted = doc.Delete(ids);
                             actualDeleteCount = deleted?.Count ?? 0;
-                            if (deleted != null) extraIds = deleted.Where(id => !ids.Contains(id)).ToList();
+                            if (deleted != null) previewDeletedIds.UnionWith(deleted);
+                            if (!ids.All(previewDeletedIds.Contains))
+                                throw new InvalidOperationException("预检未覆盖所有选中的图纸，操作已取消。");
+                            extraIds = previewDeletedIds.Where(id => !ids.Contains(id)).ToList();
                             if (t1.RollBack() != TransactionStatus.RolledBack)
                                 throw new InvalidOperationException("图纸删除预检事务未能回滚。");
                         }
@@ -371,9 +416,20 @@ namespace YangTools.Revit.UI
                             {
                                 if (t2.Start() != TransactionStatus.Started)
                                     throw new InvalidOperationException("无法启动图纸删除事务。");
-                                doc.Delete(ids);
+                                ICollection<ElementId> actuallyDeleted = doc.Delete(ids);
+                                if (actuallyDeleted == null ||
+                                    !previewDeletedIds.SetEquals(actuallyDeleted) ||
+                                    actuallyDeleted.Count != actualDeleteCount)
+                                    throw new InvalidOperationException("实际级联删除范围与预检不一致，已拒绝提交并回滚。");
                                 if (t2.Commit() != TransactionStatus.Committed)
                                     throw new InvalidOperationException("图纸删除事务未能提交。");
+                            }
+                            // Still inside the transaction group: a failed post-commit
+                            // readback can undo the real deletion before one Undo is recorded.
+                            if (ids.Any(id => doc.GetElement(id) != null))
+                            {
+                                tg.RollBack();
+                                throw new InvalidOperationException("删除后读回发现仍有目标图元，已回滚事务组。");
                             }
                             TransactionStatus groupStatus = tg.Assimilate();
                             if (groupStatus != TransactionStatus.Committed)
@@ -393,7 +449,7 @@ namespace YangTools.Revit.UI
                 {
                     Dispatcher.Invoke(() => TaskDialog.Show("错误", "删除失败: " + ex.Message));
                 }
-            }, operationName: "删除图纸", showSuccess: true);
+            }, operationName: "删除图纸", showSuccess: false);
             _externalEvent.Raise();
         }
 
@@ -420,7 +476,9 @@ namespace YangTools.Revit.UI
 
                 _handler.SetAction(app =>
                 {
-                    var doc = app.ActiveUIDocument.Document;
+                    var doc = app.ActiveUIDocument?.Document;
+                    if (doc == null || !doc.Equals(_doc) || !doc.IsValidObject || doc.IsReadOnly)
+                        throw new InvalidOperationException("项目已切换、关闭或只读，修订未修改。");
                     var targetSheet = doc.GetElement(sheetId) as ViewSheet;
                     if (targetSheet == null)
                     {
@@ -429,13 +487,19 @@ namespace YangTools.Revit.UI
 
                     using (Transaction transaction = new Transaction(doc, "更新图纸修订"))
                     {
-                        transaction.Start();
+                        if (transaction.Start() != TransactionStatus.Started)
+                            throw new InvalidOperationException("无法启动图纸修订事务。");
                         targetSheet.SetAdditionalRevisionIds(selectedRevisionIds);
-                        transaction.Commit();
+                        if (transaction.Commit() != TransactionStatus.Committed)
+                            throw new InvalidOperationException("图纸修订事务未成功提交。");
                     }
 
+                    // When the failure processor changes the revision selection,
+                    // never leave the UI showing a false requested state.
                     _revisionCache.Clear();
                     viewModel.Revisions = GetRevisionNames(targetSheet);
+                    if (!new HashSet<ElementId>(targetSheet.GetAdditionalRevisionIds()).SetEquals(selectedRevisionIds))
+                        throw new InvalidOperationException("图纸修订已提交，但读回的附加修订与所选不一致，请复核。");
                 }, operationName: "更新图纸修订", showSuccess: false);
                 _externalEvent.Raise();
             }, "读取图纸修订");
@@ -466,176 +530,61 @@ namespace YangTools.Revit.UI
 
         private void ImportSheetExcel_Click(object sender, RoutedEventArgs e)
         {
-            var filePath = ExcelService.ShowOpenDialog();
+            string filePath = ExcelService.ShowOpenDialog();
             if (filePath == null) return;
-
+            // Read the spreadsheet outside the write transaction. Any read failure
+            // is reported BEFORE starting the Revit ExternalEvent.
+            List<IDictionary<string, object>> rows;
+            try
+            {
+                rows = ExcelService.ReadExcel(filePath)
+                    .Select(row => (IDictionary<string, object>)new Dictionary<string, object>(row))
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                TaskDialog.Show("图纸导入失败", "读取 Excel 失败，模型没有修改：" + ex.Message);
+                return;
+            }
+            var request = new SheetExcelImportRequest { Rows = rows };
             _handler.SetAction(app =>
             {
+                // Prevent stale ExternalEvents from writing another open document.
+                if (!_isInitialized || !_doc.IsValidObject ||
+                    app.ActiveUIDocument == null || !app.ActiveUIDocument.Document.Equals(_doc)) return;
+
+                SheetExcelImportResult result;
                 try
                 {
-                    List<IDictionary<string, object>> rows = ExcelService.ReadExcel(filePath).ToList();
-                    var doc = app.ActiveUIDocument.Document;
-                    int successCount = 0;
-                    int createdCount = 0;
-                    int updatedCount = 0;
-                    int skippedCount = 0;
-                    var failures = new List<string>();
-
-                    ElementId defaultTitleblockId = ElementId.InvalidElementId;
-                    FamilySymbol defaultTitleblock = new FilteredElementCollector(doc)
-                        .OfCategory(BuiltInCategory.OST_TitleBlocks)
-                        .OfClass(typeof(FamilySymbol))
-                        .Cast<FamilySymbol>()
-                        .FirstOrDefault();
-                    if (defaultTitleblock != null)
-                        defaultTitleblockId = defaultTitleblock.Id;
-
-                    Dictionary<string, List<ViewSheet>> existingSheetsCache = new FilteredElementCollector(doc)
-                        .OfClass(typeof(ViewSheet))
-                        .Cast<ViewSheet>()
-                        .GroupBy(sheet => sheet.SheetNumber ?? string.Empty, StringComparer.OrdinalIgnoreCase)
-                        .ToDictionary(grouping => grouping.Key, grouping => grouping.ToList(), StringComparer.OrdinalIgnoreCase);
-
-                    using (TransactionGroup group = new TransactionGroup(doc, "批量导入建图/更新"))
-                    {
-                        if (group.Start() != TransactionStatus.Started)
-                            throw new InvalidOperationException("无法启动图纸导入事务组。");
-
-                        for (int rowIndex = 0; rowIndex < rows.Count; rowIndex++)
-                        {
-                            IDictionary<string, object> row = rows[rowIndex];
-                            if (!row.TryGetValue("图号 (Sheet Number)", out object numberValue)
-                                || string.IsNullOrWhiteSpace(numberValue?.ToString()))
-                            {
-                                skippedCount++;
-                                continue;
-                            }
-
-                            string sheetNumber = numberValue.ToString().Trim();
-                            string sheetName = row.TryGetValue("图名 (Sheet Name)", out object nameValue)
-                                ? nameValue?.ToString()?.Trim() ?? string.Empty
-                                : string.Empty;
-
-                            existingSheetsCache.TryGetValue(sheetNumber, out List<ViewSheet> matchingSheets);
-                            matchingSheets = matchingSheets ?? new List<ViewSheet>();
-                            if (matchingSheets.Count > 1)
-                            {
-                                failures.Add($"第 {rowIndex + 2} 行，图号“{sheetNumber}”在项目中对应 {matchingSheets.Count} 张图纸，无法确定更新目标。");
-                                continue;
-                            }
-
-                            bool created = false;
-                            ViewSheet targetSheet = matchingSheets.FirstOrDefault();
-                            using (Transaction rowTransaction = new Transaction(doc, $"导入图纸：{sheetNumber}"))
-                            {
-                                try
-                                {
-                                    if (rowTransaction.Start() != TransactionStatus.Started)
-                                        throw new InvalidOperationException("无法启动该行事务。");
-
-                                    if (targetSheet == null)
-                                    {
-                                        targetSheet = ViewSheet.Create(doc, defaultTitleblockId);
-                                        if (targetSheet == null)
-                                            throw new InvalidOperationException("Revit 未能创建新图纸。");
-
-                                        targetSheet.SheetNumber = sheetNumber;
-                                        targetSheet.Name = string.IsNullOrWhiteSpace(sheetName) ? "未命名图纸" : sheetName;
-                                        created = true;
-                                    }
-                                    else if (!string.IsNullOrWhiteSpace(sheetName) && targetSheet.Name != sheetName)
-                                    {
-                                        targetSheet.Name = sheetName;
-                                    }
-
-                                    foreach (KeyValuePair<string, object> kvp in row)
-                                    {
-                                        if (kvp.Key == "图号 (Sheet Number)"
-                                            || kvp.Key == "图名 (Sheet Name)"
-                                            || kvp.Value == null)
-                                        {
-                                            continue;
-                                        }
-
-                                        Parameter parameter = targetSheet.LookupParameter(kvp.Key);
-                                        if (parameter == null || parameter.IsReadOnly)
-                                            continue;
-
-                                        if (!ParameterValueHelper.TrySetFromDisplayValue(
-                                                parameter,
-                                                kvp.Value.ToString(),
-                                                out string setError))
-                                        {
-                                            throw new InvalidOperationException($"参数“{kvp.Key}”写入失败：{setError}");
-                                        }
-                                    }
-
-                                    TransactionStatus rowStatus = rowTransaction.Commit();
-                                    if (rowStatus != TransactionStatus.Committed)
-                                        throw new InvalidOperationException($"该行事务未提交，状态：{rowStatus}。");
-
-                                    if (created)
-                                    {
-                                        existingSheetsCache[sheetNumber] = new List<ViewSheet> { targetSheet };
-                                        createdCount++;
-                                    }
-                                    else
-                                    {
-                                        updatedCount++;
-                                    }
-                                    successCount++;
-                                }
-                                catch (Exception ex)
-                                {
-                                    try
-                                    {
-                                        if (rowTransaction.GetStatus() == TransactionStatus.Started)
-                                            rowTransaction.RollBack();
-                                    }
-                                    catch { }
-
-                                    failures.Add($"第 {rowIndex + 2} 行，图号“{sheetNumber}”：{ex.Message}");
-                                }
-                            }
-                        }
-
-                        if (successCount > 0)
-                        {
-                            TransactionStatus groupStatus = group.Assimilate();
-                            if (groupStatus != TransactionStatus.Committed)
-                                throw new InvalidOperationException($"图纸导入事务组合并失败，状态：{groupStatus}。");
-                        }
-                        else if (group.GetStatus() == TransactionStatus.Started)
-                        {
-                            group.RollBack();
-                        }
-                    }
-
-                    Dispatcher.Invoke(() =>
-                    {
-                        LoadSheets();
-                        var summary = new System.Text.StringBuilder();
-                        summary.AppendLine("图纸导入完成。");
-                        summary.AppendLine($"成功：{successCount} 行（新建 {createdCount}，更新 {updatedCount}）");
-                        summary.AppendLine($"跳过空行：{skippedCount}");
-                        summary.AppendLine($"失败：{failures.Count}");
-                        if (failures.Count > 0)
-                        {
-                            summary.AppendLine();
-                            summary.AppendLine("主要失败项：");
-                            foreach (string failure in failures.Take(8))
-                                summary.AppendLine("• " + failure);
-                            if (failures.Count > 8)
-                                summary.AppendLine($"• 另有 {failures.Count - 8} 项，请查看诊断日志。");
-                        }
-                        TaskDialog.Show(failures.Count == 0 ? "导入完成" : "导入完成（存在失败）", summary.ToString().TrimEnd());
-                    });
+                    result = SheetExcelImportService.Execute(_doc, request);
                 }
                 catch (Exception ex)
                 {
-                    Dispatcher.Invoke(() => TaskDialog.Show("错误", "导入失败：" + ex.Message));
+                    if (_isInitialized)
+                        TaskDialog.Show("图纸导入失败", "整批导入未成功：" + ex.Message +
+                            "\n如提示回滚/提交状态未知，请先核对实际图纸，不要重复导入。");
+                    return;
                 }
-            }, operationName: "导入图纸参数", showSuccess: false);
+
+                // WPF refresh failure does not invalidate a completed Revit commit.
+                if (!_isInitialized) return;
+                try
+                {
+                    LoadSheets();
+                    string summary = result.Committed
+                        ? $"图纸已提交：新建 {result.CreatedCount}，更新 {result.UpdatedCount}，跳过空行 {result.SkippedBlankRows}。\n整批写入可使用一次 Ctrl+Z 撤销。"
+                        : "Excel 不包含需要导入的图纸行；模型没有修改。";
+                    if (result.Committed && !result.SheetIdentityReadbackConfirmed)
+                        summary += "\n警告：提交后图纸身份回读不完整，请检查实际图纸，不要重复导入。";
+                    TaskDialog.Show(result.Committed ? "图纸导入完成" : "没有可导入的图纸", summary);
+                }
+                catch (Exception refreshError)
+                {
+                    TaskDialog.Show("图纸已提交，界面更新失败",
+                        "模型操作已完成，但界面刷新或提示失败：" + refreshError.Message +
+                        "。请重新打开管理窗口，不要重复导入。");
+                }
+            }, operationName: "批量导入图纸", showSuccess: false);
             _externalEvent.Raise();
         }
 
@@ -706,7 +655,9 @@ namespace YangTools.Revit.UI
                     {
                         _handler.SetAction(app =>
                         {
-                            var doc = app.ActiveUIDocument.Document;
+                            var doc = app.ActiveUIDocument?.Document;
+                            if (doc == null || !doc.Equals(_doc) || !doc.IsValidObject || doc.IsReadOnly)
+                                throw new InvalidOperationException("项目已切换、关闭或只读，图框参数未修改。");
                             var titleblock = doc.GetElement(instanceId);
                             var parameter = titleblock?.LookupParameter(parameterName);
                             if (parameter == null || parameter.IsReadOnly)
@@ -717,10 +668,12 @@ namespace YangTools.Revit.UI
                             {
                                 using (Transaction transaction = new Transaction(doc, "修改图框参数"))
                                 {
-                                    transaction.Start();
+                                    if (transaction.Start() != TransactionStatus.Started)
+                                        throw new InvalidOperationException("无法启动图框参数修改事务。");
                                     if (!ParameterValueHelper.TrySetFromDisplayValue(parameter, newValue, out string setError))
                                         throw new InvalidOperationException(setError);
-                                    transaction.Commit();
+                                    if (transaction.Commit() != TransactionStatus.Committed)
+                                        throw new InvalidOperationException("图框参数修改未能提交，模型状态需要复核。");
                                 }
                             }
                             catch
@@ -782,15 +735,21 @@ namespace YangTools.Revit.UI
             ElementId newTypeId = selectedType.Id;
             ElementId oldTypeId = viewModel.TypeId;
             string oldTypeName = viewModel.TypeName;
+            string operationId = Guid.NewGuid().ToString("N");
             _handler.SetAction(app =>
             {
+                bool committed = false;
                 try
                 {
-                    var doc = app.ActiveUIDocument.Document;
+                    var doc = app.ActiveUIDocument?.Document;
+                    if (doc == null || !doc.IsValidObject || !doc.Equals(_doc) || doc.IsReadOnly)
+                        throw new InvalidOperationException("项目已切换、关闭或只读，图框换型未执行。");
                     var instance = doc.GetElement(instanceId) as FamilyInstance;
                     var newSymbol = doc.GetElement(newTypeId) as FamilySymbol;
-                    if (instance == null || newSymbol == null)
-                        throw new InvalidOperationException("图框实例或目标类型已经不存在，请刷新列表。");
+                    if (instance == null || newSymbol == null ||
+                        instance.Category?.Id.GetIdValue() != (long)BuiltInCategory.OST_TitleBlocks ||
+                        newSymbol.Category?.Id.GetIdValue() != (long)BuiltInCategory.OST_TitleBlocks)
+                        throw new InvalidOperationException("图框实例或目标类型已失效，请刷新列表。");
 
                     using (Transaction transaction = new Transaction(doc, "更换图框类型"))
                     {
@@ -798,36 +757,76 @@ namespace YangTools.Revit.UI
                             throw new InvalidOperationException("无法启动图框换型事务。");
                         if (!newSymbol.IsActive) newSymbol.Activate();
                         instance.Symbol = newSymbol;
+                        doc.Regenerate();
+                        if (instance.Symbol?.Id.GetIdValue() != newTypeId.GetIdValue())
+                            throw new InvalidOperationException("换型结果与目标类型不一致，已取消事务。");
                         TransactionStatus status = transaction.Commit();
                         if (status != TransactionStatus.Committed)
                             throw new InvalidOperationException($"图框换型事务未提交，状态：{status}。");
+                        committed = true;
                     }
-
+                    // Committed state must be distinguished from a subsequent UI/readback failure.
+                    var saved = doc.GetElement(instanceId) as FamilyInstance;
+                    if (saved?.Symbol?.Id.GetIdValue() != newTypeId.GetIdValue())
+                        throw new InvalidOperationException("事务已提交，但图框类型读回不一致，请刷新核对模型。");
                     Dispatcher.Invoke(() =>
                     {
-                        viewModel.TypeId = newSymbol.Id;
+                        if (!_isInitialized) return;
+                        viewModel.TypeId = newTypeId;
                         viewModel.TypeName = newSymbol.Name;
+                        TitleblockStatusBarText.Text = "图框换型已提交并验证。";
                     });
                 }
                 catch (Exception ex)
                 {
+                    DiagnosticLog.WriteError("图框换型", ex);
                     Dispatcher.Invoke(() =>
                     {
-                        viewModel.TypeId = oldTypeId;
-                        viewModel.TypeName = oldTypeName;
-                        TaskDialog.Show("错误", "图框换型失败：" + ex.Message);
+                        if (!_isInitialized) return;
+                        if (!committed)
+                        {
+                            viewModel.TypeId = oldTypeId;
+                            viewModel.TypeName = oldTypeName;
+                        }
+                        else
+                        {
+                            var currentInstance = _doc.IsValidObject ? _doc.GetElement(instanceId) as FamilyInstance : null;
+                            if (currentInstance?.Symbol != null)
+                            {
+                                viewModel.TypeId = currentInstance.Symbol.Id;
+                                viewModel.TypeName = currentInstance.Symbol.Name;
+                            }
+                        }
+                        TaskDialog.Show(committed ? "需要复核" : "图框换型失败",
+                            (committed ? "事务已提交，不能视为未执行。" : "事务未确认提交。") + ex.Message);
                     });
                 }
                 finally
                 {
-                    Dispatcher.Invoke(() =>
-                    {
-                        _pendingTitleblockTypeChanges.Remove(instanceKey);
-                        comboBox.SelectedValue = viewModel.TypeId;
-                    });
+                    ResetPendingTitleblockChange(instanceKey, comboBox, viewModel);
                 }
-            }, operationName: "更换图框类型", showSuccess: false);
-            _externalEvent.Raise();
+            }, operationName: "更换图框类型", showSuccess: false,
+               operationId: operationId,
+               onSkipped: reason => ResetPendingTitleblockChange(instanceKey, comboBox, viewModel, reason));
+            try
+            {
+                // Pending refers to an earlier signal, whose dispatcher drains the same
+                // action queue. Denied/TimedOut MUST cancel this queued item before retry.
+                ExternalEventRequest result = _externalEvent.Raise();
+                if (result != ExternalEventRequest.Accepted && result != ExternalEventRequest.Pending)
+                {
+                    _handler.CancelPendingAction(operationId);
+                    ResetPendingTitleblockChange(instanceKey, comboBox, viewModel,
+                        "Revit 未接受本次事件（" + result + "），请重试。");
+                }
+            }
+            catch (Exception raiseError)
+            {
+                _handler.CancelPendingAction(operationId);
+                ResetPendingTitleblockChange(instanceKey, comboBox, viewModel,
+                    "Revit 事件无法入队：" + raiseError.Message);
+                DiagnosticLog.WriteError("图框换型入队", raiseError);
+            }
         }
 
         private void ExportTitleblockExcel_Click(object sender, RoutedEventArgs e)
@@ -859,61 +858,43 @@ namespace YangTools.Revit.UI
             var filePath = ExcelService.ShowOpenDialog();
             if (filePath == null) return;
 
-            _handler.SetAction(app =>
-                {
-                    try
-                    {
-                        var rows = ExcelService.ReadExcel(filePath);
-                        var doc = app.ActiveUIDocument.Document;
-                        int successCount = 0;
-
-                        using (Transaction t = new Transaction(doc, "批量导入图框参数"))
-                        {
-                            t.Start();
-                            foreach (var row in rows)
-                            {
-                                if (!row.ContainsKey("图元ID") || string.IsNullOrEmpty(row["图元ID"]?.ToString())) continue;
-                                
-                                if (long.TryParse(row["图元ID"].ToString(), out long idVal))
-                                {
-                                    ElementId eId = YangTools.Revit.Core.ElementIdExtensions.CreateId(idVal);
-                                    var elem = doc.GetElement(eId);
-                                    if (elem == null) continue;
-
-                                    foreach (var kvp in row)
-                                    {
-                                        if (kvp.Key == "图元ID" || kvp.Key == "图纸号" || kvp.Key == "图纸名" || kvp.Key == "图框类型" || kvp.Value == null) continue;
-                                        
-                                        var p = elem.LookupParameter(kvp.Key);
-                                        if (p != null && !p.IsReadOnly)
-                                        {
-                                            try
-                                            {
-                                                if (!ParameterValueHelper.TrySetFromDisplayValue(p, kvp.Value.ToString(), out string setError))
-                                                {
-                                                    System.Diagnostics.Debug.WriteLine($"[YangTools] 参数 {kvp.Key} 导入失败: {setError}");
-                                                }
-                                            } catch (Exception ex) { System.Diagnostics.Debug.WriteLine("[YangTools] SheetManagerWindow.xaml.cs: {0}", ex.Message); }
-                                        }
-                                    }
-                                    successCount++;
-                                }
-                            }
-                            t.Commit();
-                        }
-
-                        Dispatcher.Invoke(() =>
-                        {
-                            LoadTitleblocks();
-                        });
-                    }
-                    catch (Exception ex)
-                    {
-                        Dispatcher.Invoke(() => TaskDialog.Show("错误", "Import failed: " + ex.Message));
-                    }
-                }, operationName: "导入图框参数", showSuccess: true);
-                _externalEvent.Raise();
+            // Read/parse outside the Revit callback; hold a stable input snapshot.
+            List<IDictionary<string, object>> rows;
+            try
+            {
+                rows = ExcelService.ReadExcel(filePath)
+                    .Select(row => (IDictionary<string, object>)new Dictionary<string, object>(row))
+                    .ToList();
             }
+            catch (Exception ex)
+            {
+                TaskDialog.Show("图框参数导入失败", "Excel 读取失败：" + ex.Message);
+                return;
+            }
+
+            _handler.SetAction(app =>
+            {
+                var doc = app.ActiveUIDocument?.Document;
+                if (doc == null || !doc.Equals(_doc))
+                    throw new InvalidOperationException("当前项目已切换，图框参数未导入。请重新打开管理器。");
+                var outcome = TitleblockExcelImportService.Execute(doc, rows);
+                string message = outcome.Committed
+                    ? $"图框参数整批提交：更新 {outcome.ChangedElements} 个实例、{outcome.WrittenParameters} 个参数。\n可使用一次 Ctrl+Z 撤销。"
+                    : "所有指定图框参数均无需修改；没有创建撤销记录。";
+                if (!outcome.ReadbackConfirmed)
+                    message += "\n警告：" + outcome.ReadbackWarning;
+                try
+                {
+                    LoadTitleblocks();
+                }
+                catch (Exception refreshError)
+                {
+                    message += "\n模型操作已完成，但刷新表格失败：" + refreshError.Message;
+                }
+                Dispatcher.Invoke(() => TaskDialog.Show("图框参数 Excel 导入结果", message));
+            }, operationName: "图框参数 Excel 整批导入", showSuccess: false);
+            _externalEvent.Raise();
+        }
 
         private void SelectTitleblockInView_Click(object sender, RoutedEventArgs e)
         {

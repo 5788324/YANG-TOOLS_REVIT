@@ -150,7 +150,7 @@
                         <Button x:Name="BtnCollect" Content="收藏到默认仓库" IsEnabled="False"
                                 Style="{DynamicResource StandardButton}" Margin="0,0,6,6"
                                 Click="CollectToolButton_Click"/>
-                        <Button Content="删除文件" Style="{DynamicResource DangerButton}" Margin="0,0,6,6"
+                        <Button x:Name="BtnDeleteTool" Content="删除文件" IsEnabled="False" Style="{DynamicResource DangerButton}" Margin="0,0,6,6"
                                 Click="DeletePluginButton_Click"/>
                         <Button x:Name="BtnRun" Content="运行" IsEnabled="False" Style="{DynamicResource PrimaryButton}"
                                 Margin="0,0,0,6" Click="RunButton_Click" IsDefault="True"/>

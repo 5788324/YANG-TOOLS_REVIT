@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -43,6 +43,7 @@ namespace YangTools.Revit.UI
         private int _tabLoadVersion;
         private int _excelImportRequestVersion;
         private int _linePatternRequestVersion;
+        private int _filledRegionEditRequestVersion;
         private bool _isClosed;
 
         public ProjectAssetManagerWindow(UIApplication uiapp)
@@ -78,6 +79,7 @@ namespace YangTools.Revit.UI
             _tabLoadVersion++;
             _excelImportRequestVersion++;
             _linePatternRequestVersion++;
+            _filledRegionEditRequestVersion++;
             _readExternalEvent?.Dispose();
             _externalEvent?.Dispose();
             base.OnClosed(e);
@@ -901,79 +903,84 @@ namespace YangTools.Revit.UI
 
         private void FilledRegionDataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
         {
-            if (e.EditAction != DataGridEditAction.Commit) return;
-            try
+            if (_isClosed || e.EditAction != DataGridEditAction.Commit) return;
+            var vm = e.Row.Item as FilledRegionViewModel;
+            if (vm == null || _currentTabName != "FilledRegions" ||
+                !FilledRegionList.Contains(vm)) return;
+            var editor = e.EditingElement as System.Windows.Controls.TextBox;
+            var checkbox = e.EditingElement as System.Windows.Controls.CheckBox;
+            var expression = editor?.GetBindingExpression(System.Windows.Controls.TextBox.TextProperty) ??
+                checkbox?.GetBindingExpression(System.Windows.Controls.CheckBox.IsCheckedProperty);
+            string path = (expression?.ParentBinding as System.Windows.Data.Binding)?.Path?.Path;
+            ProjectAssetFilledRegionEditRequest request;
+            if (path == "Name" && editor != null)
             {
-                var vm = e.Row.Item as FilledRegionViewModel;
-                var el = e.EditingElement as System.Windows.Controls.TextBox;
-                var cb = e.EditingElement as System.Windows.Controls.CheckBox;
-                if (vm == null) return;
-                
-                var bindingExpr = el?.GetBindingExpression(System.Windows.Controls.TextBox.TextProperty) ?? 
-                                  cb?.GetBindingExpression(System.Windows.Controls.CheckBox.IsCheckedProperty);
-                var bindingPath = (bindingExpr?.ParentBinding as System.Windows.Data.Binding)?.Path?.Path;
-                if (string.IsNullOrEmpty(bindingPath)) return;
-
-                if (bindingPath == "Name" && el != null)
+                request = new ProjectAssetFilledRegionEditRequest
                 {
-                    var newValue = el.Text;
-                    if (vm.Name.StartsWith("<") || vm.Name.EndsWith(">"))
-                    {
-                        TaskDialog.Show("禁止", "内置类型不能重命名。");
-                        el.Text = vm.Name;
-                        return;
-                    }
-                    _handler.SetAction(app =>
-                    {
-                        var doc = app.ActiveUIDocument.Document;
-                        var frType = doc.GetElement(vm.Id) as FilledRegionType;
-                        if (frType == null)
-                            throw new InvalidOperationException("填充区域类型已经不存在，请刷新列表。");
-                        string oldName = frType.Name;
-                        try
-                        {
-                            if (string.IsNullOrWhiteSpace(newValue))
-                                throw new InvalidOperationException("填充区域名称不能为空。");
-
-                            using (Transaction t = new Transaction(doc, "重命名填充区域"))
-                            {
-                                t.Start();
-                                frType.Name = newValue.Trim();
-                                t.Commit();
-                            }
-                            Dispatcher.Invoke(() => vm.Name = newValue.Trim());
-                        }
-                        catch
-                        {
-                            Dispatcher.Invoke(() => vm.Name = oldName);
-                            throw;
-                        }
-                    }, operationName: "编辑填充区域名称", showSuccess: false);
-                    _externalEvent.Raise();
-                }
-                else if (bindingPath == "IsMasking" && cb != null)
-                {
-                    bool val = cb.IsChecked ?? false;
-                    _handler.SetAction(app =>
-                    {
-                        var doc = app.ActiveUIDocument.Document;
-                        var frType = doc.GetElement(vm.Id) as FilledRegionType;
-                        if (frType == null)
-                            throw new InvalidOperationException("填充区域类型已经不存在，请刷新列表。");
-
-                        using (Transaction t = new Transaction(doc, "修改填充区域遮罩"))
-                        {
-                            if (t.Start() != TransactionStatus.Started)
-                                throw new InvalidOperationException("无法启动遮罩修改事务。");
-                            frType.IsMasking = val;
-                            if (t.Commit() != TransactionStatus.Committed)
-                                throw new InvalidOperationException("遮罩修改事务未能提交。");
-                        }
-                    }, operationName: "编辑遮罩设置");
-                    _externalEvent.Raise();
-                }
+                    TypeId = vm.Id,
+                    Kind = ProjectAssetFilledRegionEditKind.Name,
+                    Name = editor.Text
+                };
+                editor.Text = vm.Name; // Restore until Revit confirms commit.
             }
-            catch (Exception ex) { System.Diagnostics.Debug.WriteLine("[YangTools] ProjectAssetManagerWindow.xaml.cs: {0}", ex.Message); }
+            else if (path == "IsMasking" && checkbox != null)
+            {
+                request = new ProjectAssetFilledRegionEditRequest
+                {
+                    TypeId = vm.Id,
+                    Kind = ProjectAssetFilledRegionEditKind.Masking,
+                    IsMasking = checkbox.IsChecked ?? false
+                };
+                checkbox.SetCurrentValue(System.Windows.Controls.Primitives.ToggleButton.IsCheckedProperty,
+                    vm.IsMasking);
+            }
+            else return;
+
+            int versionAtRequest = _tabLoadVersion;
+            int sequenceAtRequest = ++_filledRegionEditRequestVersion;
+            var rowAtRequest = vm;
+            _handler.SetAction(app =>
+            {
+                if (_isClosed || versionAtRequest != _tabLoadVersion ||
+                    sequenceAtRequest != _filledRegionEditRequestVersion ||
+                    _currentTabName != "FilledRegions" ||
+                    !FilledRegionList.Contains(rowAtRequest) ||
+                    !app.ActiveUIDocument.Document.Equals(_doc)) return;
+
+                ProjectAssetFilledRegionEditResult result;
+                try
+                {
+                    result = ProjectAssetFilledRegionEditService.Execute(_doc, request);
+                }
+                catch (Exception ex)
+                {
+                    if (!_isClosed)
+                    {
+                        StatusText.Text = "填充区域修改失败：" + ex.Message;
+                        TaskDialog.Show("填充区域编辑失败", ex.Message +
+                            "\n如提示提交或回滚状态未知，请检查实际模型，勿直接重试。");
+                    }
+                    return;
+                }
+                if (_isClosed || versionAtRequest != _tabLoadVersion ||
+                    !FilledRegionList.Contains(rowAtRequest)) return;
+                try
+                {
+                    rowAtRequest.Name = result.Name;
+                    rowAtRequest.IsMasking = result.IsMasking;
+                    StatusText.Text = !result.ReadbackConfirmed
+                        ? "已提交但回读未确认，请刷新并核实结果。"
+                        : result.Changed ? "填充区域已保存，可 Ctrl+Z 撤销。"
+                        : "填充区域无变化，未产生撤销记录。";
+                }
+                catch (Exception refreshError)
+                {
+                    if (!_isClosed) TaskDialog.Show("填充区域界面更新失败",
+                        "模型事务已完成，但界面刷新异常：" + refreshError.Message +
+                        "。请刷新列表，勿重复提交。");
+                }
+            }, operationName: "编辑填充区域", showSuccess: false);
+            _externalEvent.Raise();
         }
 
         private void PatternComboBox_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
@@ -1059,136 +1066,87 @@ namespace YangTools.Revit.UI
 
         private void FillPattern_DropDownClosed(object sender, EventArgs e)
         {
+            if (_isClosed || _currentTabName != "FilledRegions") return;
             var combo = sender as System.Windows.Controls.ComboBox;
-            if (combo == null) return;
-
-            var vm = combo.DataContext as FilledRegionViewModel;
-            if (vm == null || combo.SelectedValue == null) return;
-            
-            string tag = combo.Tag as string;
-            var newId = (ElementId)combo.SelectedValue;
-            
+            var vm = combo?.DataContext as FilledRegionViewModel;
+            var newId = combo?.SelectedValue as ElementId;
+            string tag = combo?.Tag as string;
+            if (vm == null || newId == null || !FilledRegionList.Contains(vm) ||
+                (tag != "Fore" && tag != "Back")) return;
+            var request = new ProjectAssetFilledRegionVisualRequest
+            {
+                TypeId = vm.Id,
+                Kind = tag == "Fore" ? ProjectAssetFilledRegionVisualKind.ForegroundPattern
+                                     : ProjectAssetFilledRegionVisualKind.BackgroundPattern,
+                PatternId = newId
+            };
+            int tabVersion = _tabLoadVersion;
             _handler.SetAction(app =>
             {
-                var doc = app.ActiveUIDocument.Document;
-                var frType = doc.GetElement(vm.Id) as FilledRegionType;
-                if (frType != null)
-                {
-                    var currentId = tag == "Fore" ? frType.ForegroundPatternId : frType.BackgroundPatternId;
-                    if (currentId != newId)
-                    {
-                        using (Transaction t = new Transaction(doc, "Change Fill Pattern"))
-                        {
-                            t.Start();
-                            if (tag == "Fore") frType.ForegroundPatternId = newId;
-                            else if (tag == "Back") frType.BackgroundPatternId = newId;
-                            t.Commit();
-                        }
-                    }
-                }
-            }, operationName: "更改填充图案");
+                var result = ProjectAssetFilledRegionVisualService.Execute(_doc, request);
+                if (_isClosed || tabVersion != _tabLoadVersion ||
+                    _currentTabName != "FilledRegions" || !FilledRegionList.Contains(vm)) return;
+                if (!result.ReadbackConfirmed)
+                    TaskDialog.Show("已提交，需检查", "填充图案修改已提交，但模型读回不一致，请刷新列表核对。");
+                else StatusText.Text = result.Changed ? "填充图案已保存，可 Ctrl+Z 撤销。" : "填充图案未改变。";
+            }, operationName: "更改填充图案", showSuccess: false);
             _externalEvent.Raise();
-        }
-
-        private static string GetUniqueLineStyleName(Category linesCategory, string baseName)
-        {
-            if (linesCategory == null) throw new InvalidOperationException("未找到线样式类别。");
-
-            var existingNames = new HashSet<string>(
-                linesCategory.SubCategories.Cast<Category>().Select(category => category.Name),
-                StringComparer.OrdinalIgnoreCase);
-
-            int count = 1;
-            string name;
-            do
-            {
-                name = $"{baseName} copy {count++}";
-            }
-            while (existingNames.Contains(name));
-
-            return name;
         }
 
         private void DuplicateLineStyle_Click(object sender, RoutedEventArgs e)
         {
-            var vm = LineStyleDataGrid.SelectedItem as LineStyleViewModel;
-            if (vm == null) return;
+            if (_isClosed || _currentTabName != "LineStyles") return;
+            var selected = LineStyleDataGrid.SelectedItem as LineStyleViewModel;
+            if (selected == null || !LineStyleList.Contains(selected)) return;
 
+            var request = new ProjectAssetLineDuplicateRequest
+            {
+                SourceCategoryId = selected.Id,
+                SourceName = selected.Name
+            };
+            int tabVersion = _tabLoadVersion;
             _handler.SetAction(app =>
             {
-                var doc = app.ActiveUIDocument.Document;
-                var linesCat = Category.GetCategory(doc, BuiltInCategory.OST_Lines);
-                var originalCat = linesCat?.SubCategories.Cast<Category>().FirstOrDefault(c => c.Id == vm.Id);
-                if (linesCat == null || originalCat == null)
+                var result = ProjectAssetLineDuplicateService.Execute(_doc, request);
+                if (!result.ReadbackConfirmed)
+                    TaskDialog.Show("复制线样式已提交", "新线样式读回不一致，请在模型中核对。" + Environment.NewLine + result.Name);
+                if (_isClosed || tabVersion != _tabLoadVersion || _currentTabName != "LineStyles") return;
+                try
                 {
-                    throw new InvalidOperationException("原线样式已经不存在，请刷新列表。");
+                    LoadLineStyles();
+                    StatusText.Text = result.ReadbackConfirmed
+                        ? "线样式已复制，可 Ctrl+Z 撤销。" : "复制已提交，但读回不一致，请重新加载核对。";
                 }
-
-                string newName = GetUniqueLineStyleName(linesCat, vm.Name);
-                using (Transaction transaction = new Transaction(doc, "复制线型"))
+                catch (Exception refreshError)
                 {
-                    transaction.Start();
-                    var newCat = doc.Settings.Categories.NewSubcategory(linesCat, newName);
-                    newCat.LineColor = originalCat.LineColor;
-                    newCat.SetLineWeight(originalCat.GetLineWeight(GraphicsStyleType.Projection) ?? 1, GraphicsStyleType.Projection);
-                    var patternId = originalCat.GetLinePatternId(GraphicsStyleType.Projection);
-                    if (patternId != ElementId.InvalidElementId)
-                    {
-                        newCat.SetLinePatternId(patternId, GraphicsStyleType.Projection);
-                    }
-                    transaction.Commit();
+                    TaskDialog.Show("线样式已复制，界面刷新失败", "模型已提交，请重新打开列表：" + refreshError.Message);
                 }
-
-                LoadLineStyles();
             }, operationName: "复制线型", showSuccess: false);
             _externalEvent.Raise();
         }
 
         private void DuplicateFilledRegion_Click(object sender, RoutedEventArgs e)
         {
+            if (_isClosed || _currentTabName != "FilledRegions") return;
             var vm = FilledRegionDataGrid.SelectedItem as FilledRegionViewModel;
             if (vm == null) return;
-
-            string baseName = vm.Name;
-            
+            var request = new ProjectAssetFilledRegionVisualRequest
+            {
+                TypeId = vm.Id, Kind = ProjectAssetFilledRegionVisualKind.Duplicate
+            };
+            int tabVersion = _tabLoadVersion;
             _handler.SetAction(app =>
             {
-                var doc = app.ActiveUIDocument.Document;
-                var frType = doc.GetElement(vm.Id) as FilledRegionType;
-                if (frType != null)
+                var result = ProjectAssetFilledRegionVisualService.Execute(_doc, request);
+                if (_isClosed || tabVersion != _tabLoadVersion || _currentTabName != "FilledRegions") return;
+                if (!result.ReadbackConfirmed)
+                    TaskDialog.Show("已复制，需检查", "复制填充区域已提交，但读取新类型失败，请手动刷新确认。");
+                try { LoadFilledRegions(); }
+                catch (Exception refreshError)
                 {
-                    bool duplicated = false;
-                    using (Transaction t = new Transaction(doc, "Duplicate Filled Region"))
-                    {
-                        try
-                        {
-                            if (t.Start() != TransactionStatus.Started)
-                                throw new InvalidOperationException("无法启动复制填充区域事务。");
-
-                            var existingNames = new FilteredElementCollector(doc).OfClass(typeof(FilledRegionType)).Cast<FilledRegionType>().Select(f => f.Name).ToHashSet();
-                            string name = baseName + " copy 1";
-                            int count = 1;
-                            while (existingNames.Contains(name))
-                            {
-                                count++;
-                                name = baseName + $" copy {count}";
-                            }
-                            frType.Duplicate(name);
-                            if (t.Commit() != TransactionStatus.Committed)
-                                throw new InvalidOperationException("复制填充区域事务未能提交。");
-                            duplicated = true;
-                        }
-                        catch (Exception ex)
-                        {
-                            if (t.GetStatus() == TransactionStatus.Started)
-                                t.RollBack();
-                            Dispatcher.Invoke(() => TaskDialog.Show("错误", "复制填充区域失败：" + ex.Message));
-                        }
-                    }
-                    if (duplicated)
-                        Dispatcher.Invoke(() => LoadFilledRegions());
+                    TaskDialog.Show("已复制，界面刷新失败", "模型已提交，请重开窗口：" + refreshError.Message);
                 }
-            }, operationName: "复制填充区域");
+            }, operationName: "复制填充区域", showSuccess: false);
             _externalEvent.Raise();
         }
 
@@ -1263,40 +1221,49 @@ namespace YangTools.Revit.UI
 
         private void FilledRegionColor_Click(object sender, RoutedEventArgs e)
         {
+            if (_isClosed || _currentTabName != "FilledRegions") return;
             var button = sender as Button;
             var viewModel = button?.DataContext as FilledRegionViewModel;
-            if (viewModel == null) return;
-
-            string tag = button.Tag as string;
-            var brush = (tag == "Fore" ? viewModel.ForeColorBrush : viewModel.BackColorBrush) as System.Windows.Media.SolidColorBrush;
+            string tag = button?.Tag as string;
+            if (viewModel == null || !FilledRegionList.Contains(viewModel) ||
+                (tag != "Fore" && tag != "Back")) return;
+            var brush = (tag == "Fore" ? viewModel.ForeColorBrush : viewModel.BackColorBrush)
+                as System.Windows.Media.SolidColorBrush;
             if (brush == null) return;
-
             var originalColor = new Autodesk.Revit.DB.Color(brush.Color.R, brush.Color.G, brush.Color.B);
+            var colorDialog = new ColorSelectionDialog { OriginalColor = originalColor };
+            if (colorDialog.Show() != ItemSelectionDialogResult.Confirmed) return;
+            var newColor = colorDialog.SelectedColor;
+            var request = new ProjectAssetFilledRegionVisualRequest
+            {
+                TypeId = viewModel.Id,
+                Kind = tag == "Fore" ? ProjectAssetFilledRegionVisualKind.ForegroundColor
+                                     : ProjectAssetFilledRegionVisualKind.BackgroundColor,
+                Color = new Autodesk.Revit.DB.Color(newColor.Red, newColor.Green, newColor.Blue)
+            };
+            int tabVersion = _tabLoadVersion;
             _handler.SetAction(app =>
             {
-                var colorDialog = new ColorSelectionDialog { OriginalColor = originalColor };
-                if (colorDialog.Show() != ItemSelectionDialogResult.Confirmed) return;
-
-                var newColor = colorDialog.SelectedColor;
-                var doc = app.ActiveUIDocument.Document;
-                var filledRegionType = doc.GetElement(viewModel.Id) as FilledRegionType;
-                if (filledRegionType == null)
+                var result = ProjectAssetFilledRegionVisualService.Execute(_doc, request);
+                if (_isClosed || tabVersion != _tabLoadVersion ||
+                    _currentTabName != "FilledRegions" || !FilledRegionList.Contains(viewModel)) return;
+                if (!result.ReadbackConfirmed)
                 {
-                    throw new InvalidOperationException("填充区域类型已经不存在，请刷新列表。");
+                    TaskDialog.Show("已提交，需检查", "填充颜色已提交，但模型读回不一致，请刷新列表核对。");
+                    return;
                 }
-
-                using (Transaction transaction = new Transaction(doc, "更改填充颜色"))
+                try
                 {
-                    transaction.Start();
-                    if (tag == "Fore") filledRegionType.ForegroundPatternColor = newColor;
-                    else filledRegionType.BackgroundPatternColor = newColor;
-                    transaction.Commit();
+                    var newBrush = new System.Windows.Media.SolidColorBrush(
+                        System.Windows.Media.Color.FromRgb(request.Color.Red, request.Color.Green, request.Color.Blue));
+                    if (tag == "Fore") viewModel.ForeColorBrush = newBrush;
+                    else viewModel.BackColorBrush = newBrush;
+                    StatusText.Text = result.Changed ? "填充颜色已保存，可 Ctrl+Z 撤销。" : "填充颜色未改变。";
                 }
-
-                var newBrush = new System.Windows.Media.SolidColorBrush(
-                    System.Windows.Media.Color.FromRgb(newColor.Red, newColor.Green, newColor.Blue));
-                if (tag == "Fore") viewModel.ForeColorBrush = newBrush;
-                else viewModel.BackColorBrush = newBrush;
+                catch (Exception refreshError)
+                {
+                    TaskDialog.Show("已提交，界面刷新失败", "模型已保存，请刷新列表：" + refreshError.Message);
+                }
             }, operationName: "更改填充颜色", showSuccess: false);
             _externalEvent.Raise();
         }

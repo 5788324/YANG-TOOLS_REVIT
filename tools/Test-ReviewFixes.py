@@ -45,6 +45,8 @@ def main() -> int:
     family_instance = read("src/YangTools.Revit/UI/FamilyInstanceManagerWindow.xaml.cs")
     family_manager = read("src/YangTools.Revit/UI/FamilyManagerWindow.xaml.cs")
     sheet = read("src/YangTools.Revit/UI/SheetManagerWindow.xaml.cs")
+    sheet_import = read("src/YangTools.Revit/Core/Sheets/SheetExcelImportService.cs")
+    family_instance_excel = read("src/YangTools.Revit/Core/FamilyInstances/FamilyInstanceExcelImportService.cs")
     sheet_xaml = read("src/YangTools.Revit/UI/SheetManagerWindow.xaml")
     linear = read("src/YangTools.Revit/Core/LinearPlacementEngine.cs")
     helper = read("src/YangTools.Revit/Core/FamilyPlacementHelper.cs")
@@ -98,10 +100,12 @@ def main() -> int:
         (batch_engine, 'ReplaceOutputSafely', "合并 PDF 成功后安全替换旧文件"),
         (boolean_engine, 'HasPositiveIntersection', "布尔融合失败时检查实体交集"),
         (boolean_engine, '为避免输出重叠实体，本次布尔操作已取消', "相交实体融合失败时阻止重叠输出"),
-        (family_instance, 'new TransactionGroup(doc, "批量导入实例参数")', "族实例 Excel 按行原子导入"),
-        (family_manager, 'new TransactionGroup(doc, "批量导入族类型参数")', "族类型 Excel 按行原子导入"),
+        (family_instance_excel, 'new Transaction(doc, "实例参数 Excel 整批导入")', "族实例 Excel 整批单事务导入"),
+        (family_instance, 'FamilyInstanceExcelImportService.Execute(doc,', "族实例 Excel UI 使用独立服务"),
+        (family_manager, 'FamilyTypeExcelImportService.Execute(', "族类型 Excel UI 使用整批原子服务"),
         (asset_import, 'new TransactionGroup(document, "导入资产 Excel")', "项目资产 Excel 按行原子导入"),
-        (sheet, 'new TransactionGroup(doc, "批量导入建图/更新")', "图纸 Excel 按行原子导入"),
+        (sheet_import, 'new Transaction(doc, "批量导入图纸（整批）")', "图纸 Excel 整批单事务原子导入"),
+        (sheet, 'SheetExcelImportService.Execute(_doc, request)', "图纸 Excel UI 调用原子服务"),
         (sheet, '_pendingTitleblockTypeChanges', "图框快速换型并发守卫"),
         (family_instance, 'new TaskDialog(extraIds.Count > 0 ? "警告" : "确认删除")', "族实例普通删除也确认"),
         (asset, 'new TaskDialog(extraIds.Count > 0 ? "警告" : "确认删除")', "资产普通删除也确认"),

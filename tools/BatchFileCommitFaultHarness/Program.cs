@@ -13,6 +13,11 @@ internal static class Program
         {
             RunRestoreSuccessCase();
             RunRestoreFailureRetainsBackupCase();
+            RunPdfReplaceSuccessCase();
+            RunPdfMoveFailureRestoresOldCase();
+            RunPdfRestoreFailureRetainsBackupCase();
+            RunPdfCleanupFailureWarningCase();
+            RunPdfOverwriteRefusedCase();
             Console.WriteLine("BatchFileCommitFaultHarness: PASS");
             return 0;
         }
@@ -55,6 +60,83 @@ internal static class Program
         Require(result.RecoveryMessages.Any(m => m.Contains("备份", StringComparison.Ordinal)), "result must report backup recovery information");
     }
 
+    private static void RunPdfReplaceSuccessCase()
+    {
+        using var fixture = new Fixture();
+        string temp = Path.Combine(fixture.Staging, "new.pdf");
+        string target = Path.Combine(fixture.Output, "drawing.pdf");
+        Directory.CreateDirectory(fixture.Staging);
+        Directory.CreateDirectory(fixture.Output);
+        File.WriteAllText(temp, "NEW-PDF");
+        File.WriteAllText(target, "OLD-PDF");
+        PdfFileCommitResult result = BatchFileCommitService.CommitPdf(temp, target, true, new PhysicalBatchFileSystem());
+        Require(result.Success && File.ReadAllText(target) == "NEW-PDF", "PDF should contain new content");
+        Require(!result.BackupRetained && !File.Exists(result.BackupPath), "old PDF backup should be removed");
+    }
+
+    private static void RunPdfMoveFailureRestoresOldCase()
+    {
+        using var fixture = new Fixture();
+        Directory.CreateDirectory(fixture.Staging);
+        Directory.CreateDirectory(fixture.Output);
+        string temp = Path.Combine(fixture.Staging, "new.pdf");
+        string target = Path.Combine(fixture.Output, "drawing.pdf");
+        File.WriteAllText(temp, "NEW-PDF");
+        File.WriteAllText(target, "OLD-PDF");
+        var fs = new ThrowingFileSystem(new PhysicalBatchFileSystem(), 2);
+        PdfFileCommitResult result = BatchFileCommitService.CommitPdf(temp, target, true, fs);
+        Require(!result.Success, "second move should fail");
+        Require(File.ReadAllText(target) == "OLD-PDF", "original PDF must be restored");
+        Require(File.ReadAllText(temp) == "NEW-PDF", "uncommitted PDF must remain recoverable");
+    }
+
+    private static void RunPdfRestoreFailureRetainsBackupCase()
+    {
+        using var fixture = new Fixture();
+        Directory.CreateDirectory(fixture.Staging);
+        Directory.CreateDirectory(fixture.Output);
+        string temp = Path.Combine(fixture.Staging, "new.pdf");
+        string target = Path.Combine(fixture.Output, "drawing.pdf");
+        File.WriteAllText(temp, "NEW-PDF");
+        File.WriteAllText(target, "OLD-PDF");
+        var fs = new ThrowingFileSystem(new PhysicalBatchFileSystem(), 2, 3);
+        PdfFileCommitResult result = BatchFileCommitService.CommitPdf(temp, target, true, fs);
+        Require(!result.Success && result.BackupRetained, "restore failure should retain original backup");
+        Require(File.ReadAllText(result.BackupPath) == "OLD-PDF", "old PDF must remain in backup");
+        Require(result.Error.Contains("备份", StringComparison.Ordinal), "recoverability must be explicit");
+    }
+
+    private static void RunPdfCleanupFailureWarningCase()
+    {
+        using var fixture = new Fixture();
+        Directory.CreateDirectory(fixture.Staging);
+        Directory.CreateDirectory(fixture.Output);
+        string temp = Path.Combine(fixture.Staging, "new.pdf");
+        string target = Path.Combine(fixture.Output, "drawing.pdf");
+        File.WriteAllText(temp, "NEW-PDF");
+        File.WriteAllText(target, "OLD-PDF");
+        var fs = new ThrowingDeleteFileSystem(new PhysicalBatchFileSystem());
+        PdfFileCommitResult result = BatchFileCommitService.CommitPdf(temp, target, true, fs);
+        Require(result.Success && result.BackupRetained, "cleanup failure must not undo new PDF");
+        Require(File.ReadAllText(target) == "NEW-PDF", "committed new PDF must remain");
+        Require(File.ReadAllText(result.BackupPath) == "OLD-PDF", "retained backup must be identifiable");
+        Require(result.Warning.Contains("备份", StringComparison.Ordinal), "show cleanup warning");
+    }
+
+    private static void RunPdfOverwriteRefusedCase()
+    {
+        using var fixture = new Fixture();
+        Directory.CreateDirectory(fixture.Staging);
+        Directory.CreateDirectory(fixture.Output);
+        string temp = Path.Combine(fixture.Staging, "new.pdf");
+        string target = Path.Combine(fixture.Output, "drawing.pdf");
+        File.WriteAllText(temp, "NEW-PDF");
+        File.WriteAllText(target, "OLD-PDF");
+        PdfFileCommitResult result = BatchFileCommitService.CommitPdf(temp, target, false, new PhysicalBatchFileSystem());
+        Require(!result.Success && File.ReadAllText(target) == "OLD-PDF", "existing PDF must be preserved");
+        Require(File.ReadAllText(temp) == "NEW-PDF", "uncommitted PDF must remain");
+    }
+
     private static string Hash(string path)
     {
         using var stream = File.OpenRead(path);
@@ -93,6 +175,20 @@ internal static class Program
                 throw new IOException($"Injected MoveFile failure #{_moveCall}: {source} -> {target}");
             _inner.MoveFile(source, target);
         }
+    }
+
+    private sealed class ThrowingDeleteFileSystem : IBatchFileSystem
+    {
+        private readonly IBatchFileSystem _inner;
+        internal ThrowingDeleteFileSystem(IBatchFileSystem inner) => _inner = inner;
+        public bool FileExists(string path) => _inner.FileExists(path);
+        public bool DirectoryExists(string path) => _inner.DirectoryExists(path);
+        public IEnumerable<string> EnumerateFiles(string path) => _inner.EnumerateFiles(path);
+        public void CreateDirectory(string path) => _inner.CreateDirectory(path);
+        public void MoveFile(string source, string target) => _inner.MoveFile(source, target);
+        public void DeleteFile(string path) => throw new IOException("Injected backup cleanup failure");
+        public void DeleteDirectory(string path, bool recursive) => _inner.DeleteDirectory(path, recursive);
+        public string GetFullPath(string path) => _inner.GetFullPath(path);
     }
 
     private sealed class Fixture : IDisposable

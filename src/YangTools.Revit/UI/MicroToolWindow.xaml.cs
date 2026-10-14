@@ -28,6 +28,18 @@ namespace YangTools.Revit.UI
             LoadProjects();
         }
 
+        // Preferences are not part of any model or disk-file operation. A settings write
+        // failure must not turn an already completed delete/collect/run into a false error.
+        private void SavePreferencesBestEffort()
+        {
+            try { _settings.Save(); }
+            catch (Exception ex)
+            {
+                DiagnosticLog.WriteError("保存临时插件箱上次选择失败", ex);
+                StatusText.Text = "操作已完成，但无法保存上次选择偏好；请查看诊断日志。";
+            }
+        }
+
         private void LoadProjects()
         {
             try
@@ -41,21 +53,36 @@ namespace YangTools.Revit.UI
             }
             catch (Exception ex)
             {
+                _projects = Array.Empty<MicroProjectItem>();
+                ProjectsListBox.ItemsSource = _projects;
+                ClearToolSelection("仓库列表读取失败，请检查配置后刷新。");
                 ShowError("读取临时插件项目失败", ex);
             }
         }
 
+        private void ClearToolSelection(string message)
+        {
+            _tools = Array.Empty<MicroToolItem>();
+            ToolsListBox.ItemsSource = _tools;
+            ToolsListBox.SelectedItem = null;
+            ToolCountText.Text = "0 个可运行入口";
+            BtnRun.IsEnabled = false;
+            BtnCollect.IsEnabled = false;
+            BtnDeleteTool.IsEnabled = false;
+            StatusText.Text = message;
+            UpdateToolDocumentation(null);
+        }
+
         private void RefreshTools()
         {
+            // Clear the previous project selection BEFORE filesystem I/O, so a failed scan
+            // cannot leave stale DLLs or dangerous actions enabled.
+            ClearToolSelection("正在检查仓库...");
             if (ProjectsListBox.SelectedItem is not MicroProjectItem selectedProject)
             {
                 ProjectPathText.Text = "请选择临时项目或收藏仓库";
-                ToolsListBox.ItemsSource = null;
-                ToolCountText.Text = string.Empty;
                 BtnRemoveProject.IsEnabled = false;
-                BtnRun.IsEnabled = false;
-                BtnCollect.IsEnabled = false;
-                UpdateToolDocumentation(null);
+                StatusText.Text = "请选择左侧仓库。";
                 return;
             }
 
@@ -63,17 +90,12 @@ namespace YangTools.Revit.UI
             BtnRemoveProject.IsEnabled = !selectedProject.IsDefault;
             BtnCollect.IsEnabled = false;
             _settings.MicroToolLastProjectPath = selectedProject.FullPath;
-            _settings.Save();
+            SavePreferencesBestEffort();
 
             if (!selectedProject.Exists || !Directory.Exists(selectedProject.FullPath))
             {
-                _tools = Array.Empty<MicroToolItem>();
-                ToolsListBox.ItemsSource = _tools;
                 ToolCountText.Text = "路径不存在";
                 StatusText.Text = "该仓库路径不存在，可移除后重新添加。";
-                BtnRun.IsEnabled = false;
-                BtnCollect.IsEnabled = false;
-                UpdateToolDocumentation(null);
                 return;
             }
 
@@ -92,12 +114,12 @@ namespace YangTools.Revit.UI
                 MicroToolItem? preferred = _tools.FirstOrDefault(tool =>
                     string.Equals(tool.FullPath, _settings.MicroToolLastToolPath, StringComparison.OrdinalIgnoreCase));
                 ToolsListBox.SelectedItem = preferred;
-                BtnRun.IsEnabled = ToolsListBox.SelectedItem != null;
-                BtnCollect.IsEnabled = ToolsListBox.SelectedItem != null && !selectedProject.IsDefault;
+                UpdateToolActionState();
                 UpdateToolDocumentation(ToolsListBox.SelectedItem as MicroToolItem);
             }
             catch (Exception ex)
             {
+                ClearToolSelection("扫描失败，已禁用运行、收藏和删除；请检查日志后刷新。");
                 ShowError("扫描微工具 DLL 失败", ex);
             }
             finally
@@ -111,21 +133,27 @@ namespace YangTools.Revit.UI
             RefreshTools();
         }
 
+        private void UpdateToolActionState()
+        {
+            var tool = ToolsListBox.SelectedItem as MicroToolItem;
+            var project = ProjectsListBox.SelectedItem as MicroProjectItem;
+            bool valid = tool != null && project != null &&
+                project.Exists && File.Exists(tool.FullPath);
+            BtnRun.IsEnabled = valid;
+            BtnCollect.IsEnabled = valid && !project.IsDefault;
+            BtnDeleteTool.IsEnabled = valid;
+        }
+
         private void ToolsListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            bool hasTool = ToolsListBox.SelectedItem is MicroToolItem;
-            BtnRun.IsEnabled = hasTool;
-            BtnCollect.IsEnabled = hasTool
-                && ProjectsListBox.SelectedItem is MicroProjectItem project
-                && !project.IsDefault;
-
+            UpdateToolActionState();
             if (ToolsListBox.SelectedItem is MicroToolItem tool)
             {
                 StatusText.Text = tool.HasDocumentation
                     ? tool.FullPath
                     : "该插件缺少完整的功能/使用说明；请先创建并填写说明模板。";
                 _settings.MicroToolLastToolPath = tool.FullPath;
-                _settings.Save();
+                SavePreferencesBestEffort();
                 UpdateToolDocumentation(tool);
             }
             else
@@ -272,6 +300,12 @@ namespace YangTools.Revit.UI
 
         private void ToolsListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
+            // Double-clicking empty space or the scrollbar must not run the last selected DLL.
+            var source = e.OriginalSource as DependencyObject;
+            if (source == null ||
+                ItemsControl.ContainerFromElement(ToolsListBox, source) is not ListBoxItem item ||
+                !item.IsSelected)
+                return;
             ExecuteSelectedTool();
         }
 
@@ -308,7 +342,7 @@ namespace YangTools.Revit.UI
 
             SelectedDllPath = selectedTool.FullPath;
             _settings.MicroToolLastToolPath = selectedTool.FullPath;
-            _settings.Save();
+            SavePreferencesBestEffort();
             DialogResult = true;
             Close();
         }
@@ -323,7 +357,7 @@ namespace YangTools.Revit.UI
             {
                 MicroToolEngine.AddProjectConfig(dialog.ProjectName, dialog.FolderPath);
                 _settings.MicroToolLastProjectPath = Path.GetFullPath(dialog.FolderPath);
-                _settings.Save();
+                SavePreferencesBestEffort();
                 LoadProjects();
             }
             catch (Exception ex)
@@ -340,30 +374,32 @@ namespace YangTools.Revit.UI
                     MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
-
             if (selectedProject.IsDefault)
             {
                 MessageBox.Show("收藏/候选转正仓库不能移除。", "临时插件箱",
                     MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
-
-            MessageBoxResult result = MessageBox.Show(
-                $"确定从列表中移除仓库“{selectedProject.Name}”吗？\n\n不会删除磁盘上的任何文件。",
-                "移除仓库",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-            if (result != MessageBoxResult.Yes)
+            if (MessageBox.Show(
+                    $"确定从列表中移除仓库“{selectedProject.Name}”吗？\n\n不会删除磁盘上的任何文件。",
+                    "移除仓库", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
                 return;
 
             string removedPath = selectedProject.FullPath;
-            MicroToolEngine.RemoveProjectConfig(removedPath);
-            _settings.MicroToolLastProjectPath = string.Empty;
-            _settings.MicroToolLastToolPath = string.Empty;
-            _settings.Save();
-            LoadProjects();
-            if (Directory.Exists(removedPath))
-                OpenFolder(removedPath);
+            try
+            {
+                MicroToolEngine.RemoveProjectConfig(removedPath);
+                _settings.MicroToolLastProjectPath = string.Empty;
+                _settings.MicroToolLastToolPath = string.Empty;
+                SavePreferencesBestEffort();
+                LoadProjects();
+                StatusText.Text = "已从列表移除仓库，磁盘文件未删除。";
+            }
+            catch (Exception ex)
+            {
+                LoadProjects();
+                ShowError("移除临时项目失败，请核对仓库列表", ex);
+            }
         }
 
         private void OpenProjectFolderButton_Click(object sender, RoutedEventArgs e)
@@ -492,7 +528,7 @@ namespace YangTools.Revit.UI
                 else
                     DeleteToolSidecars(selectedTool.FullPath);
                 _settings.MicroToolLastToolPath = string.Empty;
-                _settings.Save();
+                SavePreferencesBestEffort();
                 RefreshTools();
             }
             catch (Exception ex)

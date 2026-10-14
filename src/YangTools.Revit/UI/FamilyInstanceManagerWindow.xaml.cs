@@ -1205,138 +1205,43 @@ namespace YangTools.Revit.UI
 
         private void ImportExcel_Click(object sender, RoutedEventArgs e)
         {
+            if (_isWindowClosed) return;
             var dialog = new Microsoft.Win32.OpenFileDialog { Filter = "Excel File (*.xlsx)|*.xlsx" };
             if (dialog.ShowDialog() != true) return;
-
             string importPath = dialog.FileName;
             _handler.SetAction(app =>
             {
-                var doc = app.ActiveUIDocument.Document;
-                var failures = new List<string>();
-                int successCount = 0;
-                int skippedCount = 0;
-
+                if (_isWindowClosed) return;
+                var doc = app.ActiveUIDocument?.Document;
+                if (doc == null || !doc.Equals(_doc))
+                    throw new InvalidOperationException("当前项目已切换，实例参数导入已取消。");
+                var rows = MiniExcelLibs.MiniExcel.Query(importPath, useHeaderRow: true)
+                    .Cast<IDictionary<string, object>>()
+                    .ToList();
+                var result = FamilyInstanceExcelImportService.Execute(doc,
+                    new FamilyInstanceExcelImportRequest { Rows = rows });
+                if (_isWindowClosed) return;
+                // A GUI refresh error must not turn a committed model edit into a false failure.
                 try
                 {
-                    var rows = MiniExcelLibs.MiniExcel.Query(importPath, useHeaderRow: true)
-                        .Cast<IDictionary<string, object>>()
-                        .ToList();
-
-                    using (TransactionGroup group = new TransactionGroup(doc, "批量导入实例参数"))
-                    {
-                        if (group.Start() != TransactionStatus.Started)
-                        {
-                            throw new InvalidOperationException("无法启动批量导入事务组。");
-                        }
-
-                        try
-                        {
-                            for (int rowIndex = 0; rowIndex < rows.Count; rowIndex++)
-                            {
-                                var row = rows[rowIndex];
-                                if (!row.TryGetValue("图元ID", out object idObject) ||
-                                    idObject == null ||
-                                    !long.TryParse(idObject.ToString(), out long idValue))
-                                {
-                                    skippedCount++;
-                                    failures.Add($"第 {rowIndex + 2} 行：缺少有效的图元ID。");
-                                    continue;
-                                }
-
-                                Element element = doc.GetElement(ElementIdExtensions.CreateId(idValue));
-                                if (element == null)
-                                {
-                                    skippedCount++;
-                                    failures.Add($"第 {rowIndex + 2} 行：找不到图元 {idValue}。");
-                                    continue;
-                                }
-
-                                using (Transaction transaction = new Transaction(doc, $"导入实例参数 {idValue}"))
-                                {
-                                    if (transaction.Start() != TransactionStatus.Started)
-                                    {
-                                        skippedCount++;
-                                        failures.Add($"图元 {idValue}：无法启动事务。");
-                                        continue;
-                                    }
-
-                                    try
-                                    {
-                                        foreach (var item in row)
-                                        {
-                                            if (item.Key == "图元ID" || item.Key == "类型 (Type)" || item.Key == "标高" || item.Key == "主体" || item.Key == "固定" || item.Value == null)
-                                            {
-                                                continue;
-                                            }
-
-                                            Parameter parameter = StableParameterKey.ResolveByDisplayLabel(element, item.Key);
-                                            if (parameter == null)
-                                            {
-                                                throw new InvalidOperationException($"不存在参数“{item.Key}”，或存在重复同名参数无法唯一定位。");
-                                            }
-                                            if (parameter.IsReadOnly)
-                                            {
-                                                throw new InvalidOperationException($"参数“{item.Key}”为只读。");
-                                            }
-                                            if (!ParameterValueHelper.TrySetFromDisplayValue(parameter, item.Value.ToString(), out string setError))
-                                            {
-                                                throw new InvalidOperationException($"参数“{item.Key}”写入失败：{setError}");
-                                            }
-                                        }
-
-                                        if (transaction.Commit() != TransactionStatus.Committed)
-                                        {
-                                            throw new InvalidOperationException("事务提交失败。");
-                                        }
-                                        successCount++;
-                                    }
-                                    catch (Exception rowException)
-                                    {
-                                        if (transaction.GetStatus() == TransactionStatus.Started)
-                                        {
-                                            transaction.RollBack();
-                                        }
-                                        skippedCount++;
-                                        failures.Add($"图元 {idValue}：{rowException.Message}");
-                                    }
-                                }
-                            }
-
-                            TransactionStatus groupStatus = successCount > 0
-                                ? group.Assimilate()
-                                : group.RollBack();
-                            if (successCount > 0 && groupStatus != TransactionStatus.Committed)
-                            {
-                                throw new InvalidOperationException("批量导入事务组合并失败。");
-                            }
-                        }
-                        catch
-                        {
-                            if (group.GetStatus() == TransactionStatus.Started)
-                            {
-                                group.RollBack();
-                            }
-                            throw;
-                        }
-                    }
-
-                    Dispatcher.Invoke(() =>
-                    {
-                        string detail = failures.Count == 0
-                            ? string.Empty
-                            : "\n\n失败明细（最多 8 条）：\n" + string.Join("\n", failures.Take(8));
-                        TaskDialog.Show(
-                            "实例参数导入结果",
-                            $"成功：{successCount} 行\n跳过/失败：{skippedCount} 行{detail}");
-                        if (MainTabControl.SelectedIndex == 1) LoadSystemData();
-                        else LoadData();
-                    });
+                    if (MainTabControl.SelectedIndex == 1) LoadSystemData();
+                    else LoadData();
                 }
-                catch (Exception ex)
+                catch (Exception refreshError)
                 {
-                    Dispatcher.Invoke(() => TaskDialog.Show("错误", "导入失败：" + ex.Message));
+                    TaskDialog.Show("导入已提交，但界面更新失败",
+                        $"已写入 {result.ChangedElements} 个实例，请重新打开窗口刷新：{refreshError.Message}");
+                    return;
                 }
-            });
+                string details = $"实例：{result.ChangedElements}；参数：{result.WrittenParameters}；" +
+                    $"空行：{result.SkippedBlankRows}；未变化：{result.SkippedUnchangedRows}；只有信息列：{result.SkippedMetadataOnlyRows}。";
+                if (!result.Committed)
+                    TaskDialog.Show("无需导入", "没有需要写入的参数，模型未修改。" + details);
+                else if (!result.ReadbackConfirmed)
+                    TaskDialog.Show("已提交，需核对", details + "\n" + result.ReadbackWarning);
+                else
+                    TaskDialog.Show("实例参数已导入", details + "\n整批提交，可通过 Ctrl+Z 撤销。");
+            }, operationName: "实例参数 Excel 整批导入", showSuccess: false);
             _externalEvent.Raise();
         }
 
@@ -1510,7 +1415,13 @@ namespace YangTools.Revit.UI
             {
                 try
                 {
-                    var doc = app.ActiveUIDocument.Document;
+                    var doc = app.ActiveUIDocument?.Document;
+                    if (doc == null || !doc.Equals(_doc) || !doc.IsValidObject || doc.IsReadOnly)
+                        throw new InvalidOperationException("项目已切换、关闭或只读，删除未执行。请重新打开管理器。");
+                    if (ids.Count == 0 || ids.Distinct().Count() != ids.Count ||
+                        ids.Any(id => id == null || doc.GetElement(id) == null))
+                        throw new InvalidOperationException("所选图元已失效或存在重复，请刷新列表后重试。");
+                    var previewDeletedIds = new HashSet<ElementId>();
                     int actualDeleteCount = 0;
                     bool proceed = true;
 
@@ -1525,7 +1436,10 @@ namespace YangTools.Revit.UI
                                 throw new InvalidOperationException("无法启动实例删除预检事务。");
                             var deleted = doc.Delete(ids);
                             actualDeleteCount = deleted?.Count ?? 0;
-                            if (deleted != null) extraIds = System.Linq.Enumerable.ToList(System.Linq.Enumerable.Where(deleted, id => !ids.Contains(id)));
+                            if (deleted != null) previewDeletedIds.UnionWith(deleted);
+                            if (!ids.All(previewDeletedIds.Contains))
+                                throw new InvalidOperationException("预检未覆盖所有选中的实例，操作已取消。");
+                            extraIds = previewDeletedIds.Where(id => !ids.Contains(id)).ToList();
                             if (t1.RollBack() != TransactionStatus.RolledBack)
                                 throw new InvalidOperationException("实例删除预检事务未能回滚。");
                         }
@@ -1573,9 +1487,20 @@ namespace YangTools.Revit.UI
                             {
                                 if (t2.Start() != TransactionStatus.Started)
                                     throw new InvalidOperationException("无法启动实例删除事务。");
-                                doc.Delete(ids);
+                                ICollection<ElementId> actuallyDeleted = doc.Delete(ids);
+                                if (actuallyDeleted == null ||
+                                    !previewDeletedIds.SetEquals(actuallyDeleted) ||
+                                    actuallyDeleted.Count != actualDeleteCount)
+                                    throw new InvalidOperationException("实际级联删除范围与预检不一致，已拒绝提交并回滚。");
                                 if (t2.Commit() != TransactionStatus.Committed)
                                     throw new InvalidOperationException("实例删除事务未能提交。");
+                            }
+                            // Still inside the transaction group: a failed post-commit
+                            // readback can undo the real deletion before one Undo is recorded.
+                            if (ids.Any(id => doc.GetElement(id) != null))
+                            {
+                                tg.RollBack();
+                                throw new InvalidOperationException("删除后读回发现仍有目标图元，已回滚事务组。");
                             }
                             TransactionStatus groupStatus = tg.Assimilate();
                             if (groupStatus != TransactionStatus.Committed)

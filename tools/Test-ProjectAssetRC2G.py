@@ -66,7 +66,7 @@ ck('No pre-commit Brush update',position(body,'ProjectAssetLineColorService.Exec
 ck('Reports successful no-op','不生成撤销记录' in body)
 ck('Reports commit vs UI refresh separately','已提交，但界面刷新失败' in body)
 ck('Does not use swallowed catch','catch { }' not in body)
-ck('Other fill-region editor untouched', 'new Transaction(doc, "更改填充颜色")' in untouched)
+ck('Fill-region color is handled in Core service', 'ProjectAssetFilledRegionVisualService.Execute(_doc, request)' in untouched and 'new Transaction(' not in untouched)
 ck('Existing XAML color button bound','Click="LineStyleColor_Click"' in xaml)
 ck('Existing fill color button retained','Click="FilledRegionColor_Click"' in xaml)
 ck('Existing line pattern retained','DropDownClosed="LinePattern_DropDownClosed"' in xaml)

@@ -1,3 +1,55 @@
+## 2026-10-14｜YangTools 4.0.0 RC3D Phase A 编译错误定点修复（SOURCE STATIC）
+
+- 基于唯一 RC3C ZIP SHA `321A43E8630F445128EC41AB1E27080F9B4B6387D32D57A623214F7C17575940`。独立核对 Gemini V2 Revit 2025 evidence ZIP SHA `7F56521604FED9F9634415C8F5CF137672FD365406608308B69B5F5B76AE387F`，其源文件清单 651/651 与 RC3C 完全一致。dotnet build 2025 exit 1，DLL 不存在；C# CS1010/CS1003/CS1026/CS1002。用户报告另称 2024 同类失败，但此轮没有收到其独立证据 ZIP，未独立核验。
+- 真正的源码缺陷位于 `src/YangTools.Revit/UI/ProjectAssetManagerWindow.xaml.cs` 1112–1113：普通 C# 字符串被物理换行拆开，RC3A 首次引入；改为 `Environment.NewLine` 拼接以保留提示语义。没有修改线样式复制的业务处理逻辑。
+- 将 `tools/Invoke-RC3C-WindowsCompileOnly.ps1` 补为 UTF-8 BOM（Windows PowerShell 5.1 中文解析兼容），不更改其只编译不部署的执行逻辑。新增 `tools/Test-CSharpStringLexicalGate.py` 全工程词法守卫，检测普通 C# 字符串中的真实跨行及未闭合，同时允许合法逐字字符串、原始字符串和注释。
+- 本批仅 SOURCE STATIC GO，Windows 重编译尚未发生，不能宣称编译 PASS；Revit GUI/模型/Undo 均 NOT_TESTED，正式发布 NO-GO。下一步由 Gemini 使用新 RC3D ZIP 直接 `dotnet build` 并回传两版本完整证据，禁止部署/代码自修复。
+- Google Drive 为唯一同步主仓库，GitHub 保持不变。
+
+## 2026-10-13｜YangTools 4.0.0 RC3C 族类型 Excel 导入修复（STATIC）
+
+- RC3B → RC3C：族管理器“族类型 Excel 导入”从 UI 逐行提交改为单事务整批预检与回滚，校验跨族图元 ID、重复类型、参数歧义、类型名冲突和提交后内部值读回；遇 ExternalEvent 拒绝取消队列项。
+- 增加 Windows 编译但不部署的只读验证入口 `tools/Invoke-RC3C-WindowsCompileOnly.ps1`；此环境 Linux 无 `dotnet`，**脚本尚未执行，Windows C# Build NOT_TESTED**。其他 Revit 加载/GUI/Undo 仍 NOT_TESTED。
+- 交接与测试见 `docs/YANGTOOLS_4_0_0_RC3C_FAMILY_TYPE_EXCEL_AND_BUILD_GATE_20261013.md`。仅 SOURCE STATIC GO，4.0.0 RELEASE NO-GO。GitHub 不同步。
+
+# 2026-10-13｜YangTools 4.0.0 RC3B 图框事件队列/批处理完成状态（SOURCE STATIC）
+
+- 唯一输入 RC3A SHA：`4B79D0987CB2DFB94E88543139471DC87E0E8007534F355D45D8FD058CFEB7C5`，保持已有 27 条 MCP wire、Rebar、Ribbon、installer 与 csproj 不变。
+- 图框换型：为 `RevitEventHandler` 添加可选 `onSkipped`、按操作 ID 取消未执行队列项；Revit 文档已切换导致 action 被跳过时清理图框 pending 与 ComboBox 状态。`Raise` 返回 Denied/TimedOut 或抛异常时，防止任务日后被另一事件意外执行。
+- 换型预检图框实例及目标类型、只读文档；`Transaction` 提交前后核对 FamilySymbol；提交后读回问题与未提交分开报告，不能误告用户可直接重试。
+- 批处理 UI：预检异常恢复 busy 按钮；偏好保存失败不阻断执行；输出目录自动打开与报告保存失败不会倒灌为“导出中断”；警告在结束对话框显示并尽可能写入报告。
+- 新增静态专项 `tools/Test-RC3B-QueueBatchUI.py`，仅核对源码合同；不是 Revit 运行/视觉点击。
+- 没有 Windows C# 编译或 Revit 实机。状态 `SOURCE STATIC GO` 取决于本轮独立复跑，正式 `RELEASE NO-GO`。
+
+## 2026-10-13｜YangTools 4.0.0 RC3A（线样式复制 / 临时插件箱 UI 状态收口）
+
+- 唯一输入 RC2Z；原有复制线样式在 WPF 中直接构造事务，未检查 Start/Commit 成功且先刷新 UI。新增独立 `ProjectAssetLineDuplicateService`，通过 OST_Lines.SubCategories 解析含负数的 CategoryId，冻结来源、校验过期选择，单事务复制线颜色、投影粗细及投影线图案，提交前后读回并分离模型成功与 UI 刷新失败。
+- 临时插件箱扫描开始即清空上次选择并禁用运行/收藏/删除，扫描异常不再残留旧 DLL 列表；删除按钮初始禁用；只有双击当前实际条目才能触发运行，移除项目异常会给出诊断。用户设置保存失败不会把已成功执行的运行/删除误报为失败。
+- 更新 RC2Y 静态测试对旧内部 helper 的范围断言，新增 `Test-RC3A-LineMicroUI.py` 67 项源码专项。源代码静态测试工作区 66/66；43 XAML XML PASS。Windows C# Build、Revit 加载、真实复制/窗口交互、Ctrl+Z **NOT_TESTED**。
+- 本轮只改变源码和源码静态测试，不增加新功能，不改变 MCP 27 wire、Rebar、Ribbon、installer、csproj。不推送 GitHub，交接主仓库是 Google Drive。4.0.0 RELEASE NO-GO，正式稳定仍为 3.1.36 FINAL_E2E。
+
+## 2026-10-13｜YangTools 4.0.0 RC2Z 图框 Excel / 级联删除 / PDF 恢复（静态候选）
+
+- RC2Y canonical 唯一源继续；图框 Excel 导入复用实例参数单事务服务，非图框 ID 拒绝、元数据列不写参数，整批预检/回滚/读回并区分模型提交与 UI 刷新错误。
+- 族实例及图纸删除增加跨文档、失效/重复 ID、预检集合/实删集合一致性验证，在事务组内读取目标是否已真正删除，防止未预检的额外连带删除静默提交。
+- PDF 导出/虚拟打印覆盖统一走可故障注入的 CommitPdf：发生失败保留可恢复的原件备份与暂存文件；已成功输出但清理备份失败则发警告；新增 Windows .NET 故障注入 harness 的 5 种用例（尚未运行）。
+- 图纸基本信息/参数/附加修订/图框单格参数补齐事务开始/提交状态检查，部分操作增加读回。静态测试增加 RC2Z 专项；无 Windows C# 编译/Revit GUI/模型/Undo 实测，本候选 RELEASE NO-GO。GitHub 不同步，Google Drive 为主。
+
+
+## 2026-10-13｜YangTools 4.0.0 RC2Y（静态开发候选）
+
+以 RC2X 第一批完整源码为唯一基线；族实例 Excel 导入由逐行部分提交改为独立 Service 整批单事务，参数稳定身份/读写/内部值读回，重复/只读拒绝、无变化不写；项目资产填充区域前后景图案、颜色及复制迁入新服务，事务与状态校验，修复异步 UI 刷新误报；批量导出 NWC/IFC/DWG 新输出成功但旧备份未清理时明确警告和保留路径，清理后查询失败不回滚已提交文件。保留原业务入口与 MCP/Rebar/Ribbon/installer。Google Drive 是主仓库，Git 本批不推。
+
+**仅源码静态验收；没有 Windows Build/Revit Loaded/模型/Undo/GUI 的运行证据，4.0.0 RELEASE NO-GO；稳定仍 3.1.36 FINAL_E2E。**验收基线与源码哈希以 RC2Y 独立报告为准。
+
+## 2026-10-13｜YangTools 4.0.0 RC2X 第一批（MCP/图纸 Excel/填充区域；源码静态）
+
+- RC2W canonical 为唯一输入，修 MCP 执行中超时“返回失败但操作可能继续”的误判；加入排队/执行中三态与 operationId 日志，**不更改 27 个 MCP wire 字段**。
+- `SheetManager` Excel 整批导入改 `Core/Sheets/SheetExcelImportService`，缺失/重复/只读参数、重复图号或任一异常均拒绝/整批回滚；单 Transaction，一次 Undo；不再允许参数静默跳过，严格拒绝重复同名参数。
+- 项目资产“填充区域名称/遮罩”改独立 `ProjectAssetFilledRegionEditService`，no-op、事务、回滚、模型读回和关闭/切 Tab 的过期 UI 保护。
+- 新增 RC2X 静态专项及 Windows 验收清单；首次工作区全量 63/63 PASS、专项 88/88（后续最终以验收报告为准）。Windows Build/Revit GUI/Undo NOT_TESTED；**4.0.0 RELEASE NO-GO**、稳定版 3.1.36 FINAL_E2E。RC2X 未全收口；剩余批处理、其余微工具及项目管理仍在后续任务中。
+- 详见 `docs/YANGTOOLS_4_0_0_RC2X_PHASE1_MCP_SHEETS_FILLEDREGIONS_20261013.md`。未推 Git，不要求用户手测。
+
 ## 2026-10-12｜YangTools 4.0.0 RC2W 临时插件箱安全收口（源码静态）
 
 - 从 RC2V 继续，修临时插件收藏包 **整目录误删/同名普通目录覆盖**、缓存目录非 PID 误删、junction/symlink 遍历复制、仓库注册表非原子保存和 IOException 错误覆盖提示；帮助页面明确 DLL 执行无沙箱。新增 MicroTool 110 条源静态/路径策略专项；具体结果见独立验收报告。

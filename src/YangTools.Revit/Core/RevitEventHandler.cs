@@ -12,8 +12,9 @@ namespace YangTools.Revit.Core
     /// </summary>
     public class RevitEventHandler : IExternalEventHandler
     {
-        private readonly ConcurrentQueue<(Action<UIApplication> action, string name, bool showSuccess, string operationId)> _queue
-            = new ConcurrentQueue<(Action<UIApplication>, string, bool, string)>();
+        private readonly ConcurrentQueue<(Action<UIApplication> action, string name, bool showSuccess, string operationId, Action<string> onSkipped)> _queue
+            = new ConcurrentQueue<(Action<UIApplication>, string, bool, string, Action<string>)>();
+        private readonly ConcurrentDictionary<string, byte> _cancelledOperations = new ConcurrentDictionary<string, byte>();
 
         private readonly Document _expectedDocument;
         private readonly bool _wrapInTransactionGroup;
@@ -33,19 +34,46 @@ namespace YangTools.Revit.Core
             Action<UIApplication> action,
             string operationName = "YangTools 操作",
             bool showSuccess = true,
-            string operationId = null)
+            string operationId = null,
+            Action<string> onSkipped = null)
         {
             if (action == null) throw new ArgumentNullException(nameof(action));
             string id = string.IsNullOrWhiteSpace(operationId) ? Guid.NewGuid().ToString("N") : operationId;
-            _queue.Enqueue((action, operationName, showSuccess, id));
+            _queue.Enqueue((action, operationName, showSuccess, id, onSkipped));
+        }
+
+        /// <summary>
+        /// Cancel a request only if it has not started executing. Used when Raise()
+        /// was rejected: the queued action must not execute on a later Raise().
+        /// </summary>
+        public void CancelPendingAction(string operationId)
+        {
+            if (!string.IsNullOrWhiteSpace(operationId))
+                _cancelledOperations.TryAdd(operationId, 0);
+        }
+
+        private static void NotifySkipped(Action<string> callback, string reason, string operationName)
+        {
+            if (callback == null) return;
+            try { callback(reason); }
+            catch (Exception ex) { DiagnosticLog.WriteError("ExternalEvent 跳过回调：" + operationName, ex); }
         }
 
         public void Execute(UIApplication app)
         {
             while (_queue.TryDequeue(out var item))
             {
+                if (_cancelledOperations.TryRemove(item.operationId, out _))
+                {
+                    NotifySkipped(item.onSkipped, "请求未被 Revit 接受，已取消排队任务。", item.name);
+                    DiagnosticLog.WriteProductOperation("ExternalEvent." + item.name,
+                        item.operationId, "CANCELLED_BEFORE_EXECUTION", _expectedDocument,
+                        "Raise rejected the request; deferred queue entry was cancelled.");
+                    continue;
+                }
                 if (!TryResolveDocument(app, item.name, out var doc))
                 {
+                    NotifySkipped(item.onSkipped, "绑定文档已关闭或当前文档已切换。", item.name);
                     DiagnosticLog.WriteProductOperation(
                         "ExternalEvent." + item.name,
                         item.operationId,

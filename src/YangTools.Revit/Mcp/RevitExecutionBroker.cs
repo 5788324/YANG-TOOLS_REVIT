@@ -58,6 +58,7 @@ namespace YangTools.Revit.Mcp
             var request = new RevitExecutionRequest(this)
             {
                 Command = command.Trim(),
+                OperationId = Guid.NewGuid().ToString("N"),
                 Args = args ?? new JObject(),
                 Completion = completion,
                 CancellationToken = cancellationToken,
@@ -73,12 +74,12 @@ namespace YangTools.Revit.Mcp
                 if (!raiseStatus.Equals("Accepted", StringComparison.OrdinalIgnoreCase) &&
                     !raiseStatus.Equals("Pending", StringComparison.OrdinalIgnoreCase))
                 {
-                    request.TryCompleteFailure("Revit ExternalEvent 未接受请求：" + raiseStatus);
+                    request.TryCancelBeforeStart("Revit ExternalEvent 未接受请求：" + raiseStatus);
                 }
             }
             catch (Exception ex)
             {
-                request.TryCompleteFailure("无法发起 Revit ExternalEvent：" + ex.Message);
+                request.TryCancelBeforeStart("无法发起 Revit ExternalEvent：" + ex.Message);
             }
 
             return AwaitWithTimeoutAsync(request, timeout, cancellationToken);
@@ -118,14 +119,32 @@ namespace YangTools.Revit.Mcp
                     return await request.Completion.Task.ConfigureAwait(false);
                 }
 
+                // Once Revit has entered Dispatch, neither a timeout nor HTTP client
+                // cancellation can undo/interrupt a Revit API call. Do NOT complete
+                // the request in that state: the event handler still owns its result.
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    request.TryCompleteFailure("请求已取消。 ");
-                    throw new OperationCanceledException(cancellationToken);
+                    if (request.TryCancelBeforeStart("请求在进入 Revit 主线程之前已取消，未执行。"))
+                        throw new OperationCanceledException(cancellationToken);
+                    return new RevitExecutionResult
+                    {
+                        Success = false,
+                        Error = "请求已取消，但 Revit 主线程已开始执行；操作结果未知，禁止自动重试。操作编号：" + request.OperationId + "。请查看 YangTools 日志与模型实际结果。"
+                    };
                 }
 
-                request.TryCompleteFailure("等待 Revit 主线程执行超时。Revit 可能处于模态对话框或忙碌状态。");
-                return await request.Completion.Task.ConfigureAwait(false);
+                if (request.TryCancelBeforeStart("等待 Revit 主线程执行超时；请求尚未开始，已取消，未修改模型。"))
+                    return await request.Completion.Task.ConfigureAwait(false);
+
+                // Running or concurrently completed. If already completed, prefer
+                // its real result; otherwise return an explicit uncertainty result.
+                if (request.Completion.Task.IsCompleted)
+                    return await request.Completion.Task.ConfigureAwait(false);
+                return new RevitExecutionResult
+                {
+                    Success = false,
+                    Error = "等待 Revit 主线程超时，但操作已开始且无法中断；实际提交状态未知。操作编号：" + request.OperationId + "。禁止自动重试或认定模型未修改，请查询 MCP 状态/操作日志并核对模型。"
+                };
             }
         }
 
@@ -144,7 +163,8 @@ namespace YangTools.Revit.Mcp
         private sealed class RevitExecutionRequest
         {
             private readonly RevitExecutionBroker _owner;
-            private int _completed;
+            // 0 = queued; 1 = running in Revit; 2 = finished or canceled before start.
+            private int _state;
 
             internal RevitExecutionRequest(RevitExecutionBroker owner)
             {
@@ -152,15 +172,25 @@ namespace YangTools.Revit.Mcp
             }
 
             internal string Command { get; set; } = string.Empty;
+            internal string OperationId { get; set; } = string.Empty;
             internal JObject Args { get; set; } = new JObject();
             internal TaskCompletionSource<RevitExecutionResult> Completion { get; set; } = null!;
             internal CancellationToken CancellationToken { get; set; }
             internal DateTime QueuedAt { get; set; }
-            internal bool IsCompleted => Volatile.Read(ref _completed) != 0;
+
+            internal bool TryStart() => Interlocked.CompareExchange(ref _state, 1, 0) == 0;
+
+            internal bool TryCancelBeforeStart(string error)
+            {
+                if (Interlocked.CompareExchange(ref _state, 2, 0) != 0) return false;
+                try { return Completion.TrySetResult(new RevitExecutionResult { Success = false, Error = error }); }
+                finally { _owner.NotifyRequestFinished(); }
+            }
 
             internal bool TryComplete(RevitExecutionResult result)
             {
-                if (Interlocked.Exchange(ref _completed, 1) != 0) return false;
+                // The handler is the only actor completing a running request.
+                if (Interlocked.CompareExchange(ref _state, 2, 1) != 1) return false;
                 try { return Completion.TrySetResult(result); }
                 finally { _owner.NotifyRequestFinished(); }
             }
@@ -201,17 +231,17 @@ namespace YangTools.Revit.Mcp
             {
                 while (_queue.TryDequeue(out RevitExecutionRequest? request))
                 {
+                    // A queued timeout can cancel before execution, never during it.
+                    if (request.CancellationToken.IsCancellationRequested)
+                    {
+                        request.TryCancelBeforeStart("请求在开始执行前被取消，未修改模型。");
+                        continue;
+                    }
+                    if (!request.TryStart()) continue;
                     var stopwatch = Stopwatch.StartNew();
                     CurrentCommand = request.Command;
                     try
                     {
-                        if (request.IsCompleted) continue;
-                        if (request.CancellationToken.IsCancellationRequested)
-                        {
-                            request.TryCompleteFailure("请求已取消。 ");
-                            continue;
-                        }
-
                         RevitExecutionResult result = _router.Dispatch(uiapp, request.Command, request.Args);
                         stopwatch.Stop();
                         result.DurationMilliseconds = stopwatch.ElapsedMilliseconds;
@@ -221,6 +251,10 @@ namespace YangTools.Revit.Mcp
                         LastResult = result.Success ? Trim(result.Result, 600) : string.Empty;
                         LastError = result.Success ? string.Empty : Trim(result.Error, 600);
                         request.TryComplete(result);
+                        // Correlate late completions with a timeout/unknown response.
+                        // A router success does not imply a model-transaction commit.
+                        LogDispatchOutcome(uiapp, request, result.Success ? "DISPATCH_RETURNED_SUCCESS" : "DISPATCH_RETURNED_ERROR",
+                            result.Success ? result.Result : result.Error);
                     }
                     catch (Exception ex)
                     {
@@ -237,12 +271,24 @@ namespace YangTools.Revit.Mcp
                             Error = ex.Message + "\n诊断日志：" + logPath,
                             DurationMilliseconds = stopwatch.ElapsedMilliseconds
                         });
+                        LogDispatchOutcome(uiapp, request, "DISPATCH_THROWN", ex.Message);
                     }
                     finally
                     {
                         CurrentCommand = string.Empty;
                     }
                 }
+            }
+
+            private static void LogDispatchOutcome(UIApplication app, RevitExecutionRequest request,
+                string state, string detail)
+            {
+                try
+                {
+                    DiagnosticLog.WriteProductOperation("MCP." + request.Command,
+                        request.OperationId, state, app.ActiveUIDocument?.Document, Trim(detail, 400));
+                }
+                catch { /* Disk logging must not change the outcome of a Revit call. */ }
             }
 
             private static string Trim(string value, int max) => string.IsNullOrEmpty(value) || value.Length <= max ? value : value.Substring(0, max) + "…";
