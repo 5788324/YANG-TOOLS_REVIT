@@ -45,7 +45,8 @@ namespace YangTools.Revit.Models
     public sealed class MergeTextState
     {
         public List<TextNote> SelectedTexts { get; set; } = new List<TextNote>();
-        public string SortTag { get; set; } = "SelectionOrder";
+        public string SortTag { get; set; } = "ReadingOrder";
+        public bool CleanWhitespace { get; set; } = true;
         public bool UseNewlineSeparator { get; set; } = true;
         public string SeparatorText { get; set; } = string.Empty;
     }
