@@ -42,6 +42,7 @@
             <Border Style="{DynamicResource CardBorder}" Margin="0,0,0,12">
                 <StackPanel>
                     <TextBlock Text="合并顺序" Style="{DynamicResource SectionTitle}" Margin="0,0,0,8"/>
+                    <RadioButton x:Name="RbReadingOrder" Content="智能阅读顺序：同一行从左到右，逐行从上到下" Tag="ReadingOrder" IsChecked="True" Margin="0,0,0,6"/>
                     <RadioButton x:Name="RbSelectionOrder" Content="按选择顺序" Tag="SelectionOrder" Margin="0,0,0,6"/>
                     <RadioButton x:Name="RbXDesc" Content="按 X 坐标降序（从右到左）" Tag="XDesc" Margin="0,0,0,6"/>
                     <RadioButton x:Name="RbXAsc" Content="按 X 坐标升序（从左到右）" Tag="XAsc" Margin="0,0,0,6"/>
@@ -53,6 +54,7 @@
             <Border Style="{DynamicResource CardBorder}">
                 <StackPanel>
                     <TextBlock Text="合并选项" Style="{DynamicResource SectionTitle}" Margin="0,0,0,8"/>
+                    <CheckBox x:Name="ChkCleanWhitespace" Content="删除原文字中多余换行、Tab 和重复空格" IsChecked="True" Margin="0,0,0,8"/>
                     <CheckBox x:Name="ChkUseNewline" Content="以换行符分隔" Checked="ChkNewline_Changed" Unchecked="ChkNewline_Changed" Margin="0,0,0,8"/>
                     <Grid x:Name="SeparatorPanel">
                         <Grid.ColumnDefinitions>

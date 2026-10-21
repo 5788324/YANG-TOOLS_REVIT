@@ -80,6 +80,13 @@ namespace YangTools.Revit.Commands
             List<TextNote> textNotes = state.SelectedTexts
                 .Where(note => note != null && note.Document.Equals(doc) && doc.GetElement(note.Id) != null)
                 .ToList();
+            // Keep source selection in the active view and avoid altering pinned/group-bound objects.
+            if (textNotes.Any(note => note.OwnerViewId.GetIdValue() != doc.ActiveView.Id.GetIdValue()
+                || note.Pinned || note.GroupId.GetIdValue() != ElementId.InvalidElementId.GetIdValue()))
+            {
+                TaskDialog.Show("文本合并", "所选文本包含其他视图或被固定/编组的元素，已取消。");
+                return Result.Cancelled;
+            }
             if (textNotes.Count < 2)
             {
                 TaskDialog.Show("提示", "选择的文本已失效，请重新选择。 ");
@@ -91,6 +98,10 @@ namespace YangTools.Revit.Commands
                 : MergeSortMode.SelectionOrder;
             switch (sortMode)
             {
+                case MergeSortMode.ReadingOrder:
+                    textNotes = TextLayoutMerger.Rows(TextLayoutMerger.Capture(doc.ActiveView, textNotes))
+                        .SelectMany(row => row.Items.Select(x => x.Note)).ToList();
+                    break;
                 case MergeSortMode.XAsc: textNotes = textNotes.OrderBy(note => note.Coord.X).ToList(); break;
                 case MergeSortMode.XDesc: textNotes = textNotes.OrderByDescending(note => note.Coord.X).ToList(); break;
                 case MergeSortMode.YAsc: textNotes = textNotes.OrderBy(note => note.Coord.Y).ToList(); break;
@@ -98,7 +109,18 @@ namespace YangTools.Revit.Commands
             }
 
             string separator = state.UseNewlineSeparator ? "\r" : state.SeparatorText;
-            string mergedText = string.Join(separator, textNotes.Select(note => note.Text));
+            string mergedText = sortMode == MergeSortMode.ReadingOrder
+                ? TextLayoutMerger.ReadingText(doc.ActiveView, textNotes, state.CleanWhitespace, separator)
+                : string.Join(separator, textNotes.Select(note => TextLayoutMerger.Clean(note.Text, state.CleanWhitespace)));
+            if (string.IsNullOrWhiteSpace(mergedText))
+            {
+                TaskDialog.Show("提示", "合并后内容为空，已取消。 ");
+                return Result.Cancelled;
+            }
+
+            string previewText = mergedText.Length > 320 ? mergedText.Substring(0, 320) + "…" : mergedText;
+            if (TaskDialog.Show("文本合并预览", $"按当前顺序合并 {textNotes.Count} 个文本为 1 个。\n\n{previewText}\n\n该操作删除其余文本，可一次 Ctrl+Z 撤销。", TaskDialogCommonButtons.Ok | TaskDialogCommonButtons.Cancel) != TaskDialogResult.Ok)
+                return Result.Cancelled;
 
             using (var transaction = new Transaction(doc, "文本合并"))
             {
