@@ -64,7 +64,7 @@ namespace YangTools.Revit.Core.ProjectAssets
                     if (created == null)
                         throw new InvalidOperationException("Revit 没有创建出线样式。");
                     createdId = created.Id;
-                    created.LineColor = new Color(originalColor.Red, originalColor.Green, originalColor.Blue);
+                    created.LineColor = new Autodesk.Revit.DB.Color(originalColor.Red, originalColor.Green, originalColor.Blue);
                     if (originalWeight.HasValue)
                         created.SetLineWeight(originalWeight.Value, GraphicsStyleType.Projection);
                     if (originalPattern != null && originalPattern != ElementId.InvalidElementId)
@@ -103,7 +103,7 @@ namespace YangTools.Revit.Core.ProjectAssets
             };
         }
 
-        private static bool Matches(Category target, string name, Color color, int? weight, ElementId pattern)
+        private static bool Matches(Category target, string name, Autodesk.Revit.DB.Color color, int? weight, ElementId pattern)
         {
             if (target == null || !string.Equals(target.Name, name, StringComparison.Ordinal)) return false;
             var copied = target.LineColor;

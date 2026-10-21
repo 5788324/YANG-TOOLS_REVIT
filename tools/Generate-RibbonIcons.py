@@ -301,12 +301,7 @@ icons={
 'micro_tool':micro_tool,'override_cleaner':override_cleaner,'paste_cad':paste_cad,'project_info':project_info,
 'project_inspector':project_inspector,'parameter_cleanup':parameter_cleanup,'sample_window':settings,'section_line':section_line,'sheet_manager':sheet_manager,
 'text_modifier':text_modifier,'visibility_copier':visibility_copier,'cad_to_revit':cad_to_revit,
-'rebar_test':rebar_test,'rebar_gradient_set':rebar_gradient_set,'rebar_face':rebar_face,
-'rebar_surface_varying':rebar_surface_varying,'rebar_shape_create':rebar_shape_create,
-'rebar_freeform_create':rebar_freeform_create,'rebar_shape_modify':rebar_shape_modify,
-'rebar_constraint':rebar_constraint,'rebar_freeform_modify':rebar_freeform_modify,
-'rebar_hook':rebar_hook,'rebar_relationship':rebar_relationship,'rebar_coupler':rebar_coupler,
-'rebar_inspector':rebar_inspector,'rebar_clearance':rebar_clearance,
+'rebar_gradient_set':rebar_gradient_set,
 }
 
 # Remove existing icon assets; write only the currently referenced set.

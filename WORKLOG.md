@@ -1,3 +1,13 @@
+## 2026-10-21｜RC3H：删除钢筋测试12入口 / CAD文档语义守卫修复 / 2025-2026 API固定
+
+- **当前唯一源码候选 RC3H**，从 RC3G 派生；RC3G 2021–2026 BUILD GO 是历史编译基线，**不能推断 RC3H 编译/运行通过**。
+- 按用户指令删除“钢筋测试”下12个独立 `Rebar*Command` 命令类和26张对应图标，Ribbon 预期 44→32；同时撤销12个不再适用的老静态入口脚本与历史输出。**保留生产 GR01 渐变钢筋集**；被 GR01 或已发布 MCP wire 共同使用的 Rebar Core/业务服务仍保留，避免误伤依赖。MCP 入口没有删除，不要把本轮理解为删除所有钢筋后端能力。
+- “从 CAD 粘贴”修复目标文档判定：原 `ReferenceEquals(Document, Document)` 变为通过 `Document.Equals` 比较 Revit 文档身份，保留原有 `ActiveView.Id`、只读、事务、回读、单次 Undo 防护。同步修正 CAD 转 Revit 图纸（两处）、布尔几何、实体提取、批任务中文档身份比较。**不能仅凭静态修复认定导入实机 PASS**。
+- 2025 API/2026 API NuGet `RevitAPI` 与 `RevitAPIUI` 版本固定到 `2025.4.20` / `2026.4.0`（对应已知最小用户宿主补丁）；包可从 NuGet 精确引用但存在 unlisted 状态，Windows 离线环境能否拿到两个版本必须复测；2021–2024/2027 原有浮动版本待后续严格冻结。
+- 增加删项残留编译硬门禁，拒绝将旧文件覆盖进 RC3H。新专项 `Test-RC3H-CadIdentityAndRebarRetirement.py`，全部61个现存 Test-*.py 静态脚本应按RC3H重新验收；不含Windows编译/GUI/RVT事务验证。
+- 安全边界：Revit 2023当前生产使用，绝不允许测试者关闭、前台切换、部署或修改项目；DeepSeek仅进行全新解压隔离编译和证据采集，不推Git。
+- 发布裁定：RC3H STATIC GO（取决于完整复测），WINDOWS BUILD/2025 CAD IMPORT/Undo NOT_TESTED，4.0.0 RELEASE NO-GO。
+
 ## 2026-10-14｜YangTools 4.0.0 RC3D Phase A 编译错误定点修复（SOURCE STATIC）
 
 - 基于唯一 RC3C ZIP SHA `321A43E8630F445128EC41AB1E27080F9B4B6387D32D57A623214F7C17575940`。独立核对 Gemini V2 Revit 2025 evidence ZIP SHA `7F56521604FED9F9634415C8F5CF137672FD365406608308B69B5F5B76AE387F`，其源文件清单 651/651 与 RC3C 完全一致。dotnet build 2025 exit 1，DLL 不存在；C# CS1010/CS1003/CS1026/CS1002。用户报告另称 2024 同类失败，但此轮没有收到其独立证据 ZIP，未独立核验。
@@ -2000,3 +2010,15 @@ ChatGPT 从 RC2N canonical SHA A0AA68AF5F415014F1687811047F9C7AFC888B826CF57B809
 - 本轮 RC0 只做低风险 release/tooling hygiene：修 Build-Deploy 与 Sign 脚本 PowerShell `$var:` 解析缺陷；增加统一静态测试 runner、ReleaseToolingHygiene 静态检查、canonical `Package-Source.ps1`；source package 排除 artifacts/bin/obj/__pycache__ 等生成物；确认中文 installer 文件名必须原样保留且禁止 mojibake。
 - 新增 `docs/ARCHITECTURE_SLIMMING_AUDIT_20260923.md` 与 `docs/ACTIVE_DOCS_INDEX.md`，冻结后续迁移方向为 feature-sliced modular monolith；不全量重写、不拆多 DLL、不改已 Runtime GO 的 GR01 算法。
 - 下一阶段顺序：P1 MCP broker 拆分 → P2 大型 UI Revit 业务逻辑下沉 Service → P3 feature folders → P4 docs/tests 整理。每批独立 source SHA / static / Windows build，按触及面做最小 runtime smoke。
+
+## 2026-10-14 | RC3E C# Color 命名冲突编译热修复候选 (STATIC ONLY)
+- 以云盘 RC3D ZIP SHA-256 `15AC5FEB189A4B349CFC2147E12F7020EE59646A402A9BCA018D962B7E0B372A` 全新解压构建，未沿用污染的工作目录。
+- 已独立核验 Gemini Phase A V3 两配置 `BUILD FAIL`/CS0104，并修复 `ProjectAssetLineDuplicateService.cs` 的两处 Color 全限定命名空间。
+- 修复既有 `Test-RC3A-LineMicroUI.py` 对 `new Color` 的错误硬编码要求，否则真实修复导致旧静态测试假失败；增加 `Test-RC3E-CompileGuard.py` 防回归检查。`MSB3052` 数字宏警告不改动配置，继续收集证据。
+- 当前阶段仅是本地静态候选。Windows Build、Revit Loaded/WPF GUI、真实模型读回和 Undo 尚未证明，不准部署/发布或宣称兼容 Revit 2021-2027。
+- Gemini 只执行隔离编译收集原始证据。若实机编译失败，由 ChatGPT 审核修复并重新打包，不允许 Gemini 自行修改项目。
+
+## 2026-10-21 | RC3G Revit2021/2026 compiler API compatibility candidate (STATIC ONLY)
+- B4/C1 original DeepSeek evidence SHA F8D240BB487B32F99F342D7A42583BAE497F50E6C490CC6F612BC2CB9F3C3A0E, 36/36 ZIP CRC PASS. Real Windows logs: 2021 5xCS1061 FreeFormAccessor.RebarStyle, 2026 4xCS1739 GetCenterlineCurves named arg + 1xCS1501 constraint candidate overload; 2022–2025 build logs success. 2025.4 four WPF windows actual opened and closed under blank Project1 with valid screenshots; transaction/Undo NOT_TESTED.
+- RC3G minimal scope: five core Rebar .cs files adjusted; positional centerline API arguments, 2026+ constrained target overload, fail-closed Revit2021 GR01 Create before Transaction.Start if style untestable; R00 inspect reports unavailable style for 2021 freeform. Other versions' GR01 setter/readback preserved.
+- Fixed one old 2024-only static guard and added 16-target API gate. Windows compilation and feature runtime evidence pending. Revit2023 production protected; DeepSeek will execute isolated compile-only, NOT deploy or touch any Revit application. Release NO-GO.

@@ -328,7 +328,7 @@ namespace YangTools.Revit.Models.BatchTask
 
                 BatchDocumentInfo info = CreateDocumentInfo(
                     document,
-                    uiApp.ActiveUIDocument != null && ReferenceEquals(document, uiApp.ActiveUIDocument.Document));
+                    uiApp.ActiveUIDocument != null && document.Equals(uiApp.ActiveUIDocument.Document));
 
                 if (Documents.Any(existing => SameDocument(existing, info)))
                     continue;
@@ -391,7 +391,7 @@ namespace YangTools.Revit.Models.BatchTask
             }
 
             return left.OpenDocument != null && right.OpenDocument != null
-                && ReferenceEquals(left.OpenDocument, right.OpenDocument);
+                && left.OpenDocument.Equals(right.OpenDocument);
         }
 
         public void RemoveDocument(BatchDocumentInfo document)

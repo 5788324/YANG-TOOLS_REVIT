@@ -57,7 +57,7 @@ namespace YangTools.Revit.Commands
                 if (window.ShowDialog() != true)
                     return Result.Cancelled;
                 // 模态窗口返回后重新检查文档/视图：禁止粘贴到已切换的目标。
-                if (!ReferenceEquals(commandData.Application.ActiveUIDocument?.Document, document) ||
+                if (!DocumentIdentityGuard.IsSameActiveDocument(commandData.Application, document) ||
                     document.ActiveView == null || document.ActiveView.Id.GetIdValue() != activeView.Id.GetIdValue() || document.IsReadOnly)
                 {
                     TaskDialog.Show("从 CAD 粘贴", "目标文档或活动视图已改变，已取消导入；请在目标视图中重新执行。");

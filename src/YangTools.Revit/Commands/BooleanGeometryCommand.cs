@@ -45,7 +45,7 @@ namespace YangTools.Revit.Commands
 
                     state = win.State;
                     if (uiapp.ActiveUIDocument == null ||
-                        !ReferenceEquals(uiapp.ActiveUIDocument.Document, doc))
+                        !DocumentIdentityGuard.IsSameActiveDocument(uiapp, doc))
                         throw new InvalidOperationException("操作期间项目文档已切换，选择和写入均已停止。");
 
                     if (win.ActionToPerform == "PickMain")
@@ -122,7 +122,7 @@ namespace YangTools.Revit.Commands
                 }
 
                 if (uiapp.ActiveUIDocument == null ||
-                    !ReferenceEquals(uiapp.ActiveUIDocument.Document, doc))
+                    !DocumentIdentityGuard.IsSameActiveDocument(uiapp, doc))
                     throw new InvalidOperationException("当前 Revit 项目已切换，禁止对原文档继续执行布尔操作。");
 
                 if (state.MainInst.Count == 0)
@@ -159,7 +159,7 @@ namespace YangTools.Revit.Commands
                 var allSelected = allTargets.Concat(new[] { mainFi }).ToList();
                 foreach (FamilyInstance instance in allSelected)
                 {
-                    if (!ReferenceEquals(instance.Document, doc) ||
+                    if (!doc.Equals(instance.Document) ||
                         !(doc.GetElement(instance.Id) is FamilyInstance current) ||
                         current.Symbol == null || current.Symbol.Family == null)
                         throw new InvalidOperationException($"选择中存在跨项目、已删除或无效族实例（ID：{instance.Id}），请重新选择。");

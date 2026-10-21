@@ -21,7 +21,7 @@ for label,text in [('paste',paste),('cad',cad),('section',section)]:
 
 for k,x in {
 'paste_window_modal':'window.ShowDialog() != true',
-'paste_context_document':'ReferenceEquals(commandData.Application.ActiveUIDocument?.Document, document)',
+'paste_context_document':'DocumentIdentityGuard.IsSameActiveDocument(commandData.Application, document)',
 'paste_context_view':'document.ActiveView.Id.GetIdValue() != activeView.Id.GetIdValue()',
 'paste_context_readonly':'document.IsReadOnly',
 'paste_no_silent_shared_fallback':'YangTools 不会自动获取/发布共享坐标，也不会失败后改用原点到原点',
@@ -39,13 +39,13 @@ for k,x in {
 'paste_log_original_document':'boundDocument, ex.ToString()',
 'paste_result_if_committed':'return importCommitted ? Result.Succeeded : Result.Failed;',
 }.items():contains(k,paste,x)
-order('paste_validate_context_before_copy',paste,['window.ShowDialog() != true','ReferenceEquals(commandData.Application.ActiveUIDocument?.Document, document)','CadClipboardFileHelper.CreateWorkingCopy(sourcePath)'])
+order('paste_validate_context_before_copy',paste,['window.ShowDialog() != true','DocumentIdentityGuard.IsSameActiveDocument(commandData.Application, document)','CadClipboardFileHelper.CreateWorkingCopy(sourcePath)'])
 order('paste_commit_then_readback',paste,['importCommitted = true;','document.GetElement(importedId) is ImportInstance','uiDocument.Selection.SetElementIds'])
 assert_check('paste_no_failure_false_rollback_message','导入失败，未完成的事务已回滚' not in paste)
 assert_check('paste_no_wrong_import_fail_return','return Result.Failed;' not in paste[paste.index('if (!imported ||'):paste.index('TransactionStatus commitStatus')])
 
 for k,x in {
-'cad_original_document_bound':'ReferenceEquals(uiapp.ActiveUIDocument?.Document, document)',
+'cad_original_document_bound':'DocumentIdentityGuard.IsSameActiveDocument(uiapp, document)',
 'cad_original_view_bound':'document.ActiveView.Id.GetIdValue() != view.Id.GetIdValue()',
 'cad_view_checked_again':'确认期间目标文档或活动视图已改变',
 'cad_readonly_rechecked':'document.IsReadOnly',
@@ -57,7 +57,7 @@ for k,x in {
 'cad_view_whitelist':'IsSupportedView(view)',
 }.items():contains(k,cad,x)
 order('cad_confirmation_then_second_context_guard',cad,['confirm.Show() != TaskDialogResult.Yes','确认期间目标文档或活动视图已改变','CadToRevitRebuildService.Execute(document, view, request)'])
-assert_check('cad_context_checks_both_dialogs',cad.count('ReferenceEquals(uiapp.ActiveUIDocument?.Document, document)')==2)
+assert_check('cad_context_checks_both_dialogs',cad.count('DocumentIdentityGuard.IsSameActiveDocument(uiapp, document)')==2)
 for k,x in {
 'section_readonly_family_block':'doc.IsFamilyDocument || doc.IsReadOnly',
 'section_short_curve':'doc.Application.ShortCurveTolerance',

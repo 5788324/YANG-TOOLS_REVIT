@@ -8,6 +8,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using Autodesk.Revit.DB;
 using YangTools.Revit.Commands;
+using YangTools.Revit.Core;
 
 namespace YangTools.Revit.UI
 {

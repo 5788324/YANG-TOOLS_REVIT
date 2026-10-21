@@ -996,7 +996,7 @@ namespace YangTools.Revit.UI
             if (combo == null) return;
             var rowAtRequest = combo.DataContext as LineStyleViewModel;
             if (rowAtRequest == null || _currentTabName != "LineStyles" ||
-                LineStyleDataGrid.Visibility != Visibility.Visible ||
+                LineStyleDataGrid.Visibility != System.Windows.Visibility.Visible ||
                 !LineStyleList.Contains(rowAtRequest)) return;
 
             // UpdateSourceTrigger=Explicit: only a confirmed Revit commit may update the VM.
@@ -1021,7 +1021,7 @@ namespace YangTools.Revit.UI
                 if (_isClosed || versionAtRequest != _tabLoadVersion ||
                     sequenceAtRequest != _linePatternRequestVersion ||
                     _currentTabName != "LineStyles" ||
-                    LineStyleDataGrid.Visibility != Visibility.Visible ||
+                    LineStyleDataGrid.Visibility != System.Windows.Visibility.Visible ||
                     !LineStyleList.Contains(rowAtRequest)) return;
 
                 ProjectAssetLinePatternResult result;

@@ -136,7 +136,7 @@ namespace YangTools.Revit.Core.FamilyInstances
                     // is not compared here because Revit may normalize units/precision.
                     foreach (RowPlan row in plans)
                     {
-                        if (doc.GetElement(row.ElementId) == null || row.Parameters.Any(p => p.Parameter == null || !p.Parameter.IsValidObject))
+                        if (doc.GetElement(row.ElementId) == null || row.Parameters.Any(p => p.Parameter == null))
                             throw new InvalidOperationException($"第 {row.RowNumber} 行的写入目标回读失效，取消整批导入。");
                     }
                     TransactionStatus status = transaction.Commit();
@@ -172,7 +172,7 @@ namespace YangTools.Revit.Core.FamilyInstances
                     return row.Parameters.All(p =>
                     {
                         Parameter actual = StableParameterKey.ResolveByDisplayLabel(element, p.Label);
-                        return actual != null && actual.IsValidObject &&
+                        return actual != null &&
                             InternalValuesEqual(ReadInternalValue(actual), p.AppliedValue);
                     });
                 });

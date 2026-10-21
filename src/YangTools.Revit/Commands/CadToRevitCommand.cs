@@ -58,7 +58,7 @@ namespace YangTools.Revit.Commands
                     return Result.Cancelled;
 
                 // ShowDialog 返回后检查原项目与视图：禁止旧窗口请求写入另一个上下文。
-                if (!ReferenceEquals(uiapp.ActiveUIDocument?.Document, document) ||
+                if (!DocumentIdentityGuard.IsSameActiveDocument(uiapp, document) ||
                     document.ActiveView == null || document.ActiveView.Id.GetIdValue() != view.Id.GetIdValue() || document.IsReadOnly)
                 {
                     TaskDialog.Show("CAD 转 Revit 图纸", "当前项目或活动视图已改变，已取消转换，请在目标视图重新执行。");
@@ -87,7 +87,7 @@ namespace YangTools.Revit.Commands
                 };
                 if (confirm.Show() != TaskDialogResult.Yes)
                     return Result.Cancelled;
-                if (!ReferenceEquals(uiapp.ActiveUIDocument?.Document, document) ||
+                if (!DocumentIdentityGuard.IsSameActiveDocument(uiapp, document) ||
                     document.ActiveView == null || document.ActiveView.Id.GetIdValue() != view.Id.GetIdValue() || document.IsReadOnly)
                     throw new InvalidOperationException("确认期间目标文档或活动视图已改变，禁止执行过期 CAD 转换请求。");
 

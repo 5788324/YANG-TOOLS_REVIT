@@ -48,7 +48,7 @@ check('XAML event unchanged','DropDownClosed="LinePattern_DropDownClosed"' in xa
 check('XAML has explicit binding','SelectedValue="{Binding LinePatternId, Mode=TwoWay, UpdateSourceTrigger=Explicit}"' in xaml)
 check('XAML not eager bound','SelectedValue="{Binding LinePatternId, UpdateSourceTrigger=PropertyChanged}"' not in xaml)
 for tok in ('if (_isClosed) return','_currentTabName != "LineStyles"',
-            'LineStyleDataGrid.Visibility != Visibility.Visible','LineStyleList.Contains(rowAtRequest)',
+            'LineStyleDataGrid.Visibility != System.Windows.Visibility.Visible','LineStyleList.Contains(rowAtRequest)',
             'combo.SelectedValue as ElementId','combo.SetCurrentValue(',
             'System.Windows.Controls.Primitives.Selector.SelectedValueProperty',
             'rowAtRequest.LinePatternId','request = new ProjectAssetLinePatternRequest',

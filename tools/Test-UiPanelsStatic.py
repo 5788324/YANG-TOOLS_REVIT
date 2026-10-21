@@ -349,8 +349,8 @@ def main() -> int:
     if "[switch]$Deploy" not in build_all_text or "Deploy-Version" not in build_all_text:
         errors.append({"type": "build-all-deploy", "file": "tools/Build-All.ps1", "detail": "缺少单年份编译部署入口"})
 
-    # Ribbon 分组门禁：钢筋工具区只保留“创建钢筋 / 钢筋测试”两个一级 Pulldown。
-    # 生产入口“创建钢筋”只允许 GR01 渐变钢筋集；其余钢筋研发命令全部收入口“钢筋测试”。
+    # Ribbon 分组门禁：删除12个钢筋测试入口，仅保留“创建钢筋”下的 GR01。
+    # 生产入口“创建钢筋”只允许 GR01 渐变钢筋集；测试入口必须不存在。
     ribbon_builder_text = read_utf8(SOURCE_ROOT / "Core" / "RibbonBuilder.cs")
     if "PulldownButtonData" not in ribbon_builder_text or "cmd.RuntimeGroupName = isVisible ? cmd.Attr.GroupName : null" not in ribbon_builder_text:
         errors.append({"type": "ribbon-grouping", "file": "src/YangTools.Revit/Core/RibbonBuilder.cs", "detail": "GroupName/Pulldown 分组能力未启用"})
@@ -373,19 +373,19 @@ def main() -> int:
         if re.search(r'"[^"\n]*\bR(?:0[0-9]|10)\b[^"\n]*"', block):
             errors.append({"type": "rebar-ribbon-stage-label", "file": str(path.relative_to(PROJECT_ROOT)), "detail": "Ribbon 用户文案不应显示研发阶段号 Rxx"})
 
-    expected_rebar_groups = {"创建钢筋", "钢筋测试"}
+    expected_rebar_groups = {"创建钢筋"}
     if set(rebar_group_counts) != expected_rebar_groups:
         errors.append({"type": "rebar-ribbon-groups", "file": "Commands/Rebar*Command.cs", "detail": f"实际分组={dict(rebar_group_counts)}；预期={sorted(expected_rebar_groups)}"})
     if rebar_group_counts.get("创建钢筋") != 1:
         errors.append({"type": "rebar-create-production-scope", "file": "Commands/Rebar*Command.cs", "detail": f"创建钢筋必须只保留渐变钢筋集；实际命令数={rebar_group_counts.get('创建钢筋', 0)}"})
-    if rebar_group_counts.get("钢筋测试") != 12:
-        errors.append({"type": "rebar-test-scope", "file": "Commands/Rebar*Command.cs", "detail": f"除渐变钢筋集外的 12 个钢筋命令必须全部归入钢筋测试；实际={rebar_group_counts.get('钢筋测试', 0)}"})
+    if rebar_group_counts.get("钢筋测试", 0) != 0:
+        errors.append({"type": "rebar-test-scope", "file": "Commands/Rebar*Command.cs", "detail": f"钢筋测试 12 个入口必须全部移除；实际={rebar_group_counts.get('钢筋测试', 0)}"})
 
     ribbon_count = 0
     for path in (SOURCE_ROOT / "Commands").glob("*.cs"):
         ribbon_count += read_utf8(path).count("[RibbonButton")
-    if ribbon_count != 44:
-        errors.append({"type": "ribbon-count", "file": "Commands", "detail": f"实际 {ribbon_count}，预期 44（R00-R10 + GR01 渐变钢筋集；钢筋区只显示“创建钢筋 / 钢筋测试”两个一级 Pulldown）"})
+    if ribbon_count != 32:
+        errors.append({"type": "ribbon-count", "file": "Commands", "detail": f"实际 {ribbon_count}，预期 32（已移除12个钢筋测试命令；保留GR01）"})
 
     report = {
         "summary": {
