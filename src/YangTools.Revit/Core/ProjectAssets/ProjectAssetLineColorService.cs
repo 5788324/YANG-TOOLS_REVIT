@@ -61,7 +61,7 @@ namespace YangTools.Revit.Core.ProjectAssets
                     throw new InvalidOperationException("无法启动线颜色事务，未写入修改。");
                 try
                 {
-                    category.LineColor = new Color(request.Red, request.Green, request.Blue);
+                    category.LineColor = new Autodesk.Revit.DB.Color(request.Red, request.Green, request.Blue);
                     if (transaction.Commit() != TransactionStatus.Committed)
                         throw new InvalidOperationException("线颜色事务未确认提交，请检查 Revit 状态。");
                 }

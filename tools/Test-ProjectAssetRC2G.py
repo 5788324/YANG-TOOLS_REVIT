@@ -39,7 +39,7 @@ for c in ('Red','Green','Blue'):
 ck('Exactly one model transaction',src.count('new Transaction(')==1 and 'new TransactionGroup' not in src)
 ck('Start result checked','transaction.Start() != TransactionStatus.Started' in src)
 ck('Commit result checked','transaction.Commit() != TransactionStatus.Committed' in src)
-ck('Only paints during transaction','category.LineColor = new Color(request.Red, request.Green, request.Blue)' in src)
+ck('Only paints during transaction','category.LineColor = new Autodesk.Revit.DB.Color(request.Red, request.Green, request.Blue)' in src)
 ck('Rollback guarded for started only','transaction.GetStatus() == TransactionStatus.Started' in src)
 ck('Rollback result checked','transaction.RollBack() != TransactionStatus.RolledBack' in src)
 ck('Uncertain rollback reported','回滚结果无法确认' in src)

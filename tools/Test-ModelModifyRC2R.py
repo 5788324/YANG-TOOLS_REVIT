@@ -66,7 +66,7 @@ require_all(w,[
  'CmbLevel.SelectedItem == null',
  ],'UI controls')
 require_all(x,['MinWidth="560"','MinHeight="400"','TextTrimming="CharacterEllipsis"','目标标高只决定实例关联','实体世界位置和高度来自原始几何','不提交','TxtElement'], 'UI XAML')
-require_all(c,['ReferenceEquals(uiApp.ActiveUIDocument.Document, uiDoc.Document)','当前 Revit 项目已切换','未能确认完成','回滚状态未知','请先检查模型再重试'],'command safety')
+require_all(c,['DocumentIdentityGuard.IsSameActiveDocument(uiApp, uiDoc.Document)','当前 Revit 项目已切换','未能确认完成','回滚状态未知','请先检查模型再重试'],'command safety')
 check('操作已失败并回滚。' not in c,'no guaranteed rollback UI claim')
 try:ET.fromstring(x);check(True,'Solid Generator XAML well formed')
 except ET.ParseError as e:check(False,f'Solid Generator XAML parse: {e}')

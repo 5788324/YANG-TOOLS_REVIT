@@ -78,7 +78,7 @@ namespace YangTools.Revit.Commands
                         return Result.Cancelled;
 
                     if (uiApp.ActiveUIDocument == null ||
-                        !ReferenceEquals(uiApp.ActiveUIDocument.Document, uiDoc.Document))
+                        !DocumentIdentityGuard.IsSameActiveDocument(uiApp, uiDoc.Document))
                         throw new InvalidOperationException("当前 Revit 项目已切换，请重新打开实体提取命令，避免操作错误文档。");
                     if (state.SourceElementId == ElementId.InvalidElementId)
                         throw new InvalidOperationException("没有有效的源图元。");

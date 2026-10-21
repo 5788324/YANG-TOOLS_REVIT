@@ -251,7 +251,7 @@ namespace YangTools.Revit.UI
                             string rfaPath = _engine.CreateConvertedFamily(
                                 typeItem.FamilyName,
                                 typeItem.TypeName,
-                                typeItem.ConvertedSuffix,
+                                typeItem.Suffix,
                                 solids,
                                 curves,
                                 templatePath);

@@ -397,11 +397,11 @@ namespace YangTools.Revit.Core.Rebar
             try
             {
                 IList<Curve> curves = rebar.GetCenterlineCurves(
-                    adjustForSelfIntersection: false,
-                    suppressHooks: false,
-                    suppressBendRadius: false,
-                    multiplanarOption: MultiplanarOption.IncludeAllMultiplanarCurves,
-                    barPositionIndex: 0);
+                    false,
+                    false, // Revit 2026+ renamed this argument suppressHooksAndCranks.
+                    false,
+                    MultiplanarOption.IncludeAllMultiplanarCurves,
+                    0);
                 Curve? first = curves.FirstOrDefault();
                 if (first == null) return null;
                 XYZ point = first.GetEndPoint(0);
