@@ -7,7 +7,7 @@ $Project = Join-Path $ProjectRoot 'src\YangTools.Revit\YangTools.Revit.csproj'
 $Commands = Join-Path $ProjectRoot 'src\YangTools.Revit\Commands'
 
 $ExpectedVersion = '3.1.35'
-$ExpectedRibbonCount = 34
+$ExpectedRibbonCount = 36
 $ObsoleteFiles = @(
     'src\YangTools.Revit\Commands\HelloWorldCommand.cs',
     'src\YangTools.Revit\Commands\McpStatusCommand.cs',

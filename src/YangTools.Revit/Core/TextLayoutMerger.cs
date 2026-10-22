@@ -102,8 +102,9 @@ namespace YangTools.Revit.Core
                 return false;
             }
             cut = (sorted[bestIndex].U + sorted[bestIndex - 1].U) / 2;
-            var left = sorted.Where(x => x.U < cut).ToList();
-            var right = sorted.Where(x => x.U >= cut).ToList();
+            double cutValue = cut; // C# out parameters cannot be captured by LINQ lambdas.
+            var left = sorted.Where(x => x.U < cutValue).ToList();
+            var right = sorted.Where(x => x.U >= cutValue).ToList();
             if (left.Count == 0 || right.Count == 0 ||
                 left.Count > notes.Count * 0.85 || right.Count > notes.Count * 0.85)
             {

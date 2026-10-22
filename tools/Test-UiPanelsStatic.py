@@ -384,8 +384,8 @@ def main() -> int:
     ribbon_count = 0
     for path in (SOURCE_ROOT / "Commands").glob("*.cs"):
         ribbon_count += read_utf8(path).count("[RibbonButton")
-    if ribbon_count != 34:
-        errors.append({"type": "ribbon-count", "file": "Commands", "detail": f"实际 {ribbon_count}，预期 34（旧32 + 合并详图直线 + 双列文本；已移除12个钢筋测试命令；保留GR01）"})
+    if ribbon_count != 36:
+        errors.append({"type": "ribbon-count", "file": "Commands", "detail": f"实际 {ribbon_count}，预期 36（RC3I 34 + 填充隐形边界 + 重叠线清理；保留GR01）"})
 
     report = {
         "summary": {

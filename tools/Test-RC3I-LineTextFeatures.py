@@ -36,7 +36,7 @@ tests={
  'view-relative 2d reading': 'view.RightDirection' in layout and 'view.UpDirection' in layout,
  'row grouping respects View.Scale': 'size * Math.Max(1, view.Scale)' in layout,
  'image size pairs': all((S/'Icons'/f'{name}_{dim}.png').exists() for name in ('merge_lines','merge_columns') for dim in (16,32)),
- 'new ribbon count': sum(p.read_text(encoding='utf8').count('[RibbonButton') for p in (S/'Commands').glob('*.cs'))==34,
+ 'new ribbon count': sum(p.read_text(encoding='utf8').count('[RibbonButton') for p in (S/'Commands').glob('*.cs'))==36,
  'modified UI valid XML': ET.parse(S/'UI/MergeTextWindow.xaml') is not None,
  'old text state includes cleanup': 'CleanWhitespace { get; set; } = true;' in read('Models/TextToolStates.cs'),
  'safe user viewing docs present': (ROOT/'docs/RC3I_LINE_TEXT_FEATURES_20261021.md').exists(),
