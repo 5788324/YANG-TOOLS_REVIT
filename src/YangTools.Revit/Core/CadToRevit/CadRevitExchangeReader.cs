@@ -308,10 +308,37 @@ namespace YangTools.Revit.Core.CadToRevit
                                 throw new InvalidDataException("HATCH 直线边界未闭合或线段数不足，已拒绝该填充。");
                             item.Boundaries.Add(loopPts);
                         }
+                        else if (loopToken is JObject polylineLoop && polylineLoop["vertices"] is JArray vertices)
+                        {
+                            // YangCAD RevitExchangeService.GetHatchLoops() emits
+                            // { kind: "polyline", vertices: [{point:[x,y], bulge:0}, ...] }.
+                            // ReadPointList(loopToken) expects a JArray, so it used to reject
+                            // every such loop even when all edges were valid straight lines.
+                            string loopKind = ReadString(polylineLoop, "kind") ?? string.Empty;
+                            if (!string.IsNullOrEmpty(loopKind) &&
+                                !string.Equals(loopKind, "polyline", StringComparison.OrdinalIgnoreCase))
+                                throw new InvalidDataException("HATCH 边界类型未支持（" + loopKind + "）；不能忽略该环。");
+
+                            var points = new List<CadPoint2>();
+                            for (int vertexIndex = 0; vertexIndex < vertices.Count; vertexIndex++)
+                            {
+                                JToken vertex = vertices[vertexIndex];
+                                CadPoint2? point = ReadPoint(First(vertex, "point", "vertex") ?? vertex);
+                                if (point == null)
+                                    throw new InvalidDataException($"HATCH polyline 第 {item.Boundaries.Count + 1} 环第 {vertexIndex + 1} 个顶点缺少有效坐标。");
+                                double bulge = ReadDouble(vertex, "bulge", "Bulge") ?? 0.0;
+                                if (double.IsNaN(bulge) || double.IsInfinity(bulge) || Math.Abs(bulge) > 1e-12)
+                                    throw new InvalidDataException($"HATCH polyline 第 {item.Boundaries.Count + 1} 环第 {vertexIndex + 1} 个顶点含 bulge 圆弧（{bulge}）；V1 不能将弧线伪装成直线。");
+                                points.Add(point);
+                            }
+                            if (points.Count < 3)
+                                throw new InvalidDataException("HATCH polyline 边界有效顶点不足 3 个，不能忽略该环。");
+                            item.Boundaries.Add(points); // Hatch polyline ring is implicitly closed.
+                        }
                         else
                         {
                             List<CadPoint2> loop = ReadPointList(loopToken);
-                            if (loop.Count < 3) throw new InvalidDataException("填充边界点数不足，不能忽略部分环。");
+                            if (loop.Count < 3) throw new InvalidDataException("填充边界点数不足或不支持，不能忽略部分环。");
                             item.Boundaries.Add(loop);
                         }
                     }

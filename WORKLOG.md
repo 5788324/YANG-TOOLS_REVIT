@@ -2056,3 +2056,10 @@ ChatGPT 从 RC2N canonical SHA A0AA68AF5F415014F1687811047F9C7AFC888B826CF57B809
 - 依据 Gemini 2026-10-23 F2 原生命令证据，只修自依赖误判、预选删除及正交 T 分支判定。
 - 修改 3 个 C#，新增 1 个防回归脚本和 1 份说明；无模型部署、Git 同步或 Revit 编译。
 - Windows 编译、实际按钮、Ctrl+Z 和跨版本 Runtime：NOT_TESTED。
+
+## 2026-10-26 — Exchange P2：历史 C4 定位与 HATCH polyline 兼容补丁（静态候选）
+- 父基线：Exchange P1（642 文件）/ PR #5 commit `99d493b99473ddcaebefc412ec031bf80655ad82`。
+- 对照 C4 脱敏原始失败报告定位 19 Fill + 1 Dimension 短曲线 Handle；注意原 MAP 未随交接材料提供。
+- 修复 CAD `kind=polyline + vertices` HATCH 边界解析；只有全直线 bulge=0 边界可进入创建，非零 bulge 明确拒绝，不修改几何。记录 71 vs 65 计数差为待原 MAP 验证的假设。
+- 新增只读 Python MAP 诊断工具、受控 fixture、静态契约测试，以及 Gemini/DeepSeek 最小取证任务说明。
+- 既有 CAD/Revit/Ribbon/HF2 静态回归通过；Windows 编译、原 C4 工程问题修复率、Revit Runtime 均未测试。不部署、不改 YangCAD 其他功能、不推 main。
