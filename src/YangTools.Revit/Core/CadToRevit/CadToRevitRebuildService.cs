@@ -266,9 +266,16 @@ namespace YangTools.Revit.Core.CadToRevit
         private static void CreateCurves(Document document, View view, CadToRevitRebuildRequest request, CoordinateConverter coordinate, ResolvedMappings resolved, CadToRevitRebuildResult result, double shortCurveTolerance)
         {
             Dictionary<string, CadToRevitMappingRow> mapping = ToMappingDictionary(request.LineMappings);
+            // 仅影响本次 CAD 线条导入事务；不注册全局 FailuresProcessing 处理器。
+            var joinHandler = new CadToRevitJoinFailurePreprocessor(document);
             using (var transaction = new Transaction(document, "CAD 转 Revit - 线条"))
             {
                 if (transaction.Start() != TransactionStatus.Started) throw new InvalidOperationException("无法启动线条转换事务。 ");
+                FailureHandlingOptions failureOptions = transaction.GetFailureHandlingOptions();
+                failureOptions.SetFailuresPreprocessor(joinHandler);
+                // 异常分支已保存失败 ID/描述；静默回滚避免自动化被 Revit 模态错误框阻塞。
+                failureOptions.SetClearAfterRollback(true);
+                transaction.SetFailureHandlingOptions(failureOptions);
                 foreach (CadCurveItem item in request.Exchange.Curves)
                 {
                     if (!mapping.TryGetValue(item.StyleKey, out CadToRevitMappingRow? row) || row.Action == CadToRevitMappingActions.Skip)
@@ -298,6 +305,7 @@ namespace YangTools.Revit.Core.CadToRevit
                                 created.Add(Trace(detail.Id, "detail_curve"));
                             }
                             CommitSubTransactionOrThrow(sub, "线条");
+                            joinHandler.TrackCommittedSourceCurves(item.SourceId, created, curves);
                             result.CreatedCurves += created.Count;
                             AddCreated(result, item.SourceId, "线条", created);
                         }
@@ -308,7 +316,16 @@ namespace YangTools.Revit.Core.CadToRevit
                         }
                     }
                 }
-                CommitOrThrow(transaction, "线条转换");
+                CommitOrThrow(transaction, "线条转换", joinHandler);
+            }
+            // DetachElements 只应解除新建线段间的约束，不允许丢失或替换已登记的图元。
+            joinHandler.AssertCreatedCurvesStillExist();
+            if (joinHandler.ResolvedCount > 0)
+            {
+                string note = "CAD 线条导入：已仅针对本次新建详图线自动解除 " + joinHandler.ResolvedCount +
+                    " 处 Revit 连接约束；全部创建 ID 仍有效。";
+                result.AuditWarnings.Add(note);
+                DiagnosticLog.WriteInfo("CAD 转 Revit 自动解除连接约束", note + " " + joinHandler.Summary);
             }
         }
 
@@ -779,11 +796,12 @@ namespace YangTools.Revit.Core.CadToRevit
                 throw new InvalidOperationException(label + "子事务未提交：" + status);
         }
 
-        private static void CommitOrThrow(Transaction transaction, string label)
+        private static void CommitOrThrow(Transaction transaction, string label, CadToRevitJoinFailurePreprocessor joinHandler = null)
         {
             TransactionStatus status = transaction.Commit();
             if (status != TransactionStatus.Committed)
-                throw new InvalidOperationException(label + "事务未提交：" + status);
+                throw new InvalidOperationException(label + "事务未提交：" + status +
+                    (joinHandler == null ? string.Empty : "；失败处理记录：" + joinHandler.Summary));
         }
 
         internal static double UnitToFeet(double value, string units)

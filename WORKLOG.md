@@ -2063,3 +2063,9 @@ ChatGPT 从 RC2N canonical SHA A0AA68AF5F415014F1687811047F9C7AFC888B826CF57B809
 - 修复 CAD `kind=polyline + vertices` HATCH 边界解析；只有全直线 bulge=0 边界可进入创建，非零 bulge 明确拒绝，不修改几何。记录 71 vs 65 计数差为待原 MAP 验证的假设。
 - 新增只读 Python MAP 诊断工具、受控 fixture、静态契约测试，以及 Gemini/DeepSeek 最小取证任务说明。
 - 既有 CAD/Revit/Ribbon/HF2 静态回归通过；Windows 编译、原 C4 工程问题修复率、Revit Runtime 均未测试。不部署、不改 YangCAD 其他功能、不推 main。
+
+## 2026-10-26 Exchange P3：C4 线条提交 Join Error 安全隔离
+- 根据 C4 重导出报告定位到 CreateCurves 父事务 Commit 期间的 `Can't keep elements joined`（完整 Journal 未上传独立审计）。
+- 仅线条事务添加受限 IFailuresPreprocessor，符合新建 DetailCurve 白名单且允许 DetachElements 才尝试一次解耦，未知/重复错误回滚。
+- 记录源 Handle → ID、提交后同几何核验；其他转换事务、HATCH、DIMENSION 逻辑未更改。
+- 代码为静态候选；Revit F1/F2 尚未验证，禁止声称原图纸已经恢复。详见 `docs/YANGTOOLS_EXCHANGE_P3_C4_JOIN_FAILURE_20261026.md`。
