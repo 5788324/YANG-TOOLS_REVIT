@@ -15,7 +15,7 @@ namespace YangTools.Revit.Commands
         panelName: "2D修改", buttonText: "CAD转图",
         tooltip: "按 YangCAD Exchange 映射，将 CAD 图纸内容重建为 Revit 详图对象。",
         largeIcon: "Icons/cad_to_revit_32.png", smallIcon: "Icons/cad_to_revit_16.png",
-        usage: "使用：先由 YangCAD 生成 RVT Exchange；打开目标详图视图，点击按钮，在窗口选取映射文件并检查转换范围后执行。\n限制：部分文字、填充、标注和短曲线可能转换失败；执行后核查统计和实际内容。")]
+        usage: "使用：先由 YangCAD 生成 RVT Exchange；打开目标详图视图，点击按钮，在窗口选取映射文件并检查转换范围后执行。\n限制：短边不会被静默删除；空白文字和不支持对象会记录原因。转换后检查本地逐源追踪报告。")]
     public sealed class CadToRevitCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
@@ -91,7 +91,8 @@ namespace YangTools.Revit.Commands
                     throw new InvalidOperationException("确认期间目标文档或活动视图已改变，禁止执行过期 CAD 转换请求。");
 
                 CadToRevitRebuildResult result = CadToRevitRebuildService.Execute(document, view, request);
-                TaskDialog.Show(result.Failures.Count > 0 ? "CAD 转 Revit 图纸 - 部分完成" : "CAD 转 Revit 图纸", result.BuildSummary());
+                TaskDialog.Show(result.Failures.Count > 0 || result.SourceOutcomes.Any(x => x.Status != "created")
+                    ? "CAD 转 Revit 图纸 - 部分完成" : "CAD 转 Revit 图纸", result.BuildSummary());
                 return Result.Succeeded;
             }
             catch (Exception ex)

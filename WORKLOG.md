@@ -1,3 +1,10 @@
+## 2026-10-26｜HF2 → Exchange P1 数据完整性（SOURCE STATIC 候选）
+
+- 以 GitHub HF2 `31a091dabd4b67cf1de5293357b7c75555fa6b68` / 638 文件原始 ZIP SHA `9923FD9E47D4E6EB212A09EF6FF05C5BFCE4EAA154FB40670D5AF0542EFFD5B7` 为唯一基线；不改 HF2 已验收的 Ribbon/2D 清理工具。
+- CAD→Revit：按当前宿主 ShortCurveTolerance 在创建前检查短线、填充轮廓、标注界线；不静默跳过填充短边。Reader 拒绝空白文字、unsupported/重复 Handle、HATCH 非直线或不闭合边界。每个源对象创建/跳过/失败/不支持都进入结果对账。
+- 成功后记录真实 `SourceId/Handle → Revit ElementId (role)`，自动将 JSON 报告存放 `%LOCALAPPDATA%/YangTools/CadToRevit/Reports`，与 DWG/MAP 隔离；全失败回滚时也尝试保留报告。
+- 更新静态测试和使用说明；**无 Windows 编译、无 Revit 实机、无部署**。Revit 2023 生产环境未接触；YangCAD 仓库未动。正式 Release NO-GO。
+
 ## 2026-10-22｜RC3J Ribbon UX 静态候选
 
 基于 RC3J 布局候选，36 个按钮短名/功能提示/扩展使用方法/图标唯一化；中文检查与参数去重并入项目管理，取消检查工具区。新增长期开发规范、功能目录与自动校验；无命令 Execute/算法、无 Git、无部署、无 Revit 实机。新候选不得继承旧 F1 BUILD GO。

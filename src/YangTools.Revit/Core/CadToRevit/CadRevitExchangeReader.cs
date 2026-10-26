@@ -41,19 +41,36 @@ namespace YangTools.Revit.Core.CadToRevit
             if (origin != null) result.Origin = origin;
 
             foreach (JToken token in EnumerateCollection(root, "texts", "text", "text_items", "textItems"))
+            {
+                result.RawEntryCount++;
                 TryParseText(token, result);
+            }
             foreach (JToken token in EnumerateCollection(root, "curves", "lines", "curve_items", "curveItems"))
+            {
+                result.RawEntryCount++;
                 TryParseCurve(token, result);
+            }
             foreach (JToken token in EnumerateCollection(root, "fills", "hatches", "fill_items", "fillItems"))
+            {
+                result.RawEntryCount++;
                 TryParseFill(token, result);
+            }
             foreach (JToken token in EnumerateCollection(root, "dimensions", "dims", "dimension_items", "dimensionItems"))
+            {
+                result.RawEntryCount++;
                 TryParseDimension(token, result);
+            }
 
             // 一些交换格式使用统一 objects/entities 数组。
             foreach (JToken token in EnumerateCollection(root, "objects", "entities", "items"))
             {
+                result.RawEntryCount++;
                 string kind = (ReadString(token, "DxfType", "dxftype", "kind", "type", "entity_type", "entityType", "object_type", "objectType") ?? string.Empty).Trim();
-                if (string.IsNullOrWhiteSpace(kind)) continue;
+                if (string.IsNullOrWhiteSpace(kind))
+                {
+                    AddReaderIssue(result, ReadId(token), "unknown", "缺少 DxfType，无法分类。", "unsupported");
+                    continue;
+                }
                 string lower = kind.ToLowerInvariant();
                 if (lower.Contains("mtext") || lower.Contains("text") || lower.Contains("leader"))
                     TryParseText(token, result);
@@ -61,13 +78,24 @@ namespace YangTools.Revit.Core.CadToRevit
                     TryParseDimension(token, result);
                 else if (lower.Contains("hatch") || lower.Contains("fill"))
                     TryParseFill(token, result);
-                else if (lower.Contains("line") || lower.Contains("polyline") || lower.Contains("arc") || lower.Contains("circle") || lower.Contains("curve"))
+                else if (lower.Contains("spline") || lower.Contains("insert") || lower.Contains("viewport") || lower.Contains("proxy"))
+                    AddReaderIssue(result, ReadId(token), kind, "Exchange V1 不支持该对象；未展开块或将样条伪装为直线。", "unsupported");
+                else if (lower == "line" || lower == "lwpolyline" || lower == "polyline" ||
+                         lower == "arc" || lower == "circle")
                     TryParseCurve(token, result);
+                else
+                    AddReaderIssue(result, ReadId(token), kind, "Exchange V1 不支持此 CAD DxfType。", "unsupported");
             }
 
             DeduplicateBySourceId(result);
+            if (result.RawEntryCount != result.TotalCount + result.ReaderIssues.Count)
+                result.Warnings.Add("MAP 条目与识别/拒绝数量不一致，需要核对重复 SourceId 和混合数组。");
             if (result.TotalCount == 0)
-                throw new InvalidDataException("交换文件中没有识别到可转换的文字、线条、填充或标注对象。请确认使用 YangCAD RVT Exchange 输出。 ");
+            {
+                string issues = string.Join("；", result.ReaderIssues.Take(5).Select(x => x.SourceId + ": " + x.Reason));
+                throw new InvalidDataException("交换文件中没有识别到可转换对象。" +
+                    (string.IsNullOrWhiteSpace(issues) ? "请检查 YangCAD RVT Exchange 输出。" : "示例原因：" + issues));
+            }
             return result;
         }
 
@@ -78,14 +106,14 @@ namespace YangTools.Revit.Core.CadToRevit
                 CadPoint2? position = ReadPoint(First(token, "position", "insert", "insertion_point", "insertionPoint", "location", "point", "text_location", "textLocation"));
                 if (position == null)
                 {
-                    result.Warnings.Add($"文字 {ReadId(token)} 缺少插入点，已跳过。");
+                    AddReaderIssue(result, ReadId(token), "文字", "缺少插入点，已跳过。");
                     return;
                 }
 
                 string text = ReadString(token, "text", "content", "plain_text", "plainText", "raw_text", "rawText", "value") ?? string.Empty;
-                if (string.IsNullOrEmpty(text))
+                if (string.IsNullOrWhiteSpace(text) || text.All(char.IsControl))
                 {
-                    result.Warnings.Add($"文字 {ReadId(token)} 内容为空，已跳过。");
+                    AddReaderIssue(result, ReadId(token), "文字", "内容为空白或仅控制字符，不允许计为 TextNote 创建成功。");
                     return;
                 }
 
@@ -157,7 +185,7 @@ namespace YangTools.Revit.Core.CadToRevit
             }
             catch (Exception ex)
             {
-                result.Warnings.Add($"文字 {ReadId(token)} 解析失败：{ex.Message}");
+                AddReaderIssue(result, ReadId(token), "文字", "解析失败：" + ex.Message);
             }
         }
 
@@ -214,6 +242,11 @@ namespace YangTools.Revit.Core.CadToRevit
                 item.Center = ReadPoint(First(token, "center", "centre", "center_point", "centerPoint"));
 
                 string lower = curveType.ToLowerInvariant();
+                if (!(lower == "line" || lower == "lwpolyline" || lower == "polyline" || lower == "arc" || lower == "circle"))
+                {
+                    AddReaderIssue(result, item.SourceId, curveType, "不支持的曲线类型，拒绝擅自将样条/其他曲线近似重建为直线。", "unsupported");
+                    return;
+                }
                 bool sufficient = lower.Contains("circle")
                     ? item.Center != null && item.Radius > 0
                     : lower.Contains("arc")
@@ -221,14 +254,14 @@ namespace YangTools.Revit.Core.CadToRevit
                         : item.Points.Count >= 2;
                 if (!sufficient)
                 {
-                    result.Warnings.Add($"线条 {item.SourceId} 缺少必要几何数据，已跳过。");
+                    AddReaderIssue(result, item.SourceId, "线条", "缺少必要几何数据，已跳过。");
                     return;
                 }
                 result.Curves.Add(item);
             }
             catch (Exception ex)
             {
-                result.Warnings.Add($"线条 {ReadId(token)} 解析失败：{ex.Message}");
+                AddReaderIssue(result, ReadId(token), "线条", "解析失败：" + ex.Message);
             }
         }
 
@@ -254,17 +287,32 @@ namespace YangTools.Revit.Core.CadToRevit
                         if (loopToken is JObject loopObj && loopObj["curves"] is JArray curveArr)
                         {
                             var loopPts = new List<CadPoint2>();
+                            CadPoint2? firstStart = null;
+                            CadPoint2? previousEnd = null;
                             foreach (JToken cToken in curveArr)
                             {
+                                string edgeType = ReadString(cToken, "Type", "DxfType", "kind") ?? "";
+                                if (!string.Equals(edgeType, "LINE", StringComparison.OrdinalIgnoreCase))
+                                    throw new InvalidDataException("HATCH 边界包含非直线曲线（" + edgeType + "）；V1 不允许将圆弧/样条近似替换成线段。");
                                 CadPoint2? sp = ReadPoint(First(cToken, "StartPoint", "start_point", "startPoint", "start", "p1"));
-                                if (sp != null) loopPts.Add(sp);
+                                CadPoint2? ep = ReadPoint(First(cToken, "EndPoint", "end_point", "endPoint", "end", "p2"));
+                                if (sp == null || ep == null)
+                                    throw new InvalidDataException("HATCH 边界线缺少起点或终点，已拒绝该填充。");
+                                if (previousEnd != null && !SamePoint(previousEnd, sp))
+                                    throw new InvalidDataException("HATCH 相邻边界线不连续，已拒绝该填充。");
+                                if (firstStart == null) firstStart = sp;
+                                loopPts.Add(sp);
+                                previousEnd = ep;
                             }
-                            if (loopPts.Count >= 3) item.Boundaries.Add(loopPts);
+                            if (firstStart == null || previousEnd == null || !SamePoint(previousEnd, firstStart) || loopPts.Count < 3)
+                                throw new InvalidDataException("HATCH 直线边界未闭合或线段数不足，已拒绝该填充。");
+                            item.Boundaries.Add(loopPts);
                         }
                         else
                         {
                             List<CadPoint2> loop = ReadPointList(loopToken);
-                            if (loop.Count >= 3) item.Boundaries.Add(loop);
+                            if (loop.Count < 3) throw new InvalidDataException("填充边界点数不足，不能忽略部分环。");
+                            item.Boundaries.Add(loop);
                         }
                     }
                 }
@@ -275,14 +323,14 @@ namespace YangTools.Revit.Core.CadToRevit
                 }
                 if (item.Boundaries.Count == 0)
                 {
-                    result.Warnings.Add($"填充 {item.SourceId} 没有封闭边界点，已跳过。");
+                    AddReaderIssue(result, item.SourceId, "填充", "没有封闭边界点，已跳过。");
                     return;
                 }
                 result.Fills.Add(item);
             }
             catch (Exception ex)
             {
-                result.Warnings.Add($"填充 {ReadId(token)} 解析失败：{ex.Message}");
+                AddReaderIssue(result, ReadId(token), "填充", "解析失败：" + ex.Message);
             }
         }
 
@@ -380,7 +428,7 @@ namespace YangTools.Revit.Core.CadToRevit
             }
             catch (Exception ex)
             {
-                result.Warnings.Add($"标注 {ReadId(token)} 解析失败：{ex.Message}");
+                AddReaderIssue(result, ReadId(token), "标注", "解析失败：" + ex.Message);
             }
         }
 
@@ -576,12 +624,37 @@ namespace YangTools.Revit.Core.CadToRevit
             return Math.Abs(value) > Math.PI * 2.1 ? value * Math.PI / 180.0 : value;
         }
 
+        private static bool SamePoint(CadPoint2 left, CadPoint2 right)
+        {
+            // 仅用作验证 CAD 原始边界相邻端点是否为数值连续，不进行几何平滑或坐标改写。
+            return Math.Abs(left.X - right.X) <= 1e-8 && Math.Abs(left.Y - right.Y) <= 1e-8;
+        }
+
+        private static void AddReaderIssue(CadRevitExchangeDocument doc, string sourceId, string kind, string reason, string status = "rejected")
+        {
+            doc.ReaderIssues.Add(new CadRevitReaderIssue { SourceId = sourceId, Kind = kind, Reason = reason, Status = status });
+            doc.Warnings.Add($"[{kind}] {sourceId}: {reason}");
+        }
+
+        private static List<T> Deduplicate<T>(IEnumerable<T> items, Func<T, string> id, string kind, CadRevitExchangeDocument doc)
+        {
+            var output = new List<T>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (T item in items)
+            {
+                string sourceId = id(item);
+                if (seen.Add(sourceId)) output.Add(item);
+                else AddReaderIssue(doc, sourceId, kind, "同类型 SourceId 重复，保留首次出现的对象。", "duplicate");
+            }
+            return output;
+        }
+
         private static void DeduplicateBySourceId(CadRevitExchangeDocument doc)
         {
-            doc.Texts = doc.Texts.GroupBy(x => "T:" + x.SourceId, StringComparer.OrdinalIgnoreCase).Select(g => g.First()).ToList();
-            doc.Curves = doc.Curves.GroupBy(x => "C:" + x.SourceId, StringComparer.OrdinalIgnoreCase).Select(g => g.First()).ToList();
-            doc.Fills = doc.Fills.GroupBy(x => "F:" + x.SourceId, StringComparer.OrdinalIgnoreCase).Select(g => g.First()).ToList();
-            doc.Dimensions = doc.Dimensions.GroupBy(x => "D:" + x.SourceId, StringComparer.OrdinalIgnoreCase).Select(g => g.First()).ToList();
+            doc.Texts = Deduplicate(doc.Texts, x => x.SourceId, "文字", doc);
+            doc.Curves = Deduplicate(doc.Curves, x => x.SourceId, "线条", doc);
+            doc.Fills = Deduplicate(doc.Fills, x => x.SourceId, "填充", doc);
+            doc.Dimensions = Deduplicate(doc.Dimensions, x => x.SourceId, "标注", doc);
         }
     }
 }
