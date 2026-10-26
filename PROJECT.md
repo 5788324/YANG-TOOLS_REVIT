@@ -1,3 +1,7 @@
+## 2026-10-22｜RC3J Ribbon UX 候选（非发布基线）
+
+按钮命名、分区迁移、长提示、独立图标与后续开发硬门禁见 `docs/RIBBON_FEATURE_DEVELOPMENT_RULES.md`。本项基于 RC3J 布局候选，不包含几何修复；BUILD/Runtime NOT_TESTED，Release NO-GO，GitHub RC3J 不变。
+
 ## 2026-10-21｜RC3H：删除钢筋测试12入口 / CAD文档语义守卫修复 / 2025-2026 API固定
 
 - **当前唯一源码候选 RC3H**，从 RC3G 派生；RC3G 2021–2026 BUILD GO 是历史编译基线，**不能推断 RC3H 编译/运行通过**。

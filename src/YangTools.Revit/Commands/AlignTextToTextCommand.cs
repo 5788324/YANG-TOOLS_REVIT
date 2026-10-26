@@ -11,7 +11,11 @@ using YangTools.Revit.UI;
 namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
-    [RibbonButton("文本工具区", "基准对齐", "按源文本对齐目标文本的 X/Y 坐标、旋转角度或段落宽度", "Icons/align_text_32.png", "Icons/align_text_16.png")]
+    [RibbonButton(
+        panelName: "文本工具区", buttonText: "基准对齐",
+        tooltip: "按参考文字对齐目标文字的位置、角度或宽度。",
+        largeIcon: "Icons/align_text_32.png", smallIcon: "Icons/align_text_16.png",
+        usage: "使用：点击按钮，按提示拾取参考 TextNote 和待调整 TextNote，并在设置窗口指定对齐项目。\n注意：可选择 X/Y、角度或文本框宽度，执行前确认参考和目标。")]
     public class AlignTextToTextCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)

@@ -8,7 +8,11 @@ using YangTools.Revit.UI;
 namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
-    [RibbonButton("项目工具区", "临时插件箱", tooltip: "按项目管理短期 Revit 插件，并收藏候选转正工具", largeIcon: "Icons/micro_tool_32.png", smallIcon: "Icons/micro_tool_16.png")]
+    [RibbonButton(
+        panelName: "项目工具区", buttonText: "插件箱",
+        tooltip: "管理、加载及运行临时 Revit 插件。",
+        largeIcon: "Icons/micro_tool_32.png", smallIcon: "Icons/micro_tool_16.png",
+        usage: "使用：点击按钮，在插件箱中选择已登记插件，阅读说明后执行或管理收藏。\n注意：临时 DLL 会在 Revit 进程内执行，不是沙箱。")]
     public class MicroToolCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)

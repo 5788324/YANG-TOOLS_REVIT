@@ -9,7 +9,11 @@ using YangTools.Revit.UI;
 namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
-    [RibbonButton("项目信息区", "文件信息", "查看项目文件基本信息与清理预估", "Icons/project_info_32.png", "Icons/project_info_16.png")]
+    [RibbonButton(
+        panelName: "项目信息区", buttonText: "文件信息",
+        tooltip: "查看当前项目文件信息和清理预估。",
+        largeIcon: "Icons/project_info_32.png", smallIcon: "Icons/project_info_16.png",
+        usage: "使用：打开项目后点击按钮，在信息窗口查看体积、项目状态和可清理内容。\n注意：预估信息不代表已经实施清理。")]
     public class ProjectInfoCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)

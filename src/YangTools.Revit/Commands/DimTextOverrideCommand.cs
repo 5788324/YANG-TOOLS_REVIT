@@ -11,7 +11,11 @@ using YangTools.Revit.UI;
 namespace YangTools.Revit.Commands;
 
 [Transaction(TransactionMode.Manual)]
-[RibbonButton("标注工具区", "标注替换", "拾取标注并替换显示文本", "Icons/dim_override_32.png", "Icons/dim_override_16.png")]
+[RibbonButton(
+        panelName: "标注工具区", buttonText: "标注替换",
+        tooltip: "替换标注显示文字，不修改测量几何尺寸。",
+        largeIcon: "Icons/dim_override_32.png", smallIcon: "Icons/dim_override_16.png",
+        usage: "使用：点击按钮，拾取目标标注，在窗口输入需要显示的文字并确认。\n注意：这是文字覆盖，不能替代真实尺寸修改。")]
 public class DimTextOverrideCommand : IExternalCommand
 {
 	public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)

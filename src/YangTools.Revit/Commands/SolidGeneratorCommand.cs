@@ -10,7 +10,11 @@ using YangTools.Revit.UI;
 namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
-    [RibbonButton("模型修改区", "实体提取", "提取所选图元几何体并生成实体族", "Icons/solid_extract_32.png", "Icons/solid_extract_16.png")]
+    [RibbonButton(
+        panelName: "模型修改区", buttonText: "实体提取",
+        tooltip: "从图元几何提取实体并生成族对象。",
+        largeIcon: "Icons/solid_extract_32.png", smallIcon: "Icons/solid_extract_16.png",
+        usage: "使用：点击按钮，按提示选择源图元，在窗口配置目标族与生成位置后执行。\n注意：源几何的宿主/标高与偏移需要执行后核对。")]
     public class SolidGeneratorCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)

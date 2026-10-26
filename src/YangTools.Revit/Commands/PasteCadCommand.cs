@@ -12,11 +12,10 @@ namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
     [RibbonButton(
-        "导入工具区",
-        "从CAD粘贴",
-        "检测 AutoCAD Ctrl+C 生成的临时 DWG，并按当前设置导入到活动视图。",
-        "Icons/paste_cad_32.png",
-        "Icons/paste_cad_16.png")]
+        panelName: "2D修改", buttonText: "CAD粘贴",
+        tooltip: "将 AutoCAD 复制的数据粘贴到当前 Revit 视图。",
+        largeIcon: "Icons/paste_cad_32.png", smallIcon: "Icons/paste_cad_16.png",
+        usage: "使用：在 AutoCAD 中复制对象（Ctrl+C），切到目标 Revit 视图，点击按钮并在窗口选择导入选项。\n注意：需要有效的 CAD 剪贴数据；导入前确认目标视图和单位。")]
     public class PasteCadCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)

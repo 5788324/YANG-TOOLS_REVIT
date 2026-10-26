@@ -23,6 +23,9 @@ namespace YangTools.Revit.Core
         /// </summary>
         public string Tooltip { get; }
 
+        /// <summary>详细使用步骤与适用边界，显示在 Ribbon 扩展提示中。</summary>
+        public string Usage { get; }
+
         /// <summary>
         /// 32x32 大图标路径（可以是程序集嵌入资源，也可以是本地绝对路径，支持以 "pack://application:,,," 开头的 URI）
         /// </summary>
@@ -68,11 +71,13 @@ namespace YangTools.Revit.Core
             bool isSlideOut = false,
             int order = 1000,
             string? groupLargeIcon = null,
-            string? groupSmallIcon = null)
+            string? groupSmallIcon = null,
+            string usage = "")
         {
             PanelName = panelName;
             ButtonText = buttonText;
             Tooltip = tooltip;
+            Usage = usage;
             LargeIcon = largeIcon;
             SmallIcon = smallIcon;
             GroupName = groupName;

@@ -13,11 +13,10 @@ namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
     [RibbonButton(
-        "项目管理区",
-        "绑定材质",
-        "选择一个或多个族实例，自动绑定材质族参数并把指定项目材质赋给所选实例或对应族类型",
-        "Icons/family_manager_32.png",
-        "Icons/family_manager_16.png")]
+        panelName: "模型修改区", buttonText: "材质绑定",
+        tooltip: "给选中族实例或相应族类型绑定材质参数并赋予材质。",
+        largeIcon: "Icons/material_binding_32.png", smallIcon: "Icons/material_binding_16.png",
+        usage: "使用：先选择族实例或点击后拾取，再在窗口选择材质、参数名与实例/类型作用范围，确认后执行。\n注意：选择类型级会影响同类型的其他实例。")]
     public sealed class SimpleFamilyMaterialBindingCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)

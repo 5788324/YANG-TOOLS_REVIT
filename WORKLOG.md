@@ -1,3 +1,7 @@
+## 2026-10-22｜RC3J Ribbon UX 静态候选
+
+基于 RC3J 布局候选，36 个按钮短名/功能提示/扩展使用方法/图标唯一化；中文检查与参数去重并入项目管理，取消检查工具区。新增长期开发规范、功能目录与自动校验；无命令 Execute/算法、无 Git、无部署、无 Revit 实机。新候选不得继承旧 F1 BUILD GO。
+
 ## 2026-10-21｜RC3H：删除钢筋测试12入口 / CAD文档语义守卫修复 / 2025-2026 API固定
 
 - **当前唯一源码候选 RC3H**，从 RC3G 派生；RC3G 2021–2026 BUILD GO 是历史编译基线，**不能推断 RC3H 编译/运行通过**。
@@ -2022,3 +2026,26 @@ ChatGPT 从 RC2N canonical SHA A0AA68AF5F415014F1687811047F9C7AFC888B826CF57B809
 - B4/C1 original DeepSeek evidence SHA F8D240BB487B32F99F342D7A42583BAE497F50E6C490CC6F612BC2CB9F3C3A0E, 36/36 ZIP CRC PASS. Real Windows logs: 2021 5xCS1061 FreeFormAccessor.RebarStyle, 2026 4xCS1739 GetCenterlineCurves named arg + 1xCS1501 constraint candidate overload; 2022–2025 build logs success. 2025.4 four WPF windows actual opened and closed under blank Project1 with valid screenshots; transaction/Undo NOT_TESTED.
 - RC3G minimal scope: five core Rebar .cs files adjusted; positional centerline API arguments, 2026+ constrained target overload, fail-closed Revit2021 GR01 Create before Transaction.Start if style untestable; R00 inspect reports unavailable style for 2021 freeform. Other versions' GR01 setter/readback preserved.
 - Fixed one old 2024-only static guard and added 16-target API gate. Windows compilation and feature runtime evidence pending. Revit2023 production protected; DeepSeek will execute isolated compile-only, NOT deploy or touch any Revit application. Release NO-GO.
+
+## 2026-10-22 RC3J Geometry Fix + Ribbon UX（静态候选，未编译）
+- 输入：RC3J Ribbon UX 632 文件候选，维持 10 面板 / 36 功能 / 独立图标。
+- 代码：新增 `Core/DetailLineCleanup.cs`，重写三项 2D 工具的选择、几何计划、标注保护与保留 ID 的事务执行；同时修改使用说明及专项静态测试。
+- 限制：已知 API 依赖与 Dimension 引用的保守跳过；无法声称保证所有外部引用安全；未执行 Windows 编译/Revit F2/Undo。
+- 验收：等待 Gemini 提交可核验 F1 + 隔离 Revit F2 原始证据。生产 Revit 2023 不可动；Git/main 未修改。
+
+
+## 2026-10-23 — RC3J GeometryFix HF1（隔离源修复）
+
+- 输入：634 文件 GeometryFix+RibbonUX 静态候选，SHA-256 `12474AE93102441A9929386FA0ECD37E5593055A4BF7A9FC17DBB7FAAD3E2902`。
+- 报告问题：Gemini 在 Revit 2025 F2 的 J01/O01 提交路径报告 `InvalidObjectException`，读取 `doc.Delete` 之后已经失效的 `source.Element.Id`。该结论有源码直接支持，Gemini 运行证据未独立全量复核。
+- 修复：`Core/DetailLineCleanup.cs` 预先缓存 keeperId/redundantIds，删除及验证只使用 ElementId；新增 `tools/Test-RC3J-DeletedElementIdGuard.py` 与设计记录。
+- 不变：几何算法、UI/Ribbon 36 按钮 10 面板、图标/帮助、其他业务功能，未触碰 Git。
+- 当前验收：SOURCE STATIC；HF1 BUILD/Runtime/Undo 均 NOT_TESTED，Release NO-GO。
+- 后续：先隔离编译 Revit 2025 并复测 J01/O01；若通过，再集中编译 2021–2026 及执行必要 QA 回归。
+- 原 `Test-RC3I-LineTextFeatures.py` 删除路径断言改为缓存的 redundantId，避免旧断言阻碍有效修复。
+
+
+## 2026-10-26 RC3J-HF2 静态补丁
+- 依据 Gemini 2026-10-23 F2 原生命令证据，只修自依赖误判、预选删除及正交 T 分支判定。
+- 修改 3 个 C#，新增 1 个防回归脚本和 1 份说明；无模型部署、Git 同步或 Revit 编译。
+- Windows 编译、实际按钮、Ctrl+Z 和跨版本 Runtime：NOT_TESTED。

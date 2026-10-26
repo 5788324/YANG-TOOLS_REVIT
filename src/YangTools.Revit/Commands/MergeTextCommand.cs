@@ -12,7 +12,11 @@ using YangTools.Revit.UI;
 namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
-    [RibbonButton("文本工具区", "文本合并", "用指定分隔符合并多个文本", "Icons/merge_text_32.png", "Icons/merge_text_16.png")]
+    [RibbonButton(
+        panelName: "文本工具区", buttonText: "文本合并",
+        tooltip: "将多个 TextNote 按指定分隔符合并。",
+        largeIcon: "Icons/merge_text_32.png", smallIcon: "Icons/merge_text_16.png",
+        usage: "使用：点击按钮并拾取多个 TextNote，在窗口设置合并顺序与分隔符，确认后执行。\n注意：合并会修改原文字对象；需保留独立段落时不要执行。")]
     public class MergeTextCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)

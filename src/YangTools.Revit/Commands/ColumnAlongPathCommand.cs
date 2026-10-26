@@ -9,11 +9,10 @@ namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
     [RibbonButton(
-        "模型修改区",
-        "沿线布柱",
-        "选择连续模型线，按固定间距布置柱，沿路线切线旋转并设置底部/顶部标高与偏移",
-        "Icons/column_along_path_32.png",
-        "Icons/column_along_path_16.png")]
+        panelName: "模型修改区", buttonText: "沿线布柱",
+        tooltip: "沿连续模型线按固定间距放置柱。",
+        largeIcon: "Icons/column_along_path_32.png", smallIcon: "Icons/column_along_path_16.png",
+        usage: "使用：点击按钮，在窗口选取连续模型线、柱类型、间距、起终点及上下标高偏移，确认后生成。\n注意：模型线方向影响起点、末端及柱旋转。")]
     public sealed class ColumnAlongPathCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)

@@ -11,11 +11,10 @@ namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
     [RibbonButton(
-        "项目管理区",
-        "族类别修改",
-        "批量修改可编辑载入族的 Revit 族类别，例如 Abutments → Generic Models",
-        "Icons/family_manager_32.png",
-        "Icons/family_manager_16.png")]
+        panelName: "项目管理区", buttonText: "族类别",
+        tooltip: "修改可编辑载入族的族类别。",
+        largeIcon: "Icons/family_category_32.png", smallIcon: "Icons/family_category_16.png",
+        usage: "使用：点击按钮，在窗口选定可编辑载入族及目标类别，核对映射后执行。\n注意：类别更改可能影响可见性、明细表和族参数。")]
     public sealed class FamilyCategoryChangeCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)

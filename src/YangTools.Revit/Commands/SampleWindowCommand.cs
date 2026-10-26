@@ -9,7 +9,11 @@ using YangTools.Revit.UI;
 namespace YangTools.Revit.Commands;
 
 [Transaction(TransactionMode.Manual)]
-[RibbonButton("系统管理区", "系统设置", "主题配色、Ribbon 面板自定义、插件信息", "Icons/sample_window_32.png", "Icons/sample_window_16.png")]
+[RibbonButton(
+        panelName: "系统管理区", buttonText: "系统设置",
+        tooltip: "打开主题、Ribbon 布局与插件选项。",
+        largeIcon: "Icons/sample_window_32.png", smallIcon: "Icons/sample_window_16.png",
+        usage: "使用：点击按钮，按需要修改主题或 Ribbon 显隐并保存设置。\n注意：部分 Ribbon 布局可能需要重新加载插件才能完全生效。")]
 public class SampleWindowCommand : IExternalCommand
 {
 	public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)

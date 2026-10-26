@@ -324,7 +324,7 @@ def main() -> int:
             parameter_cleanup_text[name] = read_utf8(path)
 
     required_parameter_tokens = {
-        "command": ("检查工具区", "重复项目参数清理", "parameter_cleanup_32.png"),
+        "command": ("项目管理区", "参数去重", "parameter_cleanup_32.png"),
         "window_xaml": ("功能说明", "运行输出与预览报告", "快速处理：合并并清理", "全选可处理项", "全不选", "反选", "测试：最多 10 个来源参数"),
         "window_cs": ("BuildScanPreview", "BuildPostCleanupReport", "WriteVerification", "ApplySelection", "FirstTenSources", "UpdateSelectionSummary", "snapshot.ValueIndex", "DispatcherPriority.Render"),
         "merge": ("MergeValuesIndexed", "operationsByElementId", "TryGetParameterByIdentity", "ParameterApiCompatibility.ReInsert", "IdentityFailureAbortThreshold", "值引擎提前停止"),

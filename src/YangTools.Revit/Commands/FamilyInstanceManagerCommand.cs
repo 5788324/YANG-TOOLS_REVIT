@@ -9,7 +9,11 @@ using YangTools.Revit.Core;
 namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
-    [RibbonButton("项目管理区", "族实例管理", "管理并修改当前文档中的族实例", "Icons/family_instance_32.png", "Icons/family_instance_16.png")]
+    [RibbonButton(
+        panelName: "项目管理区", buttonText: "族实例",
+        tooltip: "查询、批量编辑当前项目中的族实例。",
+        largeIcon: "Icons/family_instance_32.png", smallIcon: "Icons/family_instance_16.png",
+        usage: "使用：点击按钮，在窗口筛选族实例，选择参数编辑、换型或 Excel 操作并确认。\n注意：批量操作前检查族类型、数量和参数范围。")]
     public class FamilyInstanceManagerCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)

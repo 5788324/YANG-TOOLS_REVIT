@@ -91,9 +91,19 @@ namespace YangTools.Revit.Core
         /// <summary>查询命令是否显示在 Ribbon 主区；false 表示进入面板展开区。</summary>
         public static bool IsCommandVisibleOnMainPanel(string panelName, string commandFullName, bool defaultVisible = false)
         {
-            if (Current.PanelSettings.TryGetValue(panelName, out var commands) &&
+            // 优先使用当前面板中的显隐设置。迁移 Ribbon 面板后，旧版 JSON 仍按原面板名存储；
+            // 以命令的唯一 FullName 回退查找，避免升级时静默丢失用户已有的自定义设置。
+            var panelSettings = Current.PanelSettings;
+            if (panelSettings == null) return defaultVisible;
+            if (panelSettings.TryGetValue(panelName, out var commands) && commands != null &&
                 commands.TryGetValue(commandFullName, out bool isVisible))
                 return isVisible;
+            foreach (var panel in panelSettings)
+            {
+                if (panel.Key == panelName || panel.Value == null) continue;
+                if (panel.Value.TryGetValue(commandFullName, out bool previousVisibility))
+                    return previousVisibility;
+            }
             return defaultVisible;
         }
     }
