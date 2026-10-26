@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace YangTools.Revit.Core.CadToRevit
 {
@@ -96,6 +97,9 @@ namespace YangTools.Revit.Core.CadToRevit
         public List<CadFillItem> Fills { get; set; } = new List<CadFillItem>();
         public List<CadDimensionItem> Dimensions { get; set; } = new List<CadDimensionItem>();
         public List<string> Warnings { get; set; } = new List<string>();
+        // 输入 MAP 的原始条目数（含不支持对象和重复条目），不能当作 CAD 扫描总数。
+        public int RawEntryCount { get; set; }
+        public List<CadRevitReaderIssue> ReaderIssues { get; set; } = new List<CadRevitReaderIssue>();
 
         public int TotalCount => Texts.Count + Curves.Count + Fills.Count + Dimensions.Count;
     }
@@ -157,6 +161,29 @@ namespace YangTools.Revit.Core.CadToRevit
         public string DimensionReferenceLineStyleName { get; set; } = "YangTools-尺寸界线";
     }
 
+    public sealed class CadRevitReaderIssue
+    {
+        public string SourceId { get; set; } = string.Empty;
+        public string Kind { get; set; } = string.Empty;
+        public string Reason { get; set; } = string.Empty;
+        public string Status { get; set; } = "rejected"; // rejected / unsupported / duplicate
+    }
+
+    public sealed class CadToRevitElementTrace
+    {
+        public long ElementId { get; set; }
+        public string Role { get; set; } = string.Empty; // detail_curve / text / fill / dimension / dimension_reference_line
+    }
+
+    public sealed class CadToRevitSourceOutcome
+    {
+        public string SourceId { get; set; } = string.Empty;
+        public string Kind { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty; // created / skipped / failed / rejected / unsupported / duplicate
+        public string Reason { get; set; } = string.Empty;
+        public List<CadToRevitElementTrace> Elements { get; set; } = new List<CadToRevitElementTrace>();
+    }
+
     public sealed class CadToRevitFailure
     {
         public string SourceId { get; set; } = string.Empty;
@@ -174,6 +201,11 @@ namespace YangTools.Revit.Core.CadToRevit
         public int CreatedDimensionReferenceLines { get; set; }
         public int Skipped { get; set; }
         public int CreatedTypes { get; set; }
+        public int RawMapEntries { get; set; }
+        public int ParsedSourceObjects { get; set; }
+        public string ReportPath { get; set; } = string.Empty;
+        public List<string> AuditWarnings { get; set; } = new List<string>();
+        public List<CadToRevitSourceOutcome> SourceOutcomes { get; set; } = new List<CadToRevitSourceOutcome>();
         public List<CadToRevitFailure> Failures { get; set; } = new List<CadToRevitFailure>();
 
         public int CreatedTotal => CreatedTexts + CreatedCurves + CreatedFills + CreatedDimensions;
@@ -189,10 +221,13 @@ namespace YangTools.Revit.Core.CadToRevit
                    $"标注参考线：{CreatedDimensionReferenceLines}\n" +
                    $"新建/复制类型：{CreatedTypes}\n" +
                    $"跳过：{Skipped}\n" +
-                   $"失败：{Failures.Count}\n\n" +
-                   (Failures.Count == 0
-                       ? "全部已按映射完成。可使用一次 Ctrl+Z 撤销整次转换。"
-                       : "存在失败项；成功项仍保留在同一个撤销步骤中。请查看诊断日志中的失败明细。");
+                   $"失败：{Failures.Count}\n" +
+                   $"MAP 原始条目：{RawMapEntries}；识别对象：{ParsedSourceObjects}\n" +
+                   $"读取拒绝/不支持/重复：{SourceOutcomes.Count(x => x.Status == "rejected" || x.Status == "unsupported" || x.Status == "duplicate")}\n" +
+                   (string.IsNullOrWhiteSpace(ReportPath) ? "转换追踪报告保存失败；请查看诊断日志。\n" : $"逐源追踪报告：{ReportPath}\n") +
+                   (Failures.Count == 0 && SourceOutcomes.All(x => x.Status == "created")
+                       ? "已按映射完成。整次转换的成功项由一个事务组合并，可使用 Ctrl+Z 撤销。"
+                       : "存在跳过、拒绝或失败对象；成功项仍在一个撤销步骤中。逐源报告包含完整明细。");
         }
     }
 }

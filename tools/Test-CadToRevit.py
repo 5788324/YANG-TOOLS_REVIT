@@ -63,7 +63,7 @@ add("reader_fixture_mleader_text", bool(str(fixture_ml_data.get("text", "")).str
 
 # UI/Ribbon/theme/icon contract
 add("version_4_0_0", "<Version>4.0.0</Version>" in csproj)
-add("ribbon_import_panel", '"导入工具区"' in command and '"CAD转Revit图纸"' in command)
+add("ribbon_2d_panel", '"2D修改"' in command and '"CAD转图"' in command)
 add("ribbon_icons", "cad_to_revit_32.png" in command and "cad_to_revit_16.png" in command)
 add("icon_32_exists", (SRC / "Icons" / "cad_to_revit_32.png").exists())
 add("icon_16_exists", (SRC / "Icons" / "cad_to_revit_16.png").exists())
@@ -75,7 +75,8 @@ add("exploded_not_default", "CadExplodedReference" in models and "row.Action = C
 
 # Mapping semantics
 add("mapping_by_name", '"Mapping.json"' in store and "TargetName" in models)
-add("mapping_no_element_id", "ElementId" not in store and "ElementId" not in re.sub(r"CadRevitObjectKind", "", models))
+mapping_section = models[models.index("public sealed class CadToRevitMappingSnapshot"):models.index("public sealed class CadToRevitRebuildRequest")]
+add("mapping_no_element_id", "ElementId" not in store and "ElementId" not in mapping_section)
 add("mapping_appdata", 'Environment.SpecialFolder.ApplicationData' in store and '"CadToRevit"' in store)
 add("mapping_safe_replace", "File.Replace" in store and "File.Copy(temp, MappingPath, true)" in store and "File.Delete(MappingPath)" not in store)
 add("text_no_h100_guess", "Regex.Match(source" not in catalog and "TEXT_SIZE" not in service and "TEXT_FONT" not in service)
@@ -109,7 +110,7 @@ add("native_dimension", "document.Create.NewDimension" in service and "Dimension
 add("dimension_special_style", "YangTools-尺寸界线" in models and "EnsureDimensionReferenceLineStyle" in service and "尺寸界线专用线样式" in xaml)
 add("dimension_reference_lines_separate", "detail.LineStyle = referenceStyle" in service and "GeometryCurve.Reference" in service)
 add("dimension_regenerate_before_reference", service.find("document.Regenerate();", service.find("private static void CreateDimensions")) < service.find("Reference? reference = detail.GeometryCurve.Reference", service.find("private static void CreateDimensions")))
-add("dimension_failure_subtransaction", "using (var sub = new SubTransaction(document))" in service and "尺寸界线长度小于" in service)
+add("dimension_failure_subtransaction", "using (var sub = new SubTransaction(document))" in service and "AssertSegmentLength(start, end, shortCurveTolerance" in service)
 
 # Transaction/undo/counters
 add("outer_transaction_group", 'new TransactionGroup(document, "CAD 转 Revit 图纸")' in service and "group.Assimilate()" in service)

@@ -18,7 +18,21 @@ namespace YangTools.Revit.Core.CadToRevit
             if (document.IsReadOnly) throw new InvalidOperationException("当前 Revit 文档为只读状态。 ");
             if (view.IsTemplate) throw new InvalidOperationException("视图样板不能创建详图对象。 ");
 
-            var result = new CadToRevitRebuildResult();
+            var result = new CadToRevitRebuildResult
+            {
+                RawMapEntries = request.Exchange.RawEntryCount,
+                ParsedSourceObjects = request.Exchange.TotalCount
+            };
+            foreach (CadRevitReaderIssue issue in request.Exchange.ReaderIssues)
+                result.SourceOutcomes.Add(new CadToRevitSourceOutcome
+                {
+                    SourceId = issue.SourceId, Kind = issue.Kind, Status = issue.Status, Reason = issue.Reason
+                });
+
+            // 由当前 Revit 宿主提供最小有效曲线长度；不能使用自定 1e-8 ft 当作建模阈值。
+            double shortCurveTolerance = document.Application.ShortCurveTolerance;
+            if (double.IsNaN(shortCurveTolerance) || double.IsInfinity(shortCurveTolerance) || shortCurveTolerance <= 0)
+                throw new InvalidOperationException("无法读取 Revit ShortCurveTolerance，已禁止转换。");
             var coordinate = new CoordinateConverter(view, request.Exchange);
             var resolved = new ResolvedMappings();
 
@@ -51,15 +65,20 @@ namespace YangTools.Revit.Core.CadToRevit
                         }
                     }
 
-                    CreateCurves(document, view, request, coordinate, resolved, result);
+                    CreateCurves(document, view, request, coordinate, resolved, result, shortCurveTolerance);
                     CreateTexts(document, view, request, coordinate, resolved, result);
-                    CreateFills(document, view, request, coordinate, resolved, result);
-                    CreateDimensions(document, view, request, coordinate, resolved, result);
+                    CreateFills(document, view, request, coordinate, resolved, result, shortCurveTolerance);
+                    CreateDimensions(document, view, request, coordinate, resolved, result, shortCurveTolerance);
 
                     if (result.CreatedTotal == 0)
                     {
                         group.RollBack();
-                        throw new InvalidOperationException("没有任何 CAD 对象成功转换。已回滚本次操作。 ");
+                        // 全失败仍需保留逐源失败原因，不因模型已回滚而丢失诊断证据。
+                        string rejectedReport = string.Empty;
+                        try { rejectedReport = CadToRevitAuditStore.Write(request.Exchange, result, shortCurveTolerance); }
+                        catch (Exception ex) { DiagnosticLog.WriteInfo("CAD 转 Revit 全失败追踪报告保存失败", ex.ToString()); }
+                        throw new InvalidOperationException("没有任何 CAD 对象成功转换，已回滚。逐源报告：" +
+                            (string.IsNullOrWhiteSpace(rejectedReport) ? "保存失败，请检查诊断日志。" : rejectedReport));
                     }
 
                     TransactionStatus groupStatus = group.Assimilate();
@@ -75,6 +94,14 @@ namespace YangTools.Revit.Core.CadToRevit
                     catch { }
                     throw;
                 }
+            }
+
+            // 事务组 Assimilate 成功后才写逐源 ID 对账；报告写入失败不回滚已经提交的模型。
+            try { result.ReportPath = CadToRevitAuditStore.Write(request.Exchange, result, shortCurveTolerance); }
+            catch (Exception ex)
+            {
+                result.AuditWarnings.Add("逐源审计文件保存失败：" + ex.Message);
+                DiagnosticLog.WriteInfo("CAD 转 Revit 追踪报告保存失败", ex.ToString());
             }
 
             if (result.Failures.Count > 0)
@@ -236,7 +263,7 @@ namespace YangTools.Revit.Core.CadToRevit
             }
         }
 
-        private static void CreateCurves(Document document, View view, CadToRevitRebuildRequest request, CoordinateConverter coordinate, ResolvedMappings resolved, CadToRevitRebuildResult result)
+        private static void CreateCurves(Document document, View view, CadToRevitRebuildRequest request, CoordinateConverter coordinate, ResolvedMappings resolved, CadToRevitRebuildResult result, double shortCurveTolerance)
         {
             Dictionary<string, CadToRevitMappingRow> mapping = ToMappingDictionary(request.LineMappings);
             using (var transaction = new Transaction(document, "CAD 转 Revit - 线条"))
@@ -246,7 +273,7 @@ namespace YangTools.Revit.Core.CadToRevit
                 {
                     if (!mapping.TryGetValue(item.StyleKey, out CadToRevitMappingRow? row) || row.Action == CadToRevitMappingActions.Skip)
                     {
-                        result.Skipped++;
+                        AddSkipped(result, item.SourceId, "线条", "映射选择跳过，或没有匹配映射。");
                         continue;
                     }
                     if (!resolved.LineStyleIds.TryGetValue(item.StyleKey, out ElementId styleId) || styleId == ElementId.InvalidElementId)
@@ -260,18 +287,19 @@ namespace YangTools.Revit.Core.CadToRevit
                         try
                         {
                             sub.Start();
-                            List<Curve> curves = BuildRevitCurves(item, coordinate);
+                            List<Curve> curves = BuildRevitCurves(item, coordinate, shortCurveTolerance);
                             GraphicsStyle style = document.GetElement(styleId) as GraphicsStyle
                                 ?? throw new InvalidOperationException("目标 Revit 线样式无效。 ");
-                            int createdCount = 0;
+                            var created = new List<CadToRevitElementTrace>();
                             foreach (Curve curve in curves)
                             {
                                 DetailCurve detail = document.Create.NewDetailCurve(view, curve);
                                 detail.LineStyle = style;
-                                createdCount++;
+                                created.Add(Trace(detail.Id, "detail_curve"));
                             }
                             CommitSubTransactionOrThrow(sub, "线条");
-                            result.CreatedCurves += createdCount;
+                            result.CreatedCurves += created.Count;
+                            AddCreated(result, item.SourceId, "线条", created);
                         }
                         catch (Exception ex)
                         {
@@ -294,12 +322,18 @@ namespace YangTools.Revit.Core.CadToRevit
                 {
                     if (!mapping.TryGetValue(item.StyleKey, out CadToRevitMappingRow? row) || row.Action == CadToRevitMappingActions.Skip)
                     {
-                        result.Skipped++;
+                        AddSkipped(result, item.SourceId, "文字", "映射选择跳过，或没有匹配映射。");
                         continue;
                     }
                     if (!resolved.TextTypeIds.TryGetValue(item.StyleKey, out ElementId typeId) || typeId == ElementId.InvalidElementId)
                     {
                         AddFailure(result, item.SourceId, "文字", $"映射目标“{row.TargetName}”不存在。 ");
+                        continue;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(item.Text) || item.Text.All(char.IsControl))
+                    {
+                        AddFailure(result, item.SourceId, "文字", "文本仅含空白或控制字符，未创建 TextNote。");
                         continue;
                     }
 
@@ -310,11 +344,13 @@ namespace YangTools.Revit.Core.CadToRevit
                             sub.Start();
                             XYZ position = coordinate.ToViewPoint(item.Position);
                             int leaderCount = 0;
+                            long textNoteId = -1;
                             using (var options = new TextNoteOptions(typeId))
                             {
                                 options.Rotation = item.RotationRadians;
                                 options.HorizontalAlignment = ParseTextAlignment(item.HorizontalAlignment);
                                 TextNote note = TextNote.Create(document, view.Id, position, item.Text, options);
+                                textNoteId = note.Id.GetIdValue();
 
                                 foreach (CadLeader2 cadLeader in item.Leaders)
                                 {
@@ -336,6 +372,9 @@ namespace YangTools.Revit.Core.CadToRevit
                             CommitSubTransactionOrThrow(sub, "文字/引线");
                             result.CreatedTexts++;
                             result.CreatedLeaders += leaderCount;
+                            AddCreated(result, item.SourceId, "文字", new[] {
+                                new CadToRevitElementTrace { ElementId = textNoteId, Role = "text_note" }
+                            });
                         }
                         catch (Exception ex)
                         {
@@ -348,7 +387,7 @@ namespace YangTools.Revit.Core.CadToRevit
             }
         }
 
-        private static void CreateFills(Document document, View view, CadToRevitRebuildRequest request, CoordinateConverter coordinate, ResolvedMappings resolved, CadToRevitRebuildResult result)
+        private static void CreateFills(Document document, View view, CadToRevitRebuildRequest request, CoordinateConverter coordinate, ResolvedMappings resolved, CadToRevitRebuildResult result, double shortCurveTolerance)
         {
             Dictionary<string, CadToRevitMappingRow> mapping = ToMappingDictionary(request.FillMappings);
             using (var transaction = new Transaction(document, "CAD 转 Revit - 填充"))
@@ -358,7 +397,7 @@ namespace YangTools.Revit.Core.CadToRevit
                 {
                     if (!mapping.TryGetValue(item.StyleKey, out CadToRevitMappingRow? row) || row.Action == CadToRevitMappingActions.Skip)
                     {
-                        result.Skipped++;
+                        AddSkipped(result, item.SourceId, "填充", "映射选择跳过，或没有匹配映射。");
                         continue;
                     }
                     if (!resolved.FillTypeIds.TryGetValue(item.StyleKey, out ElementId typeId) || typeId == ElementId.InvalidElementId)
@@ -373,14 +412,18 @@ namespace YangTools.Revit.Core.CadToRevit
                         {
                             sub.Start();
                             var loops = new List<CurveLoop>();
-                            foreach (List<CadPoint2> boundary in item.Boundaries)
+                            for (int index = 0; index < item.Boundaries.Count; index++)
                             {
-                                CurveLoop loop = BuildCurveLoop(boundary, coordinate);
+                                // 任意一个短边直接拒绝整个填充，不擅自删除短边改变闭合轮廓。
+                                CurveLoop loop = BuildCurveLoop(item.Boundaries[index], coordinate, shortCurveTolerance, index + 1);
                                 loops.Add(loop);
                             }
-                            FilledRegion.Create(document, typeId, view.Id, loops);
+                            FilledRegion filled = FilledRegion.Create(document, typeId, view.Id, loops);
+                            if (filled == null) throw new InvalidOperationException("Revit 未返回填充区域对象。");
+                            var created = new[] { Trace(filled.Id, "filled_region") };
                             CommitSubTransactionOrThrow(sub, "填充");
                             result.CreatedFills++;
+                            AddCreated(result, item.SourceId, "填充", created);
                         }
                         catch (Exception ex)
                         {
@@ -393,11 +436,16 @@ namespace YangTools.Revit.Core.CadToRevit
             }
         }
 
-        private static void CreateDimensions(Document document, View view, CadToRevitRebuildRequest request, CoordinateConverter coordinate, ResolvedMappings resolved, CadToRevitRebuildResult result)
+        private static void CreateDimensions(Document document, View view, CadToRevitRebuildRequest request, CoordinateConverter coordinate, ResolvedMappings resolved, CadToRevitRebuildResult result, double shortCurveTolerance)
         {
             Dictionary<string, CadToRevitMappingRow> mapping = ToMappingDictionary(request.DimensionMappings);
-            if (request.Exchange.Dimensions.Count == 0 || request.DimensionMappings.All(x => x.Action == CadToRevitMappingActions.Skip))
+            if (request.Exchange.Dimensions.Count == 0) return;
+            if (request.DimensionMappings.All(x => x.Action == CadToRevitMappingActions.Skip))
+            {
+                foreach (CadDimensionItem item in request.Exchange.Dimensions)
+                    AddSkipped(result, item.SourceId, "标注", "所有标注类型已设为跳过。");
                 return;
+            }
             GraphicsStyle referenceStyle = document.GetElement(resolved.DimensionReferenceStyleId) as GraphicsStyle
                 ?? throw new InvalidOperationException("尺寸界线专用 Revit 线样式无效。 ");
 
@@ -408,7 +456,7 @@ namespace YangTools.Revit.Core.CadToRevit
                 {
                     if (!mapping.TryGetValue(item.StyleKey, out CadToRevitMappingRow? row) || row.Action == CadToRevitMappingActions.Skip)
                     {
-                        result.Skipped++;
+                        AddSkipped(result, item.SourceId, "标注", "映射选择跳过，或没有匹配映射。");
                         continue;
                     }
                     if (!resolved.DimensionTypeIds.TryGetValue(item.StyleKey, out ElementId typeId) || typeId == ElementId.InvalidElementId)
@@ -428,12 +476,13 @@ namespace YangTools.Revit.Core.CadToRevit
                         {
                             sub.Start();
                             var referenceCurves = new List<DetailCurve>();
+                            int refIndex = 0;
                             foreach (CadLine2 cadLine in item.ReferenceLines)
                             {
                                 XYZ start = coordinate.ToViewPoint(cadLine.Start);
                                 XYZ end = coordinate.ToViewPoint(cadLine.End);
-                                if (start.DistanceTo(end) <= PointToleranceFeet)
-                                    throw new InvalidOperationException("尺寸界线长度小于 Revit 可创建容差。 ");
+                                refIndex++;
+                                AssertSegmentLength(start, end, shortCurveTolerance, $"尺寸界线第 {refIndex} 段");
                                 DetailCurve detail = document.Create.NewDetailCurve(view, Line.CreateBound(start, end));
                                 detail.LineStyle = referenceStyle;
                                 referenceCurves.Add(detail);
@@ -452,17 +501,19 @@ namespace YangTools.Revit.Core.CadToRevit
 
                             XYZ dimStart = coordinate.ToViewPoint(item.DimensionLine.Start);
                             XYZ dimEnd = coordinate.ToViewPoint(item.DimensionLine.End);
-                            if (dimStart.DistanceTo(dimEnd) <= PointToleranceFeet)
-                                throw new InvalidOperationException("CAD 尺寸线长度小于 Revit 可创建容差。 ");
+                            AssertSegmentLength(dimStart, dimEnd, shortCurveTolerance, "CAD 尺寸线");
                             Line dimensionLine = Line.CreateBound(dimStart, dimEnd);
                             DimensionType dimType = document.GetElement(typeId) as DimensionType
                                 ?? throw new InvalidOperationException("目标 Revit 标注类型无效。 ");
                             Dimension? dimension = document.Create.NewDimension(view, dimensionLine, references, dimType);
                             if (dimension == null) throw new InvalidOperationException("Revit 未能创建线性标注。 ");
 
+                            var created = referenceCurves.Select(x => Trace(x.Id, "dimension_reference_line")).ToList();
+                            created.Add(Trace(dimension.Id, "dimension"));
                             CommitSubTransactionOrThrow(sub, "标注");
                             result.CreatedDimensions++;
                             result.CreatedDimensionReferenceLines += referenceCurves.Count;
+                            AddCreated(result, item.SourceId, "标注", created);
                         }
                         catch (Exception ex)
                         {
@@ -475,13 +526,15 @@ namespace YangTools.Revit.Core.CadToRevit
             }
         }
 
-        private static List<Curve> BuildRevitCurves(CadCurveItem item, CoordinateConverter coordinate)
+        private static List<Curve> BuildRevitCurves(CadCurveItem item, CoordinateConverter coordinate, double shortCurveTolerance)
         {
             var curves = new List<Curve>();
             string type = (item.CurveType ?? string.Empty).ToLowerInvariant();
             if (type.Contains("circle"))
             {
                 if (item.Center == null || item.Radius <= 0) throw new InvalidOperationException("圆缺少中心或半径。 ");
+                if (2 * Math.PI * coordinate.ToFeet(item.Radius) <= shortCurveTolerance)
+                    throw new InvalidOperationException("圆周长小于 Revit ShortCurveTolerance。");
                 curves.Add(Arc.Create(coordinate.ToViewPoint(item.Center), coordinate.ToFeet(item.Radius), 0, Math.PI * 2.0, coordinate.RightDirection, coordinate.UpDirection));
                 return curves;
             }
@@ -490,6 +543,8 @@ namespace YangTools.Revit.Core.CadToRevit
                 if (item.Center == null || item.Radius <= 0) throw new InvalidOperationException("圆弧缺少中心或半径。 ");
                 double end = item.EndAngleRadians;
                 while (end <= item.StartAngleRadians) end += Math.PI * 2.0;
+                if ((end - item.StartAngleRadians) * coordinate.ToFeet(item.Radius) <= shortCurveTolerance)
+                    throw new InvalidOperationException("圆弧弧长小于 Revit ShortCurveTolerance。");
                 curves.Add(Arc.Create(coordinate.ToViewPoint(item.Center), coordinate.ToFeet(item.Radius), item.StartAngleRadians, end, coordinate.RightDirection, coordinate.UpDirection));
                 return curves;
             }
@@ -500,12 +555,15 @@ namespace YangTools.Revit.Core.CadToRevit
                 ? item.Vertices
                 : item.Points.Select(x => new CadPolylineVertex { Point = x, Bulge = 0.0 }).ToList();
 
-            int segmentCount = vertices.Count - 1;
-            for (int i = 0; i < segmentCount; i++)
-                AppendPolylineSegment(curves, vertices[i], vertices[i + 1], coordinate);
+            // 只有最后一个顶点与首点数值重合时，才将它视为 CAD 封闭多段线的重复终点。
+            bool repeatedEnd = item.Closed && vertices.Count > 3 &&
+                coordinate.ToViewPoint(vertices[0].Point).DistanceTo(coordinate.ToViewPoint(vertices[vertices.Count - 1].Point)) <= PointToleranceFeet;
+            int uniqueCount = vertices.Count - (repeatedEnd ? 1 : 0);
+            for (int i = 0; i < uniqueCount - 1; i++)
+                AppendPolylineSegment(curves, vertices[i], vertices[i + 1], coordinate, shortCurveTolerance, i + 1);
 
-            if (item.Closed && vertices.Count > 2)
-                AppendPolylineSegment(curves, vertices[vertices.Count - 1], vertices[0], coordinate);
+            if (item.Closed && uniqueCount > 2)
+                AppendPolylineSegment(curves, vertices[uniqueCount - 1], vertices[0], coordinate, shortCurveTolerance, uniqueCount);
             if (curves.Count == 0) throw new InvalidOperationException("线条长度小于 Revit 可创建容差。 ");
             return curves;
         }
@@ -514,11 +572,11 @@ namespace YangTools.Revit.Core.CadToRevit
             ICollection<Curve> curves,
             CadPolylineVertex start,
             CadPolylineVertex end,
-            CoordinateConverter coordinate)
+            CoordinateConverter coordinate, double shortCurveTolerance, int segmentIndex)
         {
             XYZ p0 = coordinate.ToViewPoint(start.Point);
             XYZ p1 = coordinate.ToViewPoint(end.Point);
-            if (p0.DistanceTo(p1) <= PointToleranceFeet) return;
+            AssertSegmentLength(p0, p1, shortCurveTolerance, $"Polyline 第 {segmentIndex} 段");
 
             double bulge = start.Bulge;
             if (double.IsNaN(bulge) || double.IsInfinity(bulge) || Math.Abs(bulge) <= 1e-12)
@@ -541,20 +599,27 @@ namespace YangTools.Revit.Core.CadToRevit
             if (pm.DistanceTo(p0) <= PointToleranceFeet || pm.DistanceTo(p1) <= PointToleranceFeet)
                 throw new InvalidOperationException("Polyline bulge 圆弧中点退化，无法创建。 ");
 
-            curves.Add(Arc.Create(p0, p1, pm));
+            Curve arc = Arc.Create(p0, p1, pm);
+            if (arc.Length <= shortCurveTolerance)
+                throw new InvalidOperationException($"Polyline 第 {segmentIndex} 段弧长低于 Revit ShortCurveTolerance。");
+            curves.Add(arc);
         }
 
-        private static CurveLoop BuildCurveLoop(IList<CadPoint2> points, CoordinateConverter coordinate)
+        private static CurveLoop BuildCurveLoop(IList<CadPoint2> points, CoordinateConverter coordinate, double shortCurveTolerance, int loopIndex)
         {
             if (points == null || points.Count < 3) throw new InvalidOperationException("填充边界少于 3 个点。 ");
             var loop = new CurveLoop();
-            for (int i = 0; i < points.Count; i++)
+            // 允许 CAD 显式在末尾重复首点，但不删除任何真实短边。
+            int uniqueCount = points.Count;
+            if (points.Count > 3 && coordinate.ToViewPoint(points[0]).DistanceTo(coordinate.ToViewPoint(points[points.Count - 1])) <= PointToleranceFeet)
+                uniqueCount--;
+            for (int i = 0; i < uniqueCount; i++)
             {
                 CadPoint2 a = points[i];
-                CadPoint2 b = points[(i + 1) % points.Count];
+                CadPoint2 b = points[(i + 1) % uniqueCount];
                 XYZ p0 = coordinate.ToViewPoint(a);
                 XYZ p1 = coordinate.ToViewPoint(b);
-                if (p0.DistanceTo(p1) <= PointToleranceFeet) continue;
+                AssertSegmentLength(p0, p1, shortCurveTolerance, $"填充边界第 {loopIndex} 环、第 {i + 1} 段");
                 loop.Append(Line.CreateBound(p0, p1));
             }
             if (loop.Count() < 3) throw new InvalidOperationException("填充边界有效线段少于 3 条。 ");
@@ -671,9 +736,40 @@ namespace YangTools.Revit.Core.CadToRevit
                 .ToDictionary(x => x.Key, x => x.First(), StringComparer.OrdinalIgnoreCase);
         }
 
+        private static void AssertSegmentLength(XYZ start, XYZ end, double shortCurveTolerance, string label)
+        {
+            double length = start.DistanceTo(end);
+            if (double.IsNaN(length) || double.IsInfinity(length) || length <= shortCurveTolerance)
+                throw new InvalidOperationException($"{label} 长度 {length * 304.8:0.######} mm 小于或等于 Revit ShortCurveTolerance {shortCurveTolerance * 304.8:0.######} mm；保留源几何并拒绝该对象。");
+        }
+
+        private static CadToRevitElementTrace Trace(ElementId id, string role) =>
+            new CadToRevitElementTrace { ElementId = id.GetIdValue(), Role = role };
+
+        private static void AddCreated(CadToRevitRebuildResult result, string sourceId, string kind, IEnumerable<CadToRevitElementTrace> elements)
+        {
+            result.SourceOutcomes.Add(new CadToRevitSourceOutcome
+            {
+                SourceId = sourceId, Kind = kind, Status = "created", Elements = elements.ToList()
+            });
+        }
+
+        private static void AddSkipped(CadToRevitRebuildResult result, string sourceId, string kind, string reason)
+        {
+            result.Skipped++;
+            result.SourceOutcomes.Add(new CadToRevitSourceOutcome
+            {
+                SourceId = sourceId, Kind = kind, Status = "skipped", Reason = reason
+            });
+        }
+
         private static void AddFailure(CadToRevitRebuildResult result, string sourceId, string kind, string reason)
         {
             result.Failures.Add(new CadToRevitFailure { SourceId = sourceId, Kind = kind, Reason = reason });
+            result.SourceOutcomes.Add(new CadToRevitSourceOutcome
+            {
+                SourceId = sourceId, Kind = kind, Status = "failed", Reason = reason
+            });
         }
 
         private static void CommitSubTransactionOrThrow(SubTransaction transaction, string label)
