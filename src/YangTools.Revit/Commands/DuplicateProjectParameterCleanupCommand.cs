@@ -10,11 +10,10 @@ namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
     [RibbonButton(
-        "检查工具区",
-        "重复项目参数清理",
-        "扫描并原位合并同名重复项目参数的绑定和值，删除不会级联影响其他对象的来源参数",
-        "Icons/parameter_cleanup_32.png",
-        "Icons/parameter_cleanup_16.png")]
+        panelName: "项目管理区", buttonText: "参数去重",
+        tooltip: "扫描重复项目参数并尝试保留绑定与取值。",
+        largeIcon: "Icons/parameter_cleanup_32.png", smallIcon: "Icons/parameter_cleanup_16.png",
+        usage: "使用：点击按钮先扫描重复项，核对预览、来源与保留目标，再选择需要处理的组并执行。\n注意：清理项目参数可能影响明细表/标签；重要项目先在非生产副本验证。")]
     public sealed class DuplicateProjectParameterCleanupCommand : IExternalCommand
     {
         public Result Execute(

@@ -8,21 +8,22 @@ from xml.etree import ElementTree as ET
 ROOT=Path(__file__).resolve().parents[1]
 S=ROOT/'src/YangTools.Revit'
 read=lambda p:(S/p).read_text(encoding='utf-8')
+helper=read('Core/DetailLineCleanup.cs')
 a=read('Commands/MergeCollinearDetailLinesCommand.cs')
 b=read('Commands/MergeTextColumnsCommand.cs')
 c=read('Commands/MergeTextCommand.cs')
 u=read('UI/MergeTextWindow.xaml')
 layout=read('Core/TextLayoutMerger.cs')
 tests={
- 'line command ribbon': '[RibbonButton("模型修改区", "合并直线"' in a,
+ 'line command ribbon': 'panelName: "2D修改", buttonText: "直线合并"' in a,
  'line selected only': 'Selection.GetElementIds()' in a and 'PickObjects(ObjectType.Element' in a,
- 'detail straight only': 'DetailCurve curve' in a and 'GeometryCurve is Line' in a,
- 'line no pinned/groups/foreign views': 'curve.Pinned' in a and 'curve.GroupId' in a and 'curve.OwnerViewId' in a,
- 'line same style collinear endpoints': 'StyleId.GetIdValue()' in a and 'CrossProduct' in a and 'JoinToleranceFeet' in a,
- 'line no curve below minimum': 'doc.Application.ShortCurveTolerance' in a,
- 'line preview and one transaction': '合并直线预览' in a and 'new Transaction(doc, "合并共线详图线")' in a,
- 'line rollback and delete': 'transaction.RollBack()' in a and 'doc.Delete(segment.Curve.Id)' in a,
- 'columns ribbon': '[RibbonButton("文本工具区", "双列文字合并"' in b,
+ 'detail straight only': 'DetailCurve c' in helper and 'GeometryCurve is Line' in helper,
+ 'line no pinned/groups/foreign views': 'c.Pinned' in helper and 'c.GroupId' in helper and 'c.OwnerViewId' in helper,
+ 'line same style collinear endpoints': 'Style.GetIdValue()' in helper and 'CrossProduct' in helper and 'Tolerance' in helper,
+ 'line no curve below minimum': 'doc.Application.ShortCurveTolerance' in helper,
+ 'line preview and one transaction': '直线合并预览' in a and 'Apply(doc, plans, "合并共线详图线")' in a and 'new Transaction(doc, txName)' in helper,
+ 'line rollback and delete': 'tx.RollBack()' in helper and 'doc.Delete(redundantId)' in helper and 'removed.Contains(redundantId)' in helper,
+ 'columns ribbon': 'panelName: "文本工具区", buttonText: "双列合并"' in b,
  'columns grouping': 'TryColumns' in b and 'TryColumns(View view' in layout,
  'columns two explicit output choices': 'TaskDialogCommandLinkId.CommandLink1' in b and 'TaskDialogCommandLinkId.CommandLink2' in b,
  'columns only same text type': 'GetTypeId().GetIdValue()' in b,

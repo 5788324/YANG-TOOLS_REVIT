@@ -11,7 +11,11 @@ namespace YangTools.Revit.Commands
 {
     /// <summary>Two-column text selection: single multiline note with space padding, or two aligned notes.</summary>
     [Transaction(TransactionMode.Manual)]
-    [RibbonButton("文本工具区", "双列文字合并", "识别左右两列及每行位置，可输出一个空格对齐的多行文字，或两个精准定位的多行文字", "Icons/merge_columns_32.png", "Icons/merge_columns_16.png")]
+    [RibbonButton(
+        panelName: "文本工具区", buttonText: "双列合并",
+        tooltip: "将两列 TextNote 按行合并，可选单文本或双文本输出。",
+        largeIcon: "Icons/merge_columns_32.png", smallIcon: "Icons/merge_columns_16.png",
+        usage: "使用：选择当前视图至少四个 TextNote，点击按钮并选择输出为一个多行文本或两个分列多行文本。\n建议：比例字体（如 Arial）优先使用双文本方式；原文字将被替换。")]
     public sealed class MergeTextColumnsCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)

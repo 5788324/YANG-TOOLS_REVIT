@@ -15,6 +15,9 @@ This file is the working index. Historical acceptance and iteration records rema
 - `REVIT_2021_2027_COMPATIBILITY_3.1.38.md`
 - `MCP_2026_07_28_SDK_V2_EVALUATION_20260814.md`
 - `ICON_DESIGN_GUIDE.md`
+- `RIBBON_FEATURE_DEVELOPMENT_RULES.md`（新功能命名/说明/图标硬门禁）
+- `RIBBON_FEATURE_CATALOG_RC3J.md`（36 项功能短名与操作方式）
+- `RC3J_GEOMETRY_FIX_CANDIDATE_20261022.md`（2D 几何修复候选、边界与验收）
 
 ## Rule
 New engineering decisions should update one current design/status document rather than adding another near-duplicate status file unless the file is an acceptance/evidence artifact.

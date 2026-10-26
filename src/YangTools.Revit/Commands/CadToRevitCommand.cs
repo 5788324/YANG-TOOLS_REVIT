@@ -12,11 +12,10 @@ namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
     [RibbonButton(
-        "导入工具区",
-        "CAD转Revit图纸",
-        "读取 YangCAD RVT Exchange，按映射把 CAD 文字、引线、线条、填充和标注重建为当前视图的 Revit 原生详图对象。",
-        "Icons/cad_to_revit_32.png",
-        "Icons/cad_to_revit_16.png")]
+        panelName: "2D修改", buttonText: "CAD转图",
+        tooltip: "按 YangCAD Exchange 映射，将 CAD 图纸内容重建为 Revit 详图对象。",
+        largeIcon: "Icons/cad_to_revit_32.png", smallIcon: "Icons/cad_to_revit_16.png",
+        usage: "使用：先由 YangCAD 生成 RVT Exchange；打开目标详图视图，点击按钮，在窗口选取映射文件并检查转换范围后执行。\n限制：部分文字、填充、标注和短曲线可能转换失败；执行后核查统计和实际内容。")]
     public sealed class CadToRevitCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)

@@ -10,7 +10,11 @@ using YangTools.Revit.UI;
 namespace YangTools.Revit.Commands;
 
 [Transaction(TransactionMode.Manual)]
-[RibbonButton("模型修改区", "标高修改", "修改图元标高并保持原位置", "Icons/level_modifier_32.png", "Icons/level_modifier_16.png")]
+[RibbonButton(
+        panelName: "模型修改区", buttonText: "标高修改",
+        tooltip: "修改图元关联标高并尽量保持模型世界位置。",
+        largeIcon: "Icons/level_modifier_32.png", smallIcon: "Icons/level_modifier_16.png",
+        usage: "使用：预选目标图元或在窗口拾取，指定新标高与偏移，核对世界高度后执行。\n注意：宿主、镜像或复杂约束图元可能无法安全修改。")]
 public class LevelModifierCommand : IExternalCommand
 {
     public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)

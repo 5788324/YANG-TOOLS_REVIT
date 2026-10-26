@@ -613,3 +613,8 @@ ZAxis/AutoRemaining Preview is runtime proven on Revit 2025.4. A missing MCP `Au
 ## Current engineering direction — 2026-09-23
 
 After the Rebar V1.0.4 feature gate, development has moved to project-level release/architecture cleanup. No feature rewrite is planned. See `docs/ACTIVE_DOCS_INDEX.md` and `docs/ARCHITECTURE_SLIMMING_AUDIT_20260923.md` for the current path.
+
+
+### Ribbon 功能开发要求
+
+新增或修改功能的按钮名称、图标、功能介绍、使用步骤请遵照 [`docs/RIBBON_FEATURE_DEVELOPMENT_RULES.md`](docs/RIBBON_FEATURE_DEVELOPMENT_RULES.md)，36 个正式工具目录见 [`docs/RIBBON_FEATURE_CATALOG_RC3J.md`](docs/RIBBON_FEATURE_CATALOG_RC3J.md)。

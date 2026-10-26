@@ -108,3 +108,7 @@ YangTools 图标统一采用**简约、克制、优雅的工程线条风**。目
 ## 8. 当前资产原则
 
 `src/YangTools.Revit/Icons` 只保留运行时实际引用的 PNG。SVG 中间文件、旧版图标、废弃功能图标和未引用资源不进入正式安装目录。
+
+## 9. 功能级唯一性与文案同步（必遵守）
+
+每个正式 Ribbon 功能必须使用独立、有区别的 16/32 图标族（而非文件改名复制），并同时维护 `RibbonButton` 中短名称、`tooltip` 与 `usage`。详细开发硬门禁见 `RIBBON_FEATURE_DEVELOPMENT_RULES.md`；交付前运行 `tools/Test-RibbonUxContract.py`。

@@ -10,7 +10,11 @@ using YangTools.Revit.UI;
 namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
-    [RibbonButton("文本工具区", "对齐到线", "将文本旋转并可移动到指定基准线", "Icons/align_line_32.png", "Icons/align_line_16.png")]
+    [RibbonButton(
+        panelName: "文本工具区", buttonText: "沿线对齐",
+        tooltip: "将 TextNote 旋转并按需要移动至指定基准线。",
+        largeIcon: "Icons/align_line_32.png", smallIcon: "Icons/align_line_16.png",
+        usage: "使用：点击按钮，选择待对齐的文本与基准线，在窗口中确认旋转/移动设置。\n注意：先检查选中线的方向，避免文字朝向错误。")]
     public class AlignTextToLineCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)

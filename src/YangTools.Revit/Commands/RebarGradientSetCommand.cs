@@ -9,15 +9,12 @@ namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
     [RibbonButton(
-        "钢筋工具区",
-        "渐变钢筋集",
-        "以两根控制钢筋定义首末形状，默认沿全局 Z 轴自动计算长度，也可沿直线 ModelLine 或模型 Edge 按分区最大间距创建一个完整 Free Form 渐变钢筋集。",
-        "Icons/rebar_gradient_set_32.png",
-        "Icons/rebar_gradient_set_16.png",
-        groupName: "创建钢筋",
-        order: 100,
-        groupLargeIcon: "Icons/rebar_gradient_set_32.png",
-        groupSmallIcon: "Icons/rebar_gradient_set_16.png")]
+        panelName: "钢筋工具区", buttonText: "渐变钢筋",
+        tooltip: "按首末控制钢筋生成渐变 Free Form 钢筋集。",
+        largeIcon: "Icons/rebar_gradient_set_32.png", smallIcon: "Icons/rebar_gradient_set_16.png",
+        usage: "使用：点击按钮，在窗口选取起始与终止钢筋及路径/分区间距，检查方向与长度后执行。\n注意：Revit 2021 目前有已知 API 限制，不能因编译通过认定可用。",
+        groupName: "创建钢筋", order: 100,
+        groupLargeIcon: "Icons/rebar_gradient_set_32.png", groupSmallIcon: "Icons/rebar_gradient_set_16.png")]
     public sealed class RebarGradientSetCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)

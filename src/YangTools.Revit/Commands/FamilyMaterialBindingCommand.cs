@@ -11,11 +11,10 @@ namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
     [RibbonButton(
-        "项目管理区",
-        "批量绑定材质",
-        "批量给一个或多个载入族中的可绑定几何关联统一材质族参数，并重新载入项目",
-        "Icons/family_manager_32.png",
-        "Icons/family_manager_16.png")]
+        panelName: "模型修改区", buttonText: "批量绑材",
+        tooltip: "批量给载入族的几何绑定材质族参数。",
+        largeIcon: "Icons/batch_material_binding_32.png", smallIcon: "Icons/batch_material_binding_16.png",
+        usage: "使用：点击按钮，在窗口选择一个或多个载入族与材质参数选项，确认范围后执行并重新载入。\n注意：会编辑相关族文档，核对族参数和覆盖范围。")]
     public sealed class FamilyMaterialBindingCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
