@@ -117,18 +117,39 @@ namespace YangTools.Revit.Core.CadToRevit
 
         private static bool SameGeometry(Curve actual, Curve expected)
         {
-            // 原 CAD 曲线是独立的 Line/Arc；端点允许反向，但不得改变长度、圆心或半径。
+            // 源 CAD 曲线须保持原样：曲线类型、边界性质和真实三维几何必须一致。
+            // Revit 整圆为非绑定 Arc，没有端点；绝不能直接对它调用 GetEndPoint。
             if (actual == null || expected == null || actual.GetType() != expected.GetType()) return false;
+            if (actual.IsBound != expected.IsBound) return false;
             const double epsilonFeet = 1e-6; // 约 0.000305mm，明显小于 Revit 最短边容差。
             if (Math.Abs(actual.Length - expected.Length) > epsilonFeet) return false;
+
+            if (actual is Arc a && expected is Arc b)
+            {
+                if (a.Center.DistanceTo(b.Center) > epsilonFeet ||
+                    Math.Abs(a.Radius - b.Radius) > epsilonFeet)
+                    return false;
+                // 同心同半径但法向不同（非同一平面）也不是相同几何；反向法线等价。
+                if (Math.Abs(Math.Abs(a.Normal.DotProduct(b.Normal)) - 1.0) > 1e-9)
+                    return false;
+                // 两者已确认同为非绑定整圆：用中心/半径/平面判定，不读取端点。
+                if (!actual.IsBound) return true;
+                // 有界圆弧还需检查弧中点；仅端点、圆心、长度无法区分两条互补半圆。
+                if (actual.Evaluate(0.5, true).DistanceTo(expected.Evaluate(0.5, true)) > epsilonFeet)
+                    return false;
+            }
+            else if (!actual.IsBound)
+            {
+                // 不支持的其它非绑定曲线不能仅凭 Length 判为相同。
+                return false;
+            }
+
+            // 只有两条曲线都已确认有界时，才可安全读取端点；正反向等价。
             bool direct = actual.GetEndPoint(0).DistanceTo(expected.GetEndPoint(0)) <= epsilonFeet &&
                           actual.GetEndPoint(1).DistanceTo(expected.GetEndPoint(1)) <= epsilonFeet;
             bool reversed = actual.GetEndPoint(0).DistanceTo(expected.GetEndPoint(1)) <= epsilonFeet &&
                             actual.GetEndPoint(1).DistanceTo(expected.GetEndPoint(0)) <= epsilonFeet;
-            if (!direct && !reversed) return false;
-            if (actual is Arc a && expected is Arc b)
-                return a.Center.DistanceTo(b.Center) <= epsilonFeet && Math.Abs(a.Radius - b.Radius) <= epsilonFeet;
-            return true;
+            return direct || reversed;
         }
 
         private static bool IsKnownJoinFailure(FailureDefinitionId id)
