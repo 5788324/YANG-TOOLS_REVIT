@@ -2069,3 +2069,13 @@ ChatGPT 从 RC2N canonical SHA A0AA68AF5F415014F1687811047F9C7AFC888B826CF57B809
 - 仅线条事务添加受限 IFailuresPreprocessor，符合新建 DetailCurve 白名单且允许 DetachElements 才尝试一次解耦，未知/重复错误回滚。
 - 记录源 Handle → ID、提交后同几何核验；其他转换事务、HATCH、DIMENSION 逻辑未更改。
 - 代码为静态候选；Revit F1/F2 尚未验证，禁止声称原图纸已经恢复。详见 `docs/YANGTOOLS_EXCHANGE_P3_C4_JOIN_FAILURE_20261026.md`。
+
+## 2026-11-17 | Exchange P4 — 整圆 IsBound 几何断言修复（待编译）
+
+- 基于 P3 PR #7 `259776749934feb64df2e9381670d19f17b450f0`，只修改 `CadToRevitJoinFailurePreprocessor.SameGeometry`。
+- 先检查 `Curve.IsBound` 一致；对两条非绑定 `Arc` 比对长度、圆心、半径、法向后直接返回，永远不访问不存在的端点。
+- 对有界 `Arc` 继续检查圆心/半径/法向，同时补充中点比较，避免互补半圆在起终点及长度相等时误判。
+- 未修改 Failure 白名单、`DetachElements` 安全策略、TransactionGroup / HATCH / Dimension / YangCAD。
+- 新增 `tools/Test-Exchange-P4-UnboundArcGuard.py` 和 `docs/YANGTOOLS_EXCHANGE_P4_UNBOUND_ARC_20261117.md`。
+- P3 证据：6 版本编译日志成功，但 P3 实机在整圆 `Curve.GetEndPoint` 抛异常；Journal 仍出现一次 `666 iterations` 警告，P4 不能宣称已解决所有连接循环。
+- P4 目前只做静态测试，Windows Build、Revit 2025 C4 完整转换及原生 Undo 均 NOT_TESTED，Release NO-GO。
