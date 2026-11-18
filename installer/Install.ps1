@@ -72,7 +72,7 @@ function Install-Version([string]$version) {
     $manifestBackup = Join-Path $versionRoot 'YangTools.Revit.addin.backup'
     New-Item -ItemType Directory -Force -Path $versionRoot | Out-Null
     # 只清理当前未完成的 staging；旧安装目录/manifest 在新 payload 校验之前不得删除。
-    Remove-Item -LiteralPath $staging -Recurse -Force -ErrorAction Stop
+    if (Test-Path -LiteralPath $staging) { Remove-Item -LiteralPath $staging -Recurse -Force -ErrorAction Stop }
     $hadTarget = Test-Path -LiteralPath $target
     $hadManifest = Test-Path -LiteralPath $manifest
     $movedTarget = $false
@@ -91,8 +91,8 @@ function Install-Version([string]$version) {
         }
         if ($hadTarget) {
             # 保留最新的上一版；只有新 payload 已备好才替换旧备份。
-            Remove-Item -LiteralPath $backup -Recurse -Force -ErrorAction Stop
-            Remove-Item -LiteralPath $manifestBackup -Force -ErrorAction Stop
+            if (Test-Path -LiteralPath $backup) { Remove-Item -LiteralPath $backup -Recurse -Force -ErrorAction Stop }
+            if (Test-Path -LiteralPath $manifestBackup) { Remove-Item -LiteralPath $manifestBackup -Force -ErrorAction Stop }
             Move-Item -LiteralPath $target -Destination $backup
             $movedTarget = $true
             Move-Item -LiteralPath $manifest -Destination $manifestBackup

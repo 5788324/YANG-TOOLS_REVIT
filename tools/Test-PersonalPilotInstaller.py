@@ -22,6 +22,7 @@ checks={
     'CLI 更新失败判断旧目录状态': '$movedTarget = $false' in a and 'if ($movedTarget)' in a,
     'GUI 更新失败判断旧目录状态': '$movedTarget = $false' in g and 'if ($movedTarget)' in g,
     '不会先删除当前插件目录': all('Remove-Item -LiteralPath $target -Recurse -Force' not in x.split('    try {',1)[0] for x in (a[a.index('function Install-Version'):],g[g.index('function Install-Version'):])),
+    '首次更新安全处理不存在的备份目录': all('if (Test-Path -LiteralPath $staging)' in x and 'if (Test-Path -LiteralPath $backup)' in x and 'if (Test-Path -LiteralPath $manifestBackup)' in x for x in (a,g)),
     '回退要求 Revit 关闭': 'Get-Process Revit' in r,
     '回退限定年份': "[ValidateSet('2021','2022','2023','2024','2025','2026','2027')]" in r,
     '回退保留两个版本': 'Move-Item -LiteralPath $tmp -Destination $backup' in r and 'Move-Item -LiteralPath $tmpManifest -Destination $manifestBackup' in r,
