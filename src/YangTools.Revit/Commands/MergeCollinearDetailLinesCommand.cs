@@ -14,7 +14,7 @@ namespace YangTools.Revit.Commands
         panelName: "2D修改", buttonText: "直线合并",
         tooltip: "合并相同线型、首尾连续且没有重叠或分支的详图直线。",
         largeIcon: "Icons/merge_lines_32.png", smallIcon: "Icons/merge_lines_16.png",
-        usage: "使用：先选详图直线并点击，或点击后框选/多选，再确认预览。\n限制：仅当前视图、未锁定、非组内详图直线；跳过重叠、分支、闭环和带标注/依赖关系的线组。优先保留原 ElementId，单次撤销；0.1 mm 是模型几何容差。")]
+        usage: "使用：选中至少两根详图直线后点击按钮，或点击按钮后选线并点“完成”。\n限制：仅当前视图、未锁定、非组内详图直线；跳过重叠、分支、闭环和带标注/依赖关系的线组。优先保留原 ElementId，单次撤销；0.1 mm 是模型几何容差。")]
     public sealed class MergeCollinearDetailLinesCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData data, ref string message, ElementSet elements)
@@ -28,8 +28,9 @@ namespace YangTools.Revit.Commands
                 List<DetailLineCleanup.Segment> lines = DetailLineCleanup.GetSegments(doc, view, uidoc.Selection.GetElementIds());
                 if (lines.Count < 2)
                 {
+                    var preselected = lines.Select(line => new Reference(line.Element)).ToList();
                     ICollection<ElementId> ids = uidoc.Selection.PickObjects(ObjectType.Element,
-                        new DetailLineCleanup.SelectionFilter(view.Id), "选择当前视图至少两根详图直线，完成选择以预览")
+                        new DetailLineCleanup.SelectionFilter(view.Id), "选择至少两根详图直线，点“完成”即合并。", preselected)
                         .Select(r => r.ElementId).Distinct().ToList();
                     lines = DetailLineCleanup.GetSegments(doc, view, ids);
                 }
@@ -52,14 +53,6 @@ namespace YangTools.Revit.Commands
                     TaskDialog.Show("直线合并", $"候选线组涉及标注引用或依赖元素，已安全跳过 {protectedGroups} 组，未修改。");
                     return Result.Cancelled;
                 }
-                int inputCount = plans.Sum(p => p.Members.Count);
-                var confirm = new TaskDialog("直线合并预览")
-                {
-                    MainInstruction = $"将 {inputCount} 根线合并为 {plans.Count} 根？",
-                    MainContent = $"保留每组一条原 ElementId，调整其线段并删除其余线。\n跳过：含引用 {protectedGroups} 组；歧义 {ambiguous} 条。\n仅在无标注/依赖关系的线组上执行，一次 Ctrl+Z 撤销。",
-                    CommonButtons = TaskDialogCommonButtons.Ok | TaskDialogCommonButtons.Cancel
-                };
-                if (confirm.Show() != TaskDialogResult.Ok) return Result.Cancelled;
                 if (data.Application.ActiveUIDocument == null ||
                     !data.Application.ActiveUIDocument.Document.Equals(doc) ||
                     doc.ActiveView.Id.GetIdValue() != view.Id.GetIdValue() || doc.IsReadOnly) return Result.Cancelled;
@@ -82,7 +75,6 @@ namespace YangTools.Revit.Commands
                 }
                 try { uidoc.Selection.SetElementIds(retained); }
                 catch (Exception ex) { DiagnosticLog.WriteError("直线合并选择结果", ex); }
-                TaskDialog.Show("直线合并", $"已处理 {inputCount} 根线，保留 {retained.Count} 个原 ElementId。跳过受保护 {protectedGroups} 组、歧义 {ambiguous} 条；单次 Ctrl+Z 撤销。");
                 return Result.Succeeded;
             }
             catch (Autodesk.Revit.Exceptions.OperationCanceledException) { return Result.Cancelled; }

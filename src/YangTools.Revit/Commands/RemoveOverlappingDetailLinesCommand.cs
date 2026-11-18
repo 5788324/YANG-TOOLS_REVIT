@@ -14,7 +14,7 @@ namespace YangTools.Revit.Commands
         panelName: "2D修改", buttonText: "重叠清理",
         tooltip: "清理有实际重叠区间的同线型详图直线，保留覆盖范围。",
         largeIcon: "Icons/overlap_lines_32.png", smallIcon: "Icons/overlap_lines_16.png",
-        usage: "使用：先选至少两条详图直线，或点击按钮后选线，再确认预览。\n限制：仅当前视图、共线同线型且有正长度重叠；只接触端点、交叉、模型线、圆弧、锁定、组内及有关联标注的线组跳过。优先保留原 ElementId，可单次撤销。")]
+        usage: "使用：选中至少两根详图直线后点击按钮，或点击按钮后选线并点“完成”。\n限制：仅当前视图、共线同线型且有正长度重叠；只接触端点、交叉、模型线、圆弧、锁定、组内及有关联标注的线组跳过。优先保留原 ElementId，可单次撤销。")]
     public sealed class RemoveOverlappingDetailLinesCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData data, ref string message, ElementSet elements)
@@ -28,8 +28,9 @@ namespace YangTools.Revit.Commands
                 List<DetailLineCleanup.Segment> lines = DetailLineCleanup.GetSegments(doc, view, uidoc.Selection.GetElementIds());
                 if (lines.Count < 2)
                 {
+                    var preselected = lines.Select(line => new Reference(line.Element)).ToList();
                     ICollection<ElementId> ids = uidoc.Selection.PickObjects(ObjectType.Element,
-                        new DetailLineCleanup.SelectionFilter(view.Id), "选择当前视图至少两根重叠详图直线，完成选择以预览")
+                        new DetailLineCleanup.SelectionFilter(view.Id), "选择至少两根详图直线，点“完成”即清理重叠线。", preselected)
                         .Select(r => r.ElementId).Distinct().ToList();
                     lines = DetailLineCleanup.GetSegments(doc, view, ids);
                 }
@@ -52,14 +53,6 @@ namespace YangTools.Revit.Commands
                     TaskDialog.Show("重叠清理", $"候选线组存在尺寸标注或依赖对象，已安全跳过 {protectedGroups} 组，未修改。");
                     return Result.Cancelled;
                 }
-                int count = plans.Sum(p => p.Members.Count);
-                var confirm = new TaskDialog("重叠清理预览")
-                {
-                    MainInstruction = $"将 {count} 根重叠线整理为 {plans.Count} 根？",
-                    MainContent = $"优先保留一条原 ElementId，其余重叠线删除。\n跳过：受保护 {protectedGroups} 组、歧义 {ambiguous} 条。\n仅选定且安全的线组改变，保留几何覆盖范围，可一次 Ctrl+Z 撤销。",
-                    CommonButtons = TaskDialogCommonButtons.Ok | TaskDialogCommonButtons.Cancel
-                };
-                if (confirm.Show() != TaskDialogResult.Ok) return Result.Cancelled;
                 if (data.Application.ActiveUIDocument == null ||
                     !data.Application.ActiveUIDocument.Document.Equals(doc) ||
                     doc.ActiveView.Id.GetIdValue() != view.Id.GetIdValue() || doc.IsReadOnly) return Result.Cancelled;
@@ -82,7 +75,6 @@ namespace YangTools.Revit.Commands
                 }
                 try { uidoc.Selection.SetElementIds(retained); }
                 catch (Exception ex) { DiagnosticLog.WriteError("重叠清理选择结果", ex); }
-                TaskDialog.Show("重叠清理", $"已整理 {count} 根重叠线，保留 {retained.Count} 个原 ElementId。跳过受保护 {protectedGroups} 组、歧义 {ambiguous} 条；单次 Ctrl+Z 撤销。");
                 return Result.Succeeded;
             }
             catch (Autodesk.Revit.Exceptions.OperationCanceledException) { return Result.Cancelled; }
