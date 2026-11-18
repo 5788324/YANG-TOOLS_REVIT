@@ -12,6 +12,7 @@ $ArtifactsPayloadRoot = Join-Path $ProjectRoot 'artifacts\payload'
 $BuildOutputRoot = Join-Path $ProjectRoot 'src\YangTools.Revit\bin\x64'
 $ProjectManifest = Join-Path $ProjectRoot 'src\YangTools.Revit\YangTools.Revit.addin'
 $AddinsRoot = Join-Path $env:APPDATA 'Autodesk\Revit\Addins'
+. (Join-Path $PSScriptRoot 'Assert-TargetRevitClosed.ps1')
 
 
 
@@ -37,11 +38,6 @@ function Get-VersionSource([string]$version) {
     return $null
 }
 
-function Stop-IfRevitRunning {
-    if (Get-Process Revit -ErrorAction SilentlyContinue) {
-        throw 'Revit 正在运行。请先关闭全部 Revit 窗口，再重新安装。'
-    }
-}
 
 function Get-DetectedVersions {
     $detected = @()
@@ -123,7 +119,6 @@ function Install-Version([string]$version) {
 }
 
 try {
-    Stop-IfRevitRunning
     if (-not $Versions -or $Versions.Count -eq 0) {
         throw '请明确指定 Revit 年份，例如 -Versions 2025；或使用中文图形安装器选择年份。不会自动安装全部版本。'
     }
@@ -134,6 +129,7 @@ try {
         Write-Host "[跳过] Revit $version：没有该年份独立编译文件。" -ForegroundColor Yellow
     }
     if ($available.Count -eq 0) { throw '所选版本均没有独立编译文件。' }
+    Assert-TargetRevitClosed -Versions $available
     Write-Host "将安装：Revit $($available -join '、Revit ')"
     foreach ($version in $available) { Install-Version $version }
     Write-Host 'YangTools 安装完成，请启动 Revit。' -ForegroundColor Cyan

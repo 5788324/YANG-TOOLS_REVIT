@@ -6,9 +6,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-if (Get-Process Revit -ErrorAction SilentlyContinue) {
-    throw 'Revit 正在运行。关闭全部 Revit 窗口后再恢复上一版。'
-}
+. (Join-Path $PSScriptRoot 'Assert-TargetRevitClosed.ps1')
+Assert-TargetRevitClosed -Versions @($Version)
 $root = Join-Path $env:APPDATA "Autodesk\Revit\Addins\$Version"
 $target = Join-Path $root 'YangTools'
 $backup = Join-Path $root 'YangTools.backup'

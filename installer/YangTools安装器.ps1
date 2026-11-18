@@ -13,11 +13,9 @@ $ArtifactsPayloadRoot = Join-Path $ProjectRoot 'artifacts\payload'
 $BuildOutputRoot = Join-Path $ProjectRoot 'src\YangTools.Revit\bin\x64'
 $ProjectManifest = Join-Path $ProjectRoot 'src\YangTools.Revit\YangTools.Revit.addin'
 $AddinsRoot = Join-Path $env:APPDATA 'Autodesk\Revit\Addins'
+. (Join-Path $PSScriptRoot 'Assert-TargetRevitClosed.ps1')
 $script:VersionByIndex = @{}
 
-function Test-RevitRunning {
-    return $null -ne (Get-Process Revit -ErrorAction SilentlyContinue)
-}
 
 function Test-RevitDetected([string]$Version) {
     $programPath = Join-Path $env:ProgramFiles "Autodesk\Revit $Version"
@@ -78,11 +76,6 @@ function Get-VersionStatusText([string]$Version) {
     return "Revit $Version    | $detected | $payload | $installed"
 }
 
-function Ensure-RevitClosed {
-    if (Test-RevitRunning) {
-        throw 'Revit 正在运行。请先关闭全部 Revit 窗口，再执行安装或卸载。'
-    }
-}
 
 function Install-Version([string]$Version) {
     $source = Get-VersionSource $Version
@@ -318,7 +311,6 @@ $refreshButton.Add_Click({ Refresh-VersionList })
 
 $installButton.Add_Click({
     try {
-        Ensure-RevitClosed
         $versions = @(Get-SelectedVersions)
         if ($versions.Count -eq 0) { throw '请至少选择一个 Revit 版本。' }
 
@@ -332,6 +324,7 @@ $installButton.Add_Click({
             throw "所选版本均没有独立编译文件：$($versions -join '、')。请先编译对应年份。"
         }
 
+        Assert-TargetRevitClosed -Versions $available
         Set-ControlsEnabled $false
         foreach ($version in $skipped) {
             Add-Log "跳过 Revit $version：没有该年份独立编译文件。"
@@ -358,13 +351,13 @@ $installButton.Add_Click({
 
 $uninstallButton.Add_Click({
     try {
-        Ensure-RevitClosed
         $versions = @(Get-SelectedVersions)
         if ($versions.Count -eq 0) { throw '请至少选择一个 Revit 版本。' }
         $answer = [System.Windows.Forms.MessageBox]::Show(
             "将卸载 Revit $($versions -join '、') 的 YangTools。已有个人设置与历史数据会保留。是否继续？",
             '确认卸载', 'YesNo', 'Question')
         if ($answer -ne [System.Windows.Forms.DialogResult]::Yes) { return }
+        Assert-TargetRevitClosed -Versions $versions
         Set-ControlsEnabled $false
         foreach ($version in $versions) {
             Add-Log "正在卸载 Revit $version ..."
@@ -383,13 +376,13 @@ $uninstallButton.Add_Click({
 
 $rollbackButton.Add_Click({
     try {
-        Ensure-RevitClosed
         $versions = @(Get-SelectedVersions)
         if ($versions.Count -ne 1) { throw '每次请选择一个 Revit 年份恢复上一版。' }
         $version = $versions[0]
         $answer = [System.Windows.Forms.MessageBox]::Show(
             "恢复 Revit $version 的上一版 YangTools？当前版本将转存到备份位置。", '确认回退', 'YesNo', 'Question')
         if ($answer -ne [System.Windows.Forms.DialogResult]::Yes) { return }
+        Assert-TargetRevitClosed -Versions @($version)
         Set-ControlsEnabled $false
         & (Join-Path $PSScriptRoot 'Rollback.ps1') -Version $version
         Add-Log "Revit $version 已恢复上一版。"

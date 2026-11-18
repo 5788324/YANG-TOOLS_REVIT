@@ -22,3 +22,10 @@
 - 仅在独立 QA 的 Revit 2025 上验证 Ribbon 能启动、已验收三项 2D 功能能正常调用、Exchange 转换可生成部分结果及 Undo。
 - **禁止对生产 Revit 2022/2023 Addins 安装或回退。** 2027 仍未验，不打包为已支持版本。
 - 该批是源码静态候选，尚未 Windows PowerShell 实测/正式安装。
+
+## 2026-11-18 按目标年份判断 Revit 占用（待 Windows QA）
+- 先前的安装器只要发现任一 `Revit.exe` 即拒绝，导致在生产 Revit 2022 正常使用时无法测试隔离 2025 安装。
+- 四个操作入口均复用 `installer/Assert-TargetRevitClosed.ps1`，通过 `Win32_Process.ExecutablePath` 识别 `Revit 20XX\Revit.exe`，**仅阻止本次明确选中的版本**。未知路径或查询失败会明确报错，不会默认放行。
+- 仅对目标年份的用户 Addins 文件进行操作；不触碰其他年份 Addins 或 `%APPDATA%\YangTools` 个人数据。正式安装包复制整个 `installer` 文件夹，因此包含该辅助脚本。
+- 实机重点：生产 Revit 2022 保持运行时，隔离 APPDATA 下执行 Revit 2025 安装→升级→回退→卸载，均不应因 2022 阻断；**Revit 2025 QA 进程运行时仍应拒绝 2025 安装**；无法识别路径时拒绝。所有测试只使用可丢弃目录。
+- 本批仅源码静态验证；2025 真实安装与回退仍未实测。

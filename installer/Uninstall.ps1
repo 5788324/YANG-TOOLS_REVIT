@@ -6,14 +6,13 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $AddinsRoot = Join-Path $env:APPDATA 'Autodesk\Revit\Addins'
+. (Join-Path $PSScriptRoot 'Assert-TargetRevitClosed.ps1')
 
 
 
 try {
     if (-not $Versions -or $Versions.Count -eq 0) { throw '请明确指定 Revit 年份，例如 -Versions 2025；或使用中文图形安装器。' }
-    if (Get-Process Revit -ErrorAction SilentlyContinue) {
-        throw 'Revit 正在运行。请先关闭全部 Revit 窗口，再重新卸载。'
-    }
+    Assert-TargetRevitClosed -Versions $Versions
 
     $removed = 0
     foreach ($version in $Versions) {
