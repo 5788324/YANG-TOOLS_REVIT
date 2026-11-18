@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """个人安装器源码策略检查：不是 Windows/PowerShell 运行测试。"""
 from pathlib import Path
+import re
 root = Path(__file__).resolve().parents[1]
 content=lambda x:(root/x).read_text(encoding='utf-8-sig')
 a=content('installer/Install.ps1')
@@ -10,6 +11,15 @@ r=content('installer/Rollback.ps1')
 p=content('tools/Package-Installer.ps1')
 b=content('tools/Build-All.ps1')
 d=content('tools/Build-Deploy-2024-2025.ps1')
+guard = content('installer/Assert-TargetRevitClosed.ps1')
+match = re.search(r"\[regex\]::Match\(\$path, '([^']+)'\)", guard)
+winpath = r'C:\Program Files\Autodesk\Revit 2022\Revit.exe'
+unixpath = 'C:/Program Files/Autodesk/Revit 2025/Revit.exe'
+regex_ok = bool(match) and all([
+    (m := re.search(match.group(1), winpath)) is not None and m.group(1) == '2022',
+    (m := re.search(match.group(1), unixpath)) is not None and m.group(1) == '2025',
+    re.search(match.group(1), r'C:\Program Files\Autodesk\AutoCAD 2022\acad.exe') is None,
+])
 checks={
     'CLI 安装明确选年份': '请明确指定 Revit 年份' in a,
     'CLI 卸载明确选年份': '请明确指定 Revit 年份' in u,
@@ -24,6 +34,7 @@ checks={
     '不会先删除当前插件目录': all('Remove-Item -LiteralPath $target -Recurse -Force' not in x.split('    try {',1)[0] for x in (a[a.index('function Install-Version'):],g[g.index('function Install-Version'):])),
     '目标年份进程隔离': all('Assert-TargetRevitClosed -Versions' in x for x in (a,g,u,r)) and 'Get-Process Revit' not in (a+g+u+r),
     '年份从进程路径读取': all(x in content('installer/Assert-TargetRevitClosed.ps1') for x in ('Get-CimInstance', 'ExecutablePath', 'ProcessId', '[regex]::Match', '$Versions -contains $runningVersion')),
+    'Windows 与正斜杠路径均能识别 Revit 年份': regex_ok,
     '无法识别的年份安全停止': 'if (-not $match.Success)' in content('installer/Assert-TargetRevitClosed.ps1'),
     '首次更新安全处理不存在的备份目录': all('if (Test-Path -LiteralPath $staging)' in x and 'if (Test-Path -LiteralPath $backup)' in x and 'if (Test-Path -LiteralPath $manifestBackup)' in x for x in (a,g)),
     '回退检查目标 Revit 年份': 'Assert-TargetRevitClosed -Versions @($Version)' in r,
