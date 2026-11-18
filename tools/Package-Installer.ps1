@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [switch]$SkipBuild,
     [string[]]$Versions,
@@ -102,7 +102,7 @@ YangTools $Version 快速安装包
 安装位置：%APPDATA%\Autodesk\Revit\Addins\{年份}
 权限要求：仅当前用户，无需管理员权限。
 注意：安装、更新或卸载前必须关闭全部 Revit 窗口。
-AI/摸鱼助手已永久删除；安装、更新或卸载会清理 `%APPDATA%\YangTools\Assistant` 以及旧 copilot/moyu 设置与历史文件。
+安装、更新和卸载均保留 `%APPDATA%\YangTools` 下的所有个人设置和历史。更新时保留一份插件上一版备份，遇到问题使用“恢复上一版”。
 不同 Revit 年份必须使用 payload 中各自独立编译的 DLL，禁止跨年份复制。
 本安装包包含：Revit $($AvailableVersions -join '、Revit ')。
 未包含的年份不会影响已包含年份的安装。
