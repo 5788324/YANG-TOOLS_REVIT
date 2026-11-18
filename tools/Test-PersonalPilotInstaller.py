@@ -29,6 +29,7 @@ checks={
     '直接部署脚本已禁用': 'throw' in d and 'Remove-Item' not in d,
     'Build-All -Deploy 已禁用': "if ($Deploy) {\n    throw" in b and 'Remove-LegacyAssistantData' not in b,
     '打包说明保留用户数据': '所有个人设置和历史' in p,
+    '所有安装/构建 PowerShell 脚本保留 UTF-8 BOM': all((root / path).read_bytes().startswith(b'\xef\xbb\xbf') for path in ('installer/Install.ps1','installer/Uninstall.ps1','installer/YangTools安装器.ps1','installer/Rollback.ps1','tools/Build-All.ps1','tools/Build-Deploy-2024-2025.ps1','tools/Package-Installer.ps1')),
     '不修改 CSProj': (root/'src/YangTools.Revit/YangTools.Revit.csproj').exists(),
 }
 for k,ok in checks.items():print(('[PASS]' if ok else '[FAIL]'),k)

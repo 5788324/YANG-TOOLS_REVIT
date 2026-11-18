@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param()
 
 # 禁止此旧脚本在编译前删除已安装插件。统一使用 Build-All.ps1（不带 -Deploy）和图形安装器。

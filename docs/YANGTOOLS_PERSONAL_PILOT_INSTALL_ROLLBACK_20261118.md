@@ -13,6 +13,8 @@
 5. 不再在安装时自动移除 `RevitParameterDeduplicator` 等独立插件，只提示潜在重复入口。
 6. 直接覆盖式 `Build-Deploy-2024-2025.ps1` 和 `Build-All.ps1 -Deploy` 明确禁用，避免在编译前就删除已有生产 Addins。
 
+所有修改的 PowerShell 脚本继续使用 UTF-8 BOM，兼容 Windows PowerShell 5.1 对中文文本的读取。
+
 ## 下一阶段 Gemini Windows 实机（无需重新测试 Exchange 业务）
 - 基于本分支对 Revit 2025 做 `dotnet build -c 2025` 的隔离构建；不得部署到 2022/2023。
 - 先对安装脚本做 PowerShell Parser 检查，再使用**独立测试 Windows 账户/可丢弃配置目录**验证：安装前一版 → 更新新版本 → 备份保留 → 一键恢复 → 两次 DLL SHA 与 manifest 对照。
