@@ -66,7 +66,7 @@ for key,s in {
 for key,s in {
  'start_checked':'transaction.Start() != TransactionStatus.Started',
  'delete_confirm':'!deleted.Contains(removeId)',
- 'actual_element_removed':'doc.GetElement(removeId) != null',
+ 'actual_element_removed':'deleted.Count != 1 || !deleted.Contains(removeId)',
  'commit_confirm':'status != TransactionStatus.Committed',
  'UI_guard':'string uiWarning = string.Empty;',
  'UI_exception_logged':'DiagnosticLog.WriteError("文本合并提交后界面刷新", ex)',
@@ -79,7 +79,7 @@ for key,s in {
  'rejected_stale':'if (val3 == null || !val3.IsValidObject)',
  'no_silent_skip':'整批操作取消',
  'count_verified':'num != list.Count',
- 'existing_commit_helper':'TransactionHelper.ShowSuccessAndCommit',
+ 'direct_commit':'val2.Commit()',
  'commit_confirm':'commitStatus != TransactionStatus.Committed',
  'rollback_if_started':'val2.GetStatus() == TransactionStatus.Started',
 }.items():has('dim',key,s)

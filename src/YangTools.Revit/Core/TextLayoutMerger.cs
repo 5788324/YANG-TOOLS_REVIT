@@ -29,14 +29,14 @@ namespace YangTools.Revit.Core
             XYZ up = view.UpDirection.Normalize();
             return notes.Select(note =>
             {
-                XYZ delta = note.Coord - view.Origin;
+                XYZ position = note.Coord;
                 var type = note.Document.GetElement(note.GetTypeId()) as TextNoteType;
                 double size = type?.get_Parameter(BuiltInParameter.TEXT_SIZE)?.AsDouble() ?? 0.0082;
                 return new NotePosition
                 {
                     Note = note,
-                    U = delta.DotProduct(right),
-                    V = delta.DotProduct(up),
+                    U = position.DotProduct(right),
+                    V = position.DotProduct(up),
                     Height = Math.Max(size * Math.Max(1, view.Scale), 0.001)
                 };
             }).ToList();
@@ -61,6 +61,33 @@ namespace YangTools.Revit.Core
             }).ToList();
         }
 
+        internal static bool CanMerge(IList<TextNote> notes, out string error)
+        {
+            error = "";
+            ElementId type = notes[0].GetTypeId();
+            foreach (TextNote note in notes)
+            {
+                if (note.GetTypeId() != type || note.LeaderCount > 0)
+                {
+                    error = "合并需要相同的文字类型，且文字不能带引线。";
+                    return false;
+                }
+
+                using var text = note.GetFormattedText();
+                if (text.GetPlainText().Length == 0) continue;
+                TextRange range = text.AsTextRange();
+                if (text.GetBoldStatus() != FormatStatus.None || text.GetItalicStatus() != FormatStatus.None
+                    || text.GetUnderlineStatus() != FormatStatus.None || text.GetSuperscriptStatus() != FormatStatus.None
+                    || text.GetSubscriptStatus() != FormatStatus.None || text.GetAllCapsStatus() != FormatStatus.None
+                    || text.GetListType(range) != ListType.None || text.GetIndentLevel(range) != 0)
+                {
+                    error = "所选文字含有手动格式、列表或缩进。合并会丢失这些格式，请调整选区后再试。";
+                    return false;
+                }
+            }
+            return true;
+        }
+
         internal static string Clean(string? text, bool clean)
         {
             if (!clean) return text ?? "";
@@ -68,16 +95,17 @@ namespace YangTools.Revit.Core
             return Regex.Replace((text ?? "").Replace("\r\n", " ").Replace('\r', ' ').Replace('\n', ' ').Replace('\t', ' '), @"\s+", " ").Trim();
         }
 
-        internal static string ReadingText(View view, IList<TextNote> notes, bool clean, string rowSeparator)
+        internal static string ReadingText(IEnumerable<ReadingRow> rows, bool clean, string rowSeparator)
         {
-            var lines = Rows(Capture(view, notes)).Select(row =>
+            var lines = rows.Select(row =>
                 string.Join(" ", row.Items.Select(x => Clean(x.Note.Text, clean)).Where(s => s.Length > 0)));
             return string.Join(rowSeparator, lines.Where(s => s.Length > 0));
         }
 
         internal static bool TryColumns(View view, IList<TextNote> notes, out List<ReadingRow> rows, out double cut, out string error)
         {
-            rows = Rows(Capture(view, notes));
+            var positions = Capture(view, notes);
+            rows = Rows(positions);
             error = "";
             cut = 0;
             if (notes.Count < 4 || rows.Count < 2)
@@ -87,7 +115,7 @@ namespace YangTools.Revit.Core
             }
             // Split by largest horizontal gap in *all* TextNote anchor positions. A row may
             // have one side empty; classification uses one global cut, not per-row nearest pairs.
-            var sorted = Capture(view, notes).OrderBy(x => x.U).ToList();
+            var sorted = positions.OrderBy(x => x.U).ToList();
             double bestGap = double.NegativeInfinity;
             int bestIndex = -1;
             for (int i = 1; i < sorted.Count; ++i)

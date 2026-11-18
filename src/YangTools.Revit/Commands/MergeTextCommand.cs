@@ -30,7 +30,7 @@ namespace YangTools.Revit.Commands
             }
 
             Document doc = uiDoc.Document;
-            var state = new MergeTextState();
+            var state = new MergeTextState { SelectedTexts = TextNoteHelper.SelectedInActiveView(uiDoc) };
 
             try
             {
@@ -97,24 +97,33 @@ namespace YangTools.Revit.Commands
                 return Result.Cancelled;
             }
 
+            if (!TextLayoutMerger.CanMerge(textNotes, out string formatError))
+            {
+                TaskDialog.Show("文本合并", formatError);
+                return Result.Cancelled;
+            }
+
+            XYZ right = doc.ActiveView.RightDirection.Normalize();
+            XYZ up = doc.ActiveView.UpDirection.Normalize();
+            var rows = new List<TextLayoutMerger.ReadingRow>();
             MergeSortMode sortMode = Enum.TryParse(state.SortTag, true, out MergeSortMode parsed)
                 ? parsed
                 : MergeSortMode.SelectionOrder;
             switch (sortMode)
             {
                 case MergeSortMode.ReadingOrder:
-                    textNotes = TextLayoutMerger.Rows(TextLayoutMerger.Capture(doc.ActiveView, textNotes))
-                        .SelectMany(row => row.Items.Select(x => x.Note)).ToList();
+                    rows = TextLayoutMerger.Rows(TextLayoutMerger.Capture(doc.ActiveView, textNotes));
+                    textNotes = rows.SelectMany(row => row.Items.Select(x => x.Note)).ToList();
                     break;
-                case MergeSortMode.XAsc: textNotes = textNotes.OrderBy(note => note.Coord.X).ToList(); break;
-                case MergeSortMode.XDesc: textNotes = textNotes.OrderByDescending(note => note.Coord.X).ToList(); break;
-                case MergeSortMode.YAsc: textNotes = textNotes.OrderBy(note => note.Coord.Y).ToList(); break;
-                case MergeSortMode.YDesc: textNotes = textNotes.OrderByDescending(note => note.Coord.Y).ToList(); break;
+                case MergeSortMode.XAsc: textNotes = textNotes.OrderBy(note => note.Coord.DotProduct(right)).ToList(); break;
+                case MergeSortMode.XDesc: textNotes = textNotes.OrderByDescending(note => note.Coord.DotProduct(right)).ToList(); break;
+                case MergeSortMode.YAsc: textNotes = textNotes.OrderBy(note => note.Coord.DotProduct(up)).ToList(); break;
+                case MergeSortMode.YDesc: textNotes = textNotes.OrderByDescending(note => note.Coord.DotProduct(up)).ToList(); break;
             }
 
             string separator = state.UseNewlineSeparator ? "\r" : state.SeparatorText;
             string mergedText = sortMode == MergeSortMode.ReadingOrder
-                ? TextLayoutMerger.ReadingText(doc.ActiveView, textNotes, state.CleanWhitespace, separator)
+                ? TextLayoutMerger.ReadingText(rows, state.CleanWhitespace, separator)
                 : string.Join(separator, textNotes.Select(note => TextLayoutMerger.Clean(note.Text, state.CleanWhitespace)));
             if (string.IsNullOrWhiteSpace(mergedText))
             {
@@ -138,8 +147,8 @@ namespace YangTools.Revit.Commands
                     {
                         ElementId removeId = textNotes[index].Id;
                         var deleted = doc.Delete(removeId);
-                        if (!deleted.Contains(removeId) || doc.GetElement(removeId) != null)
-                            throw new InvalidOperationException($"文本 {removeId} 未确认删除，整次合并取消。");
+                        if (deleted.Count != 1 || !deleted.Contains(removeId))
+                            throw new InvalidOperationException("删除原文本会影响关联元素，整次合并取消。");
                     }
 
                     TransactionStatus status = transaction.Commit();
@@ -168,7 +177,7 @@ namespace YangTools.Revit.Commands
                 DiagnosticLog.WriteError("文本合并提交后界面刷新", ex);
                 uiWarning = "\n提示：合并已经提交，但选择或刷新视图失败。";
             }
-            TaskDialog.Show("完成", $"已合并 {textNotes.Count} 个文本，并保留第一个文本。{uiWarning}");
+            if (uiWarning.Length > 0) TaskDialog.Show("文本已合并", uiWarning.Trim());
             return Result.Succeeded;
         }
     }

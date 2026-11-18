@@ -46,7 +46,7 @@ namespace YangTools.Revit.Models
     {
         public List<TextNote> SelectedTexts { get; set; } = new List<TextNote>();
         public string SortTag { get; set; } = "ReadingOrder";
-        public bool CleanWhitespace { get; set; } = true;
+        public bool CleanWhitespace { get; set; }
         public bool UseNewlineSeparator { get; set; } = true;
         public string SeparatorText { get; set; } = string.Empty;
     }

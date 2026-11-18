@@ -54,7 +54,7 @@
             <Border Style="{DynamicResource CardBorder}">
                 <StackPanel>
                     <TextBlock Text="合并选项" Style="{DynamicResource SectionTitle}" Margin="0,0,0,8"/>
-                    <CheckBox x:Name="ChkCleanWhitespace" Content="删除原文字中多余换行、Tab 和重复空格" IsChecked="True" Margin="0,0,0,8"/>
+                    <CheckBox x:Name="ChkCleanWhitespace" Content="将原文字中的换行、制表符和连续空格合为一个空格" Margin="0,0,0,8"/>
                     <CheckBox x:Name="ChkUseNewline" Content="以换行符分隔" Checked="ChkNewline_Changed" Unchecked="ChkNewline_Changed" Margin="0,0,0,8"/>
                     <Grid x:Name="SeparatorPanel">
                         <Grid.ColumnDefinitions>
