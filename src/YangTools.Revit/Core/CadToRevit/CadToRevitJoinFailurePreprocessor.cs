@@ -18,6 +18,12 @@ namespace YangTools.Revit.Core.CadToRevit
         private readonly Dictionary<long, ExpectedCurve> _sourceCurves = new Dictionary<long, ExpectedCurve>();
         private readonly List<string> _diagnostics = new List<string>();
         private bool _attempted;
+        // 严格验收阈值保持 P4 的 1e-6 ft；仅在本事务实际解除 Join 约束后，
+        // 才允许有限的 Revit 自动端点吸附，并向逐源审计记录每一条偏移。
+        private readonly List<string> _acceptedAutojoinDrifts = new List<string>();
+        private double _maxAcceptedDriftFeet;
+        private const double FeetPerMillimeter = 1.0 / 304.8;
+        private const double MaxAutojoinDriftMillimeters = 0.15;
 
         public CadToRevitJoinFailurePreprocessor(Document document)
         {
@@ -25,6 +31,9 @@ namespace YangTools.Revit.Core.CadToRevit
         }
 
         public int ResolvedCount { get; private set; }
+        public int AcceptedAutojoinDriftCount => _acceptedAutojoinDrifts.Count;
+        public double MaxAcceptedAutojoinDriftMillimeters => _maxAcceptedDriftFeet / FeetPerMillimeter;
+        public IReadOnlyList<string> AcceptedAutojoinDriftDetails => _acceptedAutojoinDrifts.AsReadOnly();
         public string Summary => _diagnostics.Count == 0 ? "无连接失败" : string.Join(" | ", _diagnostics);
 
         public void TrackCommittedSourceCurves(string sourceId, IList<CadToRevitElementTrace> created, IList<Curve> sourceGeometry)
@@ -97,16 +106,73 @@ namespace YangTools.Revit.Core.CadToRevit
 
         public void AssertCreatedCurvesStillExist()
         {
+            _acceptedAutojoinDrifts.Clear();
+            _maxAcceptedDriftFeet = 0.0;
             var mismatch = new List<string>();
             foreach (KeyValuePair<long, ExpectedCurve> entry in _sourceCurves)
             {
                 DetailCurve current = _document.GetElement(ToElementId(entry.Key)) as DetailCurve;
-                if (current == null || !SameGeometry(current.GeometryCurve, entry.Value.Geometry))
-                    mismatch.Add(entry.Value.SourceId + ":" + entry.Key);
+                if (current == null)
+                {
+                    mismatch.Add(entry.Value.SourceId + ":" + entry.Key + "(图元缺失)");
+                    continue;
+                }
+                Curve actual = current.GeometryCurve;
+                Curve expected = entry.Value.Geometry;
+                if (SameGeometry(actual, expected)) continue; // P4 严格几何核验不变
+
+                // 不允许无条件放宽：必须是本次新建详图线，且已经实际处理过 Join Failure。
+                if (ResolvedCount > 0 && TryAcceptAutojoinDrift(actual, expected,
+                    _document.Application.ShortCurveTolerance, out double driftFeet))
+                {
+                    _maxAcceptedDriftFeet = Math.Max(_maxAcceptedDriftFeet, driftFeet);
+                    _acceptedAutojoinDrifts.Add("SourceId=" + entry.Value.SourceId +
+                        "; ElementId=" + entry.Key + "; MaxDriftMm=" +
+                        (driftFeet / FeetPerMillimeter).ToString("F6", System.Globalization.CultureInfo.InvariantCulture));
+                    continue;
+                }
+                mismatch.Add(entry.Value.SourceId + ":" + entry.Key + "(几何超限或非受控改变)");
             }
             if (mismatch.Count != 0)
                 throw new InvalidOperationException("连接解耦后详图线丢失或几何改变，已阻止提交；SourceId:ElementId=" +
-                    string.Join(",", mismatch.Take(30)));
+                    string.Join(",", mismatch.Take(30)) +
+                    "；已检查 " + _sourceCurves.Count + " 条，受控微调候选 " + _acceptedAutojoinDrifts.Count + " 条。");
+        }
+
+        /// <summary>
+        /// 只接受 Revit Autojoin 对本次新建、已解除连接的 DetailCurve 所造成的受限微调。
+        /// 双重限制：0.15mm 绝对值、宿主最短曲线容差的 20%、源曲线长度的 20%。
+        /// 只处理 Line 或有界 Arc；无界整圆继续用 P4 原始严格比较，避免整圆中心漂移。
+        /// </summary>
+        private static bool TryAcceptAutojoinDrift(Curve actual, Curve expected, double shortCurveTolerance,
+            out double maxDriftFeet)
+        {
+            maxDriftFeet = double.PositiveInfinity;
+            if (actual == null || expected == null || actual.GetType() != expected.GetType() ||
+                !actual.IsBound || !expected.IsBound || shortCurveTolerance <= 0)
+                return false;
+            if (!(expected is Line) && !(expected is Arc)) return false;
+            double limit = Math.Min(MaxAutojoinDriftMillimeters * FeetPerMillimeter,
+                Math.Min(0.20 * shortCurveTolerance, 0.20 * expected.Length));
+            if (limit <= 0 || double.IsNaN(limit) || double.IsInfinity(limit)) return false;
+            double lengthDelta = Math.Abs(actual.Length - expected.Length);
+            if (double.IsNaN(lengthDelta) || lengthDelta > limit) return false;
+
+            double direct = Math.Max(actual.GetEndPoint(0).DistanceTo(expected.GetEndPoint(0)),
+                                     actual.GetEndPoint(1).DistanceTo(expected.GetEndPoint(1)));
+            double reverse = Math.Max(actual.GetEndPoint(0).DistanceTo(expected.GetEndPoint(1)),
+                                      actual.GetEndPoint(1).DistanceTo(expected.GetEndPoint(0)));
+            double drift = Math.Max(lengthDelta, Math.Min(direct, reverse));
+            if (actual is Arc a && expected is Arc b)
+            {
+                // 保留 P4 的法向/弧中点保护；互补半圆不能被当成微调。
+                if (Math.Abs(Math.Abs(a.Normal.DotProduct(b.Normal)) - 1.0) > 1e-9) return false;
+                drift = Math.Max(drift, a.Center.DistanceTo(b.Center));
+                drift = Math.Max(drift, Math.Abs(a.Radius - b.Radius));
+                drift = Math.Max(drift, a.Evaluate(0.5, true).DistanceTo(b.Evaluate(0.5, true)));
+            }
+            maxDriftFeet = drift;
+            return !double.IsNaN(drift) && !double.IsInfinity(drift) && drift <= limit;
         }
 
         private sealed class ExpectedCurve

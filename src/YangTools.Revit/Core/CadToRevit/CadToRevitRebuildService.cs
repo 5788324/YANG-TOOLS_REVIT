@@ -318,13 +318,19 @@ namespace YangTools.Revit.Core.CadToRevit
                 }
                 CommitOrThrow(transaction, "线条转换", joinHandler);
             }
-            // DetachElements 只应解除新建线段间的约束，不允许丢失或替换已登记的图元。
+            // DetachElements 后必须逐 ElementId 核验；只允许有上限且有逐源记录的 Autojoin 微调。
             joinHandler.AssertCreatedCurvesStillExist();
             if (joinHandler.ResolvedCount > 0)
             {
-                string note = "CAD 线条导入：已仅针对本次新建详图线自动解除 " + joinHandler.ResolvedCount +
-                    " 处 Revit 连接约束；全部创建 ID 仍有效。";
+                string note = "CAD 线条导入：仅对本次新建详图线解除 " + joinHandler.ResolvedCount +
+                    " 处 Revit 连接约束；已核验全部创建 ID；受控 Autojoin 几何微调 " +
+                    joinHandler.AcceptedAutojoinDriftCount + " 条，最大 " +
+                    joinHandler.MaxAcceptedAutojoinDriftMillimeters.ToString("F6", System.Globalization.CultureInfo.InvariantCulture) +
+                    " mm（上限为 0.15 mm，且受最短曲线/源线长进一步限制）。";
                 result.AuditWarnings.Add(note);
+                // 逐条进入 P1 的 JSON 审计；不可把发生位移的线条报告为完全无变化。
+                foreach (string drift in joinHandler.AcceptedAutojoinDriftDetails)
+                    result.AuditWarnings.Add("CAD_AUTOJOIN_MICROADJUST: " + drift);
                 DiagnosticLog.WriteInfo("CAD 转 Revit 自动解除连接约束", note + " " + joinHandler.Summary);
             }
         }
