@@ -58,6 +58,15 @@ def icon(name, draw):
         cairosvg.svg2png(bytestring=data.encode(),write_to=str(ROOT/f'{name}_{size}.png'),output_width=size,output_height=size)
 
 
+def family_coordinates(g):
+    line(g,8,24,26,24)
+    line(g,8,24,8,6)
+    line(g,8,24,20,12)
+    poly(g,[(22,21),(26,24),(22,27)])
+    poly(g,[(5,10),(8,6),(11,10)])
+    dot(g,20,12,2.5)
+
+
 def align_line(g):
     line(g,5,24,27,24,accent=True)
     line(g,9,8,9,21); line(g,6,8,12,8); line(g,6,14,12,14)
@@ -354,7 +363,7 @@ def family_category(g):
 icons={
 'align_line':align_line,'align_text':align_text,'batch_task':batch_task,'boolean_geometry':boolean_geometry,
 'cn_check':cn_check,'column_along_path':column_path,'dim_override':dim_override,
-'distribute_text':distribute_text,'entity_generator':loft,'solid_extract':solid_extract,'face_based':face_based,'family_instance':family_instance,
+'distribute_text':distribute_text,'entity_generator':loft,'solid_extract':solid_extract,'face_based':face_based,'family_coordinates':family_coordinates, 'family_instance':family_instance,
 'family_manager':family_manager,'level_modifier':level_modifier,'linear_placement':linear_placement,'merge_text':merge_text,
 'micro_tool':micro_tool,'override_cleaner':override_cleaner,'paste_cad':paste_cad,'project_info':project_info,
 'project_inspector':project_inspector,'parameter_cleanup':parameter_cleanup,'sample_window':settings,'section_line':section_line,'sheet_manager':sheet_manager,

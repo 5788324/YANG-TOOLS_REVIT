@@ -37,6 +37,7 @@
 | 项目管理区 | 图纸管理 | `SheetManagerCommand` | 集中管理 Revit 图纸、修订与图框信息。 |
 | 项目管理区 | 批量任务 | `BatchTaskCommand` | 批量导出或处理本地及云端关联模型。 |
 | 项目管理区 | 族实例 | `FamilyInstanceManagerCommand` | 查询、批量编辑当前项目中的族实例。 |
+| 项目管理区 | 族坐标 | `FamilyInstanceCoordinatesCommand` | 查看并设置点定位族的测量、项目基点及内部原点坐标。 |
 | 项目管理区 | 族管理 | `FamilyManagerCommand` | 管理项目载入族及编辑后的重新载入。 |
 | 项目管理区 | 族类别 | `FamilyCategoryChangeCommand` | 修改可编辑载入族的族类别。 |
 | 项目管理区 | 资产管理 | `ProjectAssetManagerCommand` | 浏览和管理项目的资产与资源。 |
