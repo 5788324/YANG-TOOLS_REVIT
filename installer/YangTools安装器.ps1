@@ -13,14 +13,6 @@ $ArtifactsPayloadRoot = Join-Path $ProjectRoot 'artifacts\payload'
 $BuildOutputRoot = Join-Path $ProjectRoot 'src\YangTools.Revit\bin\x64'
 $ProjectManifest = Join-Path $ProjectRoot 'src\YangTools.Revit\YangTools.Revit.addin'
 $AddinsRoot = Join-Path $env:APPDATA 'Autodesk\Revit\Addins'
-$YangToolsUserDataRoot = Join-Path $env:APPDATA 'YangTools'
-$LegacyAssistantDirectory = Join-Path $YangToolsUserDataRoot 'Assistant'
-$LegacyAssistantFiles = @(
-    (Join-Path $YangToolsUserDataRoot 'copilot_settings.json'),
-    (Join-Path $YangToolsUserDataRoot 'copilot_history.json'),
-    (Join-Path $YangToolsUserDataRoot 'moyu_settings.json'),
-    (Join-Path $YangToolsUserDataRoot 'moyu_history.json')
-)
 $script:VersionByIndex = @{}
 
 function Test-RevitRunning {
@@ -109,46 +101,56 @@ function Install-Version([string]$Version) {
     $manifestBackup = Join-Path $versionRoot 'YangTools.Revit.addin.backup'
 
     New-Item -ItemType Directory -Force -Path $versionRoot | Out-Null
-    Remove-Item -LiteralPath $staging -Recurse -Force -ErrorAction SilentlyContinue
-    Remove-Item -LiteralPath $backup -Recurse -Force -ErrorAction SilentlyContinue
-    Remove-Item -LiteralPath $manifestBackup -Force -ErrorAction SilentlyContinue
+    # 只清理当前未完成的 staging；旧安装目录/manifest 在新 payload 校验之前不得删除。
+    if (Test-Path -LiteralPath $staging) { Remove-Item -LiteralPath $staging -Recurse -Force -ErrorAction Stop }
+    $hadTarget = Test-Path -LiteralPath $target
+    $hadManifest = Test-Path -LiteralPath $manifest
+    $movedTarget = $false
+    $movedManifest = $false
+    if (($hadTarget -and -not $hadManifest) -or (-not $hadTarget -and $hadManifest)) {
+        throw "Revit $Version 插件文件和 manifest 状态不一致，已停止安装；请检查现有文件。"
+    }
+    if (-not $hadTarget -and ((Test-Path -LiteralPath $backup) -or (Test-Path -LiteralPath $manifestBackup))) {
+        throw "Revit $Version 尚有上一版备份但当前插件目录不存在，请先检查或恢复备份。"
+    }
 
     try {
         Copy-Item -LiteralPath $sourcePlugin -Destination $staging -Recurse -Force
         if (-not (Test-Path -LiteralPath (Join-Path $staging 'YangTools.Revit.dll'))) {
             throw '复制到临时目录后未找到 YangTools.Revit.dll。'
         }
-
-        if (Test-Path -LiteralPath $target) {
+        if ($hadTarget) {
+            # 保留最新的上一版；只有新 payload 已备好才替换旧备份。
+            if (Test-Path -LiteralPath $backup) { Remove-Item -LiteralPath $backup -Recurse -Force -ErrorAction Stop }
+            if (Test-Path -LiteralPath $manifestBackup) { Remove-Item -LiteralPath $manifestBackup -Force -ErrorAction Stop }
             Move-Item -LiteralPath $target -Destination $backup
-        }
-        if (Test-Path -LiteralPath $manifest) {
+            $movedTarget = $true
             Move-Item -LiteralPath $manifest -Destination $manifestBackup
+            $movedManifest = $true
         }
         Move-Item -LiteralPath $staging -Destination $target
         Copy-Item -LiteralPath $sourceManifest -Destination $manifest -Force
-
-        # 重复项目参数清理已在 3.1.30 并入 YangTools；自动清理本项目历史独立插件，避免出现重复按钮。
+        # 安装成功后保留 YangTools.backup 和 manifest.backup，以便一键回退。
         $legacyManifest = Join-Path $versionRoot 'RevitParameterDeduplicator.addin'
-        $legacyFolder = Join-Path $versionRoot 'RevitParameterDeduplicator'
-        $legacyFound = (Test-Path -LiteralPath $legacyManifest) -or (Test-Path -LiteralPath $legacyFolder)
-        Remove-Item -LiteralPath $legacyManifest -Force -ErrorAction SilentlyContinue
-        Remove-Item -LiteralPath $legacyFolder -Recurse -Force -ErrorAction SilentlyContinue
-        if ($legacyFound) { Add-Log "Revit $Version：已移除历史独立重复参数清理插件入口。" }
-
-        Remove-Item -LiteralPath $backup -Recurse -Force -ErrorAction SilentlyContinue
-        Remove-Item -LiteralPath $manifestBackup -Force -ErrorAction SilentlyContinue
+        if (Test-Path -LiteralPath $legacyManifest) {
+            Add-Log "Revit $Version：检测到旧重复参数独立插件；为保护现有插件未自动删除。如有重复按钮请自行检查。"
+        }
     }
     catch {
-        # 无论旧版本是否存在，都先清理本次可能留下的半成品，再恢复备份。
         Remove-Item -LiteralPath $staging -Recurse -Force -ErrorAction SilentlyContinue
-        Remove-Item -LiteralPath $target -Recurse -Force -ErrorAction SilentlyContinue
-        Remove-Item -LiteralPath $manifest -Force -ErrorAction SilentlyContinue
-        if (Test-Path -LiteralPath $backup) {
-            Move-Item -LiteralPath $backup -Destination $target -Force
+        if ($movedTarget) {
+            Remove-Item -LiteralPath $target -Recurse -Force -ErrorAction SilentlyContinue
+            Move-Item -LiteralPath $backup -Destination $target
         }
-        if (Test-Path -LiteralPath $manifestBackup) {
-            Move-Item -LiteralPath $manifestBackup -Destination $manifest -Force
+        elseif (-not $hadTarget) {
+            Remove-Item -LiteralPath $target -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        if ($movedManifest) {
+            Remove-Item -LiteralPath $manifest -Force -ErrorAction SilentlyContinue
+            Move-Item -LiteralPath $manifestBackup -Destination $manifest
+        }
+        elseif (-not $hadManifest) {
+            Remove-Item -LiteralPath $manifest -Force -ErrorAction SilentlyContinue
         }
         throw
     }
@@ -247,6 +249,12 @@ $uninstallButton.Location = New-Object System.Drawing.Point(180, 492)
 $uninstallButton.Size = New-Object System.Drawing.Size(110, 42)
 $form.Controls.Add($uninstallButton)
 
+$rollbackButton = New-Object System.Windows.Forms.Button
+$rollbackButton.Text = '恢复上一版'
+$rollbackButton.Location = New-Object System.Drawing.Point(432, 492)
+$rollbackButton.Size = New-Object System.Drawing.Size(138, 42)
+$form.Controls.Add($rollbackButton)
+
 $openFolderButton = New-Object System.Windows.Forms.Button
 $openFolderButton.Text = '打开插件目录'
 $openFolderButton.Location = New-Object System.Drawing.Point(302, 492)
@@ -268,24 +276,6 @@ function Add-Log([string]$Text) {
 }
 
 
-function Remove-LegacyAssistantData {
-    $removed = @()
-    if (Test-Path -LiteralPath $LegacyAssistantDirectory) {
-        Remove-Item -LiteralPath $LegacyAssistantDirectory -Recurse -Force -ErrorAction Stop
-        $removed += $LegacyAssistantDirectory
-    }
-    foreach ($path in $LegacyAssistantFiles) {
-        if (Test-Path -LiteralPath $path) {
-            Remove-Item -LiteralPath $path -Force -ErrorAction Stop
-            $removed += $path
-        }
-    }
-    if ($removed.Count -gt 0) {
-        Add-Log "已清理旧 AI/摸鱼助手历史、设置和 API Key：$($removed.Count) 项。"
-    }
-    return @($removed)
-}
-
 function Get-SelectedVersions {
     $selected = @()
     foreach ($index in $list.CheckedIndices) {
@@ -306,7 +296,7 @@ function Refresh-VersionList([string[]]$Preselect = @()) {
 }
 
 function Set-ControlsEnabled([bool]$Enabled) {
-    foreach ($control in @($installButton, $uninstallButton, $selectAvailable, $selectInstalled, $clearSelection, $refreshButton, $openFolderButton)) {
+    foreach ($control in @($installButton, $uninstallButton, $selectAvailable, $selectInstalled, $clearSelection, $refreshButton, $openFolderButton, $rollbackButton)) {
         $control.Enabled = $Enabled
     }
 }
@@ -329,7 +319,6 @@ $refreshButton.Add_Click({ Refresh-VersionList })
 $installButton.Add_Click({
     try {
         Ensure-RevitClosed
-        [void](Remove-LegacyAssistantData)
         $versions = @(Get-SelectedVersions)
         if ($versions.Count -eq 0) { throw '请至少选择一个 Revit 版本。' }
 
@@ -373,22 +362,42 @@ $uninstallButton.Add_Click({
         $versions = @(Get-SelectedVersions)
         if ($versions.Count -eq 0) { throw '请至少选择一个 Revit 版本。' }
         $answer = [System.Windows.Forms.MessageBox]::Show(
-            "将卸载 Revit $($versions -join '、') 的 YangTools，并清理已删除 AI/摸鱼助手的历史、设置和 API Key。其他仍在使用的个人设置会保留。是否继续？",
+            "将卸载 Revit $($versions -join '、') 的 YangTools。已有个人设置与历史数据会保留。是否继续？",
             '确认卸载', 'YesNo', 'Question')
         if ($answer -ne [System.Windows.Forms.DialogResult]::Yes) { return }
         Set-ControlsEnabled $false
-        [void](Remove-LegacyAssistantData)
         foreach ($version in $versions) {
             Add-Log "正在卸载 Revit $version ..."
             Uninstall-Version $version
             Add-Log "Revit $version 卸载完成。"
         }
         Refresh-VersionList $versions
-        [System.Windows.Forms.MessageBox]::Show('YangTools 卸载完成；旧 AI/摸鱼助手数据已清理，其他仍在使用的个人设置已保留。', 'YangTools', 'OK', 'Information') | Out-Null
+        [System.Windows.Forms.MessageBox]::Show('YangTools 卸载完成；个人设置和历史数据均已保留。', 'YangTools', 'OK', 'Information') | Out-Null
     }
     catch {
         Add-Log "失败：$($_.Exception.Message)"
         [System.Windows.Forms.MessageBox]::Show($_.Exception.Message, '卸载失败', 'OK', 'Error') | Out-Null
+    }
+    finally { Set-ControlsEnabled $true }
+})
+
+$rollbackButton.Add_Click({
+    try {
+        Ensure-RevitClosed
+        $versions = @(Get-SelectedVersions)
+        if ($versions.Count -ne 1) { throw '每次请选择一个 Revit 年份恢复上一版。' }
+        $version = $versions[0]
+        $answer = [System.Windows.Forms.MessageBox]::Show(
+            "恢复 Revit $version 的上一版 YangTools？当前版本将转存到备份位置。", '确认回退', 'YesNo', 'Question')
+        if ($answer -ne [System.Windows.Forms.DialogResult]::Yes) { return }
+        Set-ControlsEnabled $false
+        & (Join-Path $PSScriptRoot 'Rollback.ps1') -Version $version
+        Add-Log "Revit $version 已恢复上一版。"
+        Refresh-VersionList $versions
+    }
+    catch {
+        Add-Log "恢复失败：$($_.Exception.Message)"
+        [System.Windows.Forms.MessageBox]::Show($_.Exception.Message, '回退失败', 'OK', 'Error') | Out-Null
     }
     finally { Set-ControlsEnabled $true }
 })
