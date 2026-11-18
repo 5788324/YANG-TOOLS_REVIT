@@ -13,6 +13,21 @@ This file is the working index. Historical acceptance and iteration records rema
 
 交接与证据：[PersonalPilot 交接](HANDOFF_20261118_YANGTOOLS_PERSONAL_PILOT.md) · [CLI 安装器验收](YANGTOOLS_PERSONAL_PILOT_VERSIONGATE_REGEX_ACCEPTANCE_20261118.md) · [Exchange P5 验收](YANGTOOLS_EXCHANGE_P5_INDEPENDENT_ACCEPTANCE_20261118.md)
 
+## 代码与界面审查｜2026-11-18
+
+审查基线 `ebf248b36c6b0748fbf7c1c24e36f7c97eb2c0c0`。Revit 2025 PersonalPilot 进入个人试用。现有分模块服务、WPF 共享主题、Revit 事务与撤销能力可继续使用。维护压力集中在资产管理（约 1,900 行代码后置）、族实例（约 1,600 行代码后置）和批量任务引擎（约 1,800 行）。优先在修改具体功能时减少重复校验和异常包装，保留防止写错文档、级联删除、覆盖文件和批量写入一半的保护。
+
+| 优先级 | 发现 | 证据与处理范围 |
+| --- | --- | --- |
+| P0 · 2027 编译 | 用 .NET SDK 10.0.100 构建 2027，默认解析到 API 2027.4.0，显式使用 API 2027.0.0 复核，两次均 10 个错误。钢筋创建仍用 `RebarHookOrientation`，自由形钢筋相关调用使用旧 `CreateFreeForm` 签名。 | [渐变钢筋](../src/YangTools.Revit/Core/Rebar/RebarGradientSetService.cs#L183)、[形状驱动钢筋](../src/YangTools.Revit/Core/Rebar/RebarShapeDrivenCreateService.cs#L76)。按目标版本适配调用并固定 API 版本，保留 2021–2026 路径。 |
+| P1 · CAD 转图 | 「重新扫描」会用已保存配置重建表格，丢弃当前未保存的映射。只转换非标注对象时，清空尺寸界线样式也会阻止转换，服务实际只在处理标注时才用这个设置。 | [重新扫描](../src/YangTools.Revit/UI/CadToRevitWindow.xaml.cs#L63)、[开始转换](../src/YangTools.Revit/UI/CadToRevitWindow.xaml.cs#L246)。只改界面状态和条件，不改 P5 几何。 |
+| P1 · 族实例 | 「选择图元」先隐藏窗口，再提交 Revit 外部事件。事件未获接受且没有待处理请求接手，或因文档切换被跳过时，没有恢复窗口的路径。 | [选择图元](../src/YangTools.Revit/UI/FamilyInstanceManagerWindow.xaml.cs#L1121)、[图框换型已有处理](../src/YangTools.Revit/UI/SheetManagerWindow.xaml.cs#L808)。这是代码路径审查，实际触发频率待试用确认。 |
+| P2 · 窗口布局 | 族实例窗口最小宽度 1160 WPF DIP 且使用自绘标题栏，小屏幕或高缩放下会超出工作区。CAD 转图将 `DetailCurve`、`Reference` 等 API 实现术语直接放进操作界面。 | [族实例布局](../src/YangTools.Revit/UI/FamilyInstanceManagerWindow.xaml#L1)、[CAD 转图文案](../src/YangTools.Revit/UI/CadToRevitWindow.xaml#L149)。优先修布局和主操作反馈，复用现有主题。 |
+
+兼容范围按实际 Revit 版本记录。2021–2026 有历史编译证据，2025.4 有当前试用加载记录。2025.5、2026.5 已转入 .NET 10，当前项目的 2025/2026 配置仍固定 .NET 8 API，后续须单独验证这些更新版。[Autodesk .NET 10 迁移说明](https://help.autodesk.com/view/NAV/2026/ENU/?caas=caas/sfdcarticles/sfdcarticles/Revit--Requirements-for-products-affected-by-the-Microsoft--NET-10-transition.html)
+
+后续需求按一个功能一个行为改动交付，优先跑现有相关检查与目标版本编译。单元格修改的输入错误放在原位提示，常规成功用状态行反馈，删除、覆盖或影响整批时保留确认。此次只记录审查，未改功能代码，也未运行 Windows 窗口交互测试。
+
 ## 历史设计和迭代资料
 - `../README.md`
 - `../PROJECT.md`
