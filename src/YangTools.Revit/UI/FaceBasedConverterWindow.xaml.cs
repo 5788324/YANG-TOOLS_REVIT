@@ -33,7 +33,11 @@ namespace YangTools.Revit.UI
             FamilyDataGrid.ItemsSource = TypeItems;
 
             ResolveTemplatePath();
-            ScanFaceBasedFamilies();
+            var preselected = uiapp.ActiveUIDocument.Selection.GetElementIds();
+            if (preselected.Count > 0)
+                ScanFromSelection(preselected);
+            else
+                ScanFaceBasedFamilies();
         }
 
         private void ResolveTemplatePath()
@@ -44,54 +48,9 @@ namespace YangTools.Revit.UI
 
         private void ScanFaceBasedFamilies()
         {
-            TypeItems.Clear();
-            try
-            {
-                var instances = new FilteredElementCollector(_doc)
-                    .OfClass(typeof(FamilyInstance))
-                    .Cast<FamilyInstance>()
-                    .Where(fi =>
-                    {
-                        try { return _engine.IsFamilyFaceBased(fi.Symbol?.Family); }
-                        catch { return false; }
-                    })
-                    .ToList();
-
-                var grouped = instances
-                    .GroupBy(fi => fi.Symbol?.Id ?? ElementId.InvalidElementId)
-                    .Where(g => g.Key != ElementId.InvalidElementId)
-                    .ToList();
-
-                foreach (var group in grouped)
-                {
-                    var firstInst = group.First();
-                    var symbol = firstInst.Symbol;
-                    if (symbol == null) continue;
-
-                    string hostCat = "";
-                    try { hostCat = firstInst.Host?.Category?.Name ?? "未知"; }
-                    catch { hostCat = "未知"; }
-
-                    TypeItems.Add(new FaceBasedTypeItem
-                    {
-                        IsSelected = true,
-                        FamilyName = symbol.Family?.Name ?? "未知",
-                        TypeName = symbol.Name ?? "未知",
-                        InstanceCount = group.Count(),
-                        HostCategory = hostCat,
-                        SymbolId = symbol.Id,
-                        InstanceIds = group.Select(fi => fi.Id).ToList()
-                    });
-                }
-
-                AttachSelectionTracking();
-                TxtCount.Text = $"共 {TypeItems.Count} 个基于面族类型 ({instances.Count} 个实例)";
-                TxtStatus.Text = $"扫描完成，发现 {TypeItems.Count} 个基于面的族类型";
-            }
-            catch (Exception ex)
-            {
-                TxtStatus.Text = "扫描失败: " + ex.Message;
-            }
+            _lastScannedIds = new FilteredElementCollector(_doc)
+                .OfClass(typeof(FamilyInstance)).ToElementIds().ToList();
+            RefreshUIList(new HashSet<ElementId>());
         }
 
         private void AttachSelectionTracking()
@@ -108,10 +67,10 @@ namespace YangTools.Revit.UI
         private void ScanFromSelection(ICollection<ElementId> selectedIds)
         {
             _lastScannedIds = selectedIds.ToList();
-            RefreshUIList();
+            RefreshUIList(new HashSet<ElementId>(_lastScannedIds));
         }
 
-        private void RefreshUIList()
+        private void RefreshUIList(HashSet<ElementId> checkedIds)
         {
             TypeItems.Clear();
             try
@@ -150,7 +109,7 @@ namespace YangTools.Revit.UI
 
                             TypeItems.Add(new FaceBasedTypeItem
                             {
-                                IsSelected = true,
+                                IsSelected = og.All(instance => checkedIds.Contains(instance.Id)),
                                 FamilyName = symbol.Family?.Name ?? "未知",
                                 TypeName = symbol.Name + (multiple ? $" (朝向 {index})" : ""),
                                 ConvertedSuffix = multiple ? $"_{index}" : "",
@@ -171,7 +130,7 @@ namespace YangTools.Revit.UI
 
                         TypeItems.Add(new FaceBasedTypeItem
                         {
-                            IsSelected = true,
+                            IsSelected = symbolGroup.All(instance => checkedIds.Contains(instance.Id)),
                             FamilyName = symbol.Family?.Name ?? "未知",
                             TypeName = symbol.Name ?? "未知",
                             ConvertedSuffix = "",
@@ -185,7 +144,9 @@ namespace YangTools.Revit.UI
 
                 AttachSelectionTracking();
                 TxtCount.Text = $"共 {TypeItems.Count} 个基于面族类型 ({instances.Count} 个实例)";
-                TxtStatus.Text = "列表已更新，等待选择转换类型。";
+                TxtStatus.Text = instances.Count > 0
+                    ? "核对勾选范围后开始转换。"
+                    : "当前范围没有可转换的面基族。可在视图中重选，或刷新全项目列表。";
             }
             catch (Exception ex)
             {
@@ -486,11 +447,17 @@ namespace YangTools.Revit.UI
             if (failMessages.Count > 0)
                 resultMsg += "\n\n失败详情:\n" + string.Join("\n", failMessages);
 
-            TaskDialog.Show("转换结果", resultMsg);
-            TxtStatus.Text = $"完成: 成功 {totalConverted} 个, 失败 {totalFailed} 个";
+            if (totalFailed > 0 || failMessages.Count > 0)
+                TaskDialog.Show("转换结果", resultMsg);
+            string status = $"完成：已转换 {totalConverted} 个，失败 {totalFailed} 个。";
+            TxtStatus.Text = status;
             if (totalConverted > 0)
             {
-                try { ScanFaceBasedFamilies(); }
+                try
+                {
+                    ScanFaceBasedFamilies();
+                    TxtStatus.Text = status;
+                }
                 catch (Exception uiError)
                 {
                     DiagnosticLog.WriteError("基于面转换成功后刷新", uiError);
@@ -521,7 +488,7 @@ namespace YangTools.Revit.UI
             {
                 var sel = _uiapp.ActiveUIDocument.Selection;
                 var picked = sel.PickObjects(Autodesk.Revit.UI.Selection.ObjectType.Element,
-                    "请选择要转换的基于面族实例 (按Enter确认，按ESC取消)");
+                    "请选择要转换的基于面族实例 (点“完成”确认，按 Esc 取消)");
 
                 if (picked != null && picked.Count > 0)
                 {
@@ -551,10 +518,9 @@ namespace YangTools.Revit.UI
         {
             // InitializeComponent 加载控件时也可能触发 Checked/Unchecked，不能读取尚未赋值的 Engine。
             if (_engine == null || _doc == null) return;
-            if (_lastScannedIds != null && _lastScannedIds.Count > 0)
-                RefreshUIList();
-            else
-                ScanFaceBasedFamilies();
+            var checkedIds = new HashSet<ElementId>(TypeItems
+                .Where(item => item.IsSelected).SelectMany(item => item.InstanceIds));
+            RefreshUIList(checkedIds);
         }
 
         private void BrowseTemplate_Click(object sender, RoutedEventArgs e)

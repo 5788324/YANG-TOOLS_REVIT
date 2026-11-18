@@ -31,9 +31,12 @@ namespace YangTools.Revit.Commands
                 }
                 var doc = uidoc.Document;
 
+                var preselected = uidoc.Selection.GetElementIds()
+                    .Select(id => doc.GetElement(id)).OfType<FamilyInstance>().ToList();
                 UserSettings settings = UserSettings.Load();
                 var state = new Models.BooleanGeometryState
                 {
+                    MainInst = preselected.Count == 1 ? preselected : new List<FamilyInstance>(),
                     DeleteTargetInst = settings.BooleanDeleteTargetInst,
                     DeleteTargetFam = settings.BooleanDeleteTargetFam
                 };

@@ -36,7 +36,10 @@ namespace YangTools.Revit.Commands
 
             try
             {
-                var window = new FamilyMaterialBindingWindow(doc);
+                var familyIds = uidoc.Selection.GetElementIds()
+                    .Select(id => doc.GetElement(id)).OfType<FamilyInstance>()
+                    .Select(instance => instance.Symbol.Family.Id).ToList();
+                var window = new FamilyMaterialBindingWindow(doc, familyIds);
                 new WindowInteropHelper(window).Owner = uiapp.MainWindowHandle;
                 if (window.ShowDialog() != true || window.Request == null)
                     return Result.Cancelled;

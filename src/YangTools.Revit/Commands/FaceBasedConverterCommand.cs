@@ -20,6 +20,11 @@ namespace YangTools.Revit.Commands
             try
             {
                 var uiapp = commandData.Application;
+                if (uiapp.ActiveUIDocument == null || uiapp.ActiveUIDocument.Document.IsFamilyDocument)
+                {
+                    TaskDialog.Show("面基转换", "请先打开一个项目文档。");
+                    return Result.Cancelled;
+                }
 
                 var window = new FaceBasedConverterWindow(uiapp);
                 var helper = new System.Windows.Interop.WindowInteropHelper(window);

@@ -52,9 +52,13 @@ namespace YangTools.Revit.Commands
 
                     if (window.ReselectRequested)
                     {
-                        List<ElementId> reselected = PickInstances(uidoc);
-                        if (reselected.Count > 0)
-                            instanceIds = reselected;
+                        try
+                        {
+                            List<ElementId> reselected = PickInstances(uidoc);
+                            if (reselected.Count > 0)
+                                instanceIds = reselected;
+                        }
+                        catch (Autodesk.Revit.Exceptions.OperationCanceledException) { }
                         continue;
                     }
 

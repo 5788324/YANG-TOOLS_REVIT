@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
@@ -29,9 +30,11 @@ namespace YangTools.Revit.Commands
                     return Result.Cancelled;
                 }
 
+                var selectedIds = uiDoc.Selection.GetElementIds();
                 UserSettings settings = UserSettings.Load();
                 var state = new SolidGeneratorState
                 {
+                    SourceElementId = selectedIds.Count == 1 ? selectedIds.First() : ElementId.InvalidElementId,
                     TemplatePath = string.IsNullOrWhiteSpace(settings.SolidGeneratorTemplatePath)
                         ? settings.EntityGeneratorTemplatePath
                         : settings.SolidGeneratorTemplatePath,

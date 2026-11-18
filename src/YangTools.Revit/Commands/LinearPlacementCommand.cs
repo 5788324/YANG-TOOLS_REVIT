@@ -15,29 +15,21 @@ namespace YangTools.Revit.Commands
         usage: "使用：点击按钮，在窗口选择路径、族类型、间距或数量，以及标高等参数后执行。\n注意：核对路径方向、标高基准与数量。")]
     public class LinearPlacementCommand : IExternalCommand
     {
-        private static LinearPlacementWindow? _window;
-
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
             try
             {
                 var uiapp = commandData.Application;
 
-                if (_window == null)
+                if (uiapp.ActiveUIDocument == null)
                 {
-                    _window = new LinearPlacementWindow(uiapp);
-                    _window.Closed += (s, e) => _window = null;
-                    
-                    var handle = uiapp.MainWindowHandle;
-                    var helper = new System.Windows.Interop.WindowInteropHelper(_window);
-                    helper.Owner = handle;
+                    TaskDialog.Show("沿线布置", "请先打开一个项目文档。");
+                    return Result.Cancelled;
+                }
 
-                    _window.Show();
-                }
-                else
-                {
-                    _window.Activate();
-                }
+                ModelessWindowRegistry.ShowOrActivate(
+                    uiapp.ActiveUIDocument.Document, uiapp.MainWindowHandle,
+                    () => new LinearPlacementWindow(uiapp));
 
                 return Result.Succeeded;
             }

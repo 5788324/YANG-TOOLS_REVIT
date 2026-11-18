@@ -11,7 +11,7 @@ namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
     [RibbonButton(
-        panelName: "项目管理区", buttonText: "族坐标",
+        panelName: "模型修改区", buttonText: "族坐标",
         tooltip: "查看和设置点定位族的三套坐标。",
         largeIcon: "Icons/family_coordinates_32.png", smallIcon: "Icons/family_coordinates_16.png",
         usage: "使用：选中族实例并打开窗口，点击一套坐标，输入目标位置后应用。\n限制：仅当前项目中的点定位族。每次移动一个实例，可撤销。")]

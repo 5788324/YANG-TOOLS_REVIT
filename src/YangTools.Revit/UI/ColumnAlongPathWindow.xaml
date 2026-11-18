@@ -193,20 +193,24 @@
                     BorderBrush="{DynamicResource WindowBorder}"
                     BorderThickness="0,1,0,0"
                     CornerRadius="0,0,8,8">
-                <StackPanel Orientation="Horizontal"
-                            HorizontalAlignment="Right"
-                            VerticalAlignment="Center"
-                            Margin="0,0,14,0">
-                    <Button Content="关闭"
-                            Style="{DynamicResource StandardButton}"
-                            Click="CloseButton_Click"
-                            Width="82"
-                            Margin="0,0,8,0"/>
-                    <Button Content="开始布置"
-                            Style="{DynamicResource PrimaryButton}"
-                            Click="StartPlacement_Click"
-                            Width="110"/>
-                </StackPanel>
+                <DockPanel Margin="14,0">
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Margin="10,0,0,0">
+                        <Button Content="关闭"
+                                Style="{DynamicResource StandardButton}"
+                                Click="CloseButton_Click"
+                                Width="82"
+                                Margin="0,0,8,0"/>
+                        <Button Content="开始布置"
+                                Style="{DynamicResource PrimaryButton}"
+                                Click="StartPlacement_Click"
+                                Width="110"/>
+                    </StackPanel>
+                    <TextBlock x:Name="PlacementStatus" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                               Foreground="{DynamicResource SecondaryText}"/>
+                </DockPanel>
             </Border>
         </Grid>
     </Border>
