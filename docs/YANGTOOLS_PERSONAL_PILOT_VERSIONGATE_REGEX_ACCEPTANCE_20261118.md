@@ -1,6 +1,23 @@
 # YangTools PersonalPilot — VersionGate REGEX_FIX 独立证据审查
 
-日期：2026-11-18。状态：**CLI LIFECYCLE PASS（隔离 APPDATA） / TARGET-VERSION NEGATIVE GATE PARTIAL（两项需补证） / RELEASE NO-GO**。
+日期：2026-11-18。历史审查状态：**CLI LIFECYCLE PASS / TARGET-VERSION NEGATIVE GATE PARTIAL**；已由下文补充验收更新。
+
+## 2026-11-18 补充验收（最终裁定）
+
+**CLI LIFECYCLE GO / TARGET-VERSION NEGATIVE GATE GO（凭用户 Windows QA 证据） / PERSONAL PILOT CLI ACCEPTED / GUI 安装回退点击 NOT_TESTED / FORMAL RELEASE NO-GO。**
+
+用户新上传完整证据 `VERSIONGATE_REGEX_FIX_EVIDENCE(1).zip`，**9,724 bytes**，SHA-256 `55418B30C07D5D650981AFAC5AB9BD24A6354BF77CA2382739A8B80E0E8AAC8E`，压缩包 10/10 CRC PASS，清单 9/9 SHA-256 PASS。原始文件 `step4_negative_gate_subprocess.json` 和 `scripts/run_step4_supplemental_subprocess.ps1` 已直接检查；Windows 子进程没有在审查环境重跑。
+
+- 在生产 Revit 2022（PID 17776）及 QA Revit 2025（PID 8476）均运行时，独立 `powershell.exe -NoProfile -ExecutionPolicy Bypass -File` 调用 `Install.ps1 -Versions 2025`，记录 **ExitCode = 1**，stdout 明确为“安装失败：目标 Revit 2025 正在运行（PID 8476）”，stderr 为空；DLL、manifest 原 SHA 不变，`v2_marker.txt` 未写入，`unchanged=true`。
+- 同一隔离环境调用 `Uninstall.ps1 -Versions 2025`，记录 **ExitCode = 1**，stdout 明确为“卸载失败：目标 Revit 2025 正在运行（PID 8476）”，stderr 为空；DLL 和 manifest SHA 不变，`unchanged=true`。
+- 旧 `step4_negative_gate.json` 的 `install_blocked=false`、`uninstall_blocked=false` 属于原验收脚本未检查子脚本 `exit 1` 的测试缺陷；**不改写原始证据**。本次独立子进程的退出码与文件读回已补足那两项验收。
+- 旧 `step3_cli_lifecycle.json` 已展示 2025 首装→更新→回退→卸载、个人文件 SHA 始终不变；旧反向记录中 `rollback_blocked=true`、目标 PID 提示正确。CLI 阶段可冻结。
+- 限制：v1 与 v2 测试 **DLL 的 SHA 相同**，不同版本 DLL 的实际回退尚未验证；`unknown_path_rejected_by_regex` 只测试正则匹配，中文 GUI 安装/回退按钮并未实测点击。没有证据支持正式 4.0.0 完整发布或对生产插件进行安装。
+- 冻结当前安装器源码，不新增 P12/新修复分支；如果要交付个人试用包，下一项只做中文 GUI 安装/回退的最短实机点击验收，仍隔离生产环境。
+
+---
+
+## 2026-11-18 原始首轮证据审查（历史保留）
 
 ## 证据来源与完整性
 - 输入：用户上传 `VERSIONGATE_REGEX_FIX_EVIDENCE.zip`。
