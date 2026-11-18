@@ -2079,3 +2079,7 @@ ChatGPT 从 RC2N canonical SHA A0AA68AF5F415014F1687811047F9C7AFC888B826CF57B809
 - 新增 `tools/Test-Exchange-P4-UnboundArcGuard.py` 和 `docs/YANGTOOLS_EXCHANGE_P4_UNBOUND_ARC_20261117.md`。
 - P3 证据：6 版本编译日志成功，但 P3 实机在整圆 `Curve.GetEndPoint` 抛异常；Journal 仍出现一次 `666 iterations` 警告，P4 不能宣称已解决所有连接循环。
 - P4 目前只做静态测试，Windows Build、Revit 2025 C4 完整转换及原生 Undo 均 NOT_TESTED，Release NO-GO。
+
+
+## 2026-11-18 — Exchange P5 (SOURCE STATIC / NOT RELEASE)
+在 P4 基础上实现 Autojoin 详图线受限微调核验：P4 严格比较保持不变；仅合法 Detach 后允许 Line/有界 Arc 小于 min(0.15mm, 20% ShortCurveTolerance, 20%源线长) 的差异，并逐 SourceId/ElementId 记录。无界整圆、非预期失败与超限仍回滚。没有 Windows 编译或 Revit Runtime 验收；不修改生产文件。
