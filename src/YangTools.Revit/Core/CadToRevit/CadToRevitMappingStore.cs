@@ -30,17 +30,7 @@ namespace YangTools.Revit.Core.CadToRevit
         public static void Save(IEnumerable<CadToRevitMappingRow> rows)
         {
             var file = Load();
-            foreach (CadToRevitMappingRow row in rows)
-            {
-                if (string.IsNullOrWhiteSpace(row.SourceKey)) continue;
-                Dictionary<string, CadToRevitMappingSnapshot> dict = GetDictionary(file, row.Kind);
-                dict[row.SourceKey] = new CadToRevitMappingSnapshot
-                {
-                    Action = row.Action ?? CadToRevitMappingActions.UseExisting,
-                    TargetName = row.TargetName ?? string.Empty,
-                    NewTypeName = row.NewTypeName ?? string.Empty
-                };
-            }
+            ApplyRows(file, rows);
 
             string? dir = Path.GetDirectoryName(MappingPath);
             if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);
@@ -59,6 +49,21 @@ namespace YangTools.Revit.Core.CadToRevit
             else
             {
                 File.Move(temp, MappingPath);
+            }
+        }
+
+        internal static void ApplyRows(CadToRevitMappingFile file, IEnumerable<CadToRevitMappingRow> rows)
+        {
+            foreach (CadToRevitMappingRow row in rows)
+            {
+                if (string.IsNullOrWhiteSpace(row.SourceKey)) continue;
+                Dictionary<string, CadToRevitMappingSnapshot> dict = GetDictionary(file, row.Kind);
+                dict[row.SourceKey] = new CadToRevitMappingSnapshot
+                {
+                    Action = row.Action ?? CadToRevitMappingActions.UseExisting,
+                    TargetName = row.TargetName ?? string.Empty,
+                    NewTypeName = row.NewTypeName ?? string.Empty
+                };
             }
         }
 

@@ -54,7 +54,7 @@ check('report_no_bbox_match', 'getboundingbox' not in A.lower())
 check('report_role_per_id', 'source_outcomes = result.SourceOutcomes' in A)
 check('one_transaction_group', 'group.Assimilate()' in S and 'new TransactionGroup(document' in S)
 check('ribbon_kept_36', 'panelName: "2D修改", buttonText: "CAD转图"' in C)
-check('ui_reports_partial', 'result.SourceOutcomes.Any(x => x.Status != "created")' in C)
+check('ui_reports_partial', 'result.SourceOutcomes.Count(row => row.Status != "created")' in C and "部分完成" in C)
 check('does_not_write_map', 'File.WriteAllText(exchange.SourcePath' not in A)
 
 # A static sanity fixture also demonstrates that source records and created curves have distinct grains.

@@ -170,17 +170,8 @@ namespace YangTools.Revit.Commands
                     document,
                     $"ImportInstanceId={importedId.GetIdValue()}; Placement={window.SelectedPlacement}; Source={sourcePath}; ViewId={activeView.Id.GetIdValue()}");
 
-                TaskDialog.Show(
-                    "从 CAD 粘贴",
-                    $"CAD 导入完成。\n\n" +
-                    $"目标视图：{activeView.Name}\n" +
-                    $"导入实例 ID：{importedId}\n" +
-                    $"来源文件：{Path.GetFileName(sourcePath)}\n" +
-                    $"定位：{GetPlacementDisplayName(window.SelectedPlacement)}\n" +
-                    $"范围：{(supportsThisViewOnly && window.SelectedThisViewOnly ? "仅当前视图" : "模型级")}\n\n" +
-                    (selectionRefreshed
-                        ? "已选中新导入实例，可使用一次 Ctrl+Z 撤销。"
-                        : "CAD 已提交，但界面选中/刷新失败；请手动检查结果，可使用一次 Ctrl+Z 撤销。"));
+                if (!selectionRefreshed)
+                    TaskDialog.Show("从 CAD 粘贴", "CAD 已导入，但未能自动选中。请检查视图，可用一次 Ctrl+Z 撤销。");
                 return Result.Succeeded;
             }
             catch (Exception ex)
@@ -203,16 +194,6 @@ namespace YangTools.Revit.Commands
             {
                 CadClipboardFileHelper.CleanupWorkingCopy(workingCopy);
             }
-        }
-
-        private static string GetPlacementDisplayName(ImportPlacement placement)
-        {
-            return placement switch
-            {
-                ImportPlacement.Centered => "中心到中心",
-                ImportPlacement.Shared => "对齐共享坐标",
-                _ => "原点到原点"
-            };
         }
     }
 }

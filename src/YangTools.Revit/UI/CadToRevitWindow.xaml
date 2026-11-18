@@ -163,7 +163,7 @@
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <Button Content="保存映射" Width="96" Style="{DynamicResource StandardButton}" Click="SaveMappings_Click"/>
                     <TextBlock x:Name="TxtBottomHint" Margin="12,0,0,0" VerticalAlignment="Center" Style="{DynamicResource SecondaryLabel}"
-                               Text="跳过是合法选择；只有未完成的非跳过映射会阻止转换。"/>
+                               Text="请选择要转换的文件。"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <Button Content="取消" Width="88" Margin="0,0,10,0" Style="{DynamicResource StandardButton}" Click="Cancel_Click" IsCancel="True"/>

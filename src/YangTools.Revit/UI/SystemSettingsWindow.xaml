@@ -113,30 +113,48 @@
                     </ScrollViewer>
                 </TabItem>
 
-                <!-- Tab 1: 面板设置 -->
-                <TabItem Header="面板设置">
-                    <ScrollViewer Margin="10" VerticalScrollBarVisibility="Auto">
-                        <StackPanel>
-                            <TextBlock Text="Ribbon 面板可见性" FontWeight="Bold" Foreground="{DynamicResource PrimaryText}" FontSize="14" Margin="0,0,0,10"/>
-                            <TextBlock Text="勾选的功能显示在面板主区；未勾选的功能进入该面板的展开区。系统设置固定显示，避免配置后无法恢复。" 
-                                       Foreground="{DynamicResource SecondaryText}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,8"/>
-                            <WrapPanel Margin="0,0,0,8">
-                                <Button Content="当前面板全选" Width="108" Margin="0,0,8,4" Click="SelectCurrentPanel_Click"/>
-                                <Button Content="当前面板恢复默认" Width="132" Margin="0,0,8,4" Click="RestoreCurrentPanel_Click"/>
-                                <Button Content="全部面板恢复默认" Width="132" Margin="0,0,8,4" Click="RestoreAllPanels_Click"/>
-                            </WrapPanel>
-                            <TabControl x:Name="PanelTabControl" 
-                                        Background="{DynamicResource InputBg}" 
-                                        BorderBrush="{DynamicResource WindowBorder}" BorderThickness="1"
-                                        MinHeight="200"/>
-                            <Button x:Name="BtnSavePanel" Content="保存面板设置" Width="140" Height="32" Margin="0,12,0,0"
-                                    Background="{DynamicResource AccentColor}" Foreground="{DynamicResource AccentText}"
-                                    BorderThickness="0" FontWeight="Bold" Cursor="Hand"
-                                    Click="BtnSavePanel_Click"/>
-                            <TextBlock Text="关闭窗口不会保存面板改动；只有点击“保存面板设置”才会写入。重启 Revit 后生效。" 
-                                       Foreground="{DynamicResource WarningColor}" FontSize="11" TextWrapping="Wrap" Margin="0,6,0,0"/>
-                        </StackPanel>
-                    </ScrollViewer>
+                <TabItem Header="工具栏布局">
+                    <Grid Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="勾选的工具放在主区，其余放在展开区。系统设置固定显示。"
+                                   Style="{DynamicResource SecondaryLabel}" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="160"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <ListBox x:Name="PanelList" SelectionChanged="PanelList_SelectionChanged" Margin="0,0,12,0"
+                                     Background="{DynamicResource InputBg}" Foreground="{DynamicResource PrimaryText}"
+                                     BorderBrush="{DynamicResource InputBorder}"/>
+                            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl x:Name="PanelCommands">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <CheckBox Content="{Binding DisplayName}" IsChecked="{Binding IsVisible, Mode=TwoWay}"
+                                                      IsEnabled="{Binding CanToggle}" ToolTip="{Binding LockReason}"
+                                                      Style="{DynamicResource StandardCheckBox}" Foreground="{DynamicResource PrimaryText}"
+                                                      Margin="0,0,0,8"/>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Grid>
+                        <WrapPanel Grid.Row="2" Margin="0,10,0,0">
+                            <Button Content="本面板全选" Margin="0,0,8,4" Click="SelectCurrentPanel_Click" Style="{DynamicResource StandardButton}"/>
+                            <Button Content="本面板恢复默认" Margin="0,0,8,4" Click="RestoreCurrentPanel_Click" Style="{DynamicResource StandardButton}"/>
+                            <Button Content="全部恢复默认" Margin="0,0,0,4" Click="RestoreAllPanels_Click" Style="{DynamicResource StandardButton}"/>
+                        </WrapPanel>
+                        <DockPanel Grid.Row="3" Margin="0,8,0,0">
+                            <Button DockPanel.Dock="Right" Content="完成" Width="88" Click="BtnSavePanel_Click" Style="{DynamicResource PrimaryButton}"/>
+                            <TextBlock Text="点“完成”保存，下次启动 Revit 生效。"
+                                       VerticalAlignment="Center" Style="{DynamicResource SecondaryLabel}" TextWrapping="Wrap" Margin="0,0,12,0"/>
+                        </DockPanel>
+                    </Grid>
                 </TabItem>
 
                 <!-- Tab 2: 关于 -->
@@ -191,7 +209,7 @@
                 </TabItem>
 
                 <!-- Tab 3: MCP 与执行服务 -->
-                <TabItem Header="MCP与执行服务">
+                <TabItem Header="高级 · MCP与执行服务">
                     <ScrollViewer Margin="10" VerticalScrollBarVisibility="Auto">
                         <StackPanel>
                             <TextBlock Text="Revit 执行器" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,8"/>

@@ -65,18 +65,31 @@ namespace YangTools.Revit.UI
             string path = TxtSourcePath.Text?.Trim() ?? string.Empty;
             if (string.IsNullOrWhiteSpace(path) || !System.IO.File.Exists(path))
             {
-                MessageBox.Show("请先选择有效的 YangCAD 交换文件。", "CAD 转 Revit 图纸", MessageBoxButton.OK, MessageBoxImage.Information);
+                _exchange = null;
+                UpdateMappingStatus();
+                TxtSourceInfo.Text = "找不到交换文件，请重新选择文件。";
                 return;
             }
-            Scan(path);
+            Scan(path, preserveEdits: true);
         }
 
-        private void Scan(string path)
+        private void Scan(string path, bool preserveEdits = false)
         {
             try
             {
+                var saved = CadToRevitMappingStore.Load();
+                if (preserveEdits)
+                {
+                    CommitPendingGridEdits();
+                    CadToRevitMappingStore.ApplyRows(saved, GetAllRows());
+                }
+                else
+                {
+                    ClearMappings();
+                }
+
                 _exchange = CadRevitExchangeReader.Read(path);
-                BuildMappings();
+                BuildMappings(saved);
                 TxtSummary.Text = $"识别：文字 {_exchange.Texts.Count} / 线条 {_exchange.Curves.Count} / 填充 {_exchange.Fills.Count} / 标注 {_exchange.Dimensions.Count}";
                 TxtSourceInfo.Text = $"单位：{_exchange.Units}；Schema：{(string.IsNullOrWhiteSpace(_exchange.SchemaVersion) ? "未声明" : _exchange.SchemaVersion)}；基点：({_exchange.Origin.X:0.###}, {_exchange.Origin.Y:0.###})" +
                                      (_exchange.Warnings.Count > 0 ? $"；解析警告 {_exchange.Warnings.Count} 条" : string.Empty);
@@ -85,18 +98,23 @@ namespace YangTools.Revit.UI
             catch (Exception ex)
             {
                 _exchange = null;
-                TextMappings.Clear(); LineMappings.Clear(); FillMappings.Clear(); DimensionMappings.Clear();
-                BtnConvert.IsEnabled = false;
+                UpdateMappingStatus();
                 TxtSummary.Text = "扫描失败";
                 TxtSourceInfo.Text = ex.Message;
-                MessageBox.Show(ex.Message, "CAD 转 Revit 图纸", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
-        private void BuildMappings()
+        private void ClearMappings()
+        {
+            TextMappings.Clear();
+            LineMappings.Clear();
+            FillMappings.Clear();
+            DimensionMappings.Clear();
+        }
+
+        private void BuildMappings(CadToRevitMappingFile saved)
         {
             if (_exchange == null) return;
-            CadToRevitMappingFile saved = CadToRevitMappingStore.Load();
             TextMappings.ReplaceWith(BuildTextRows(_exchange, saved));
             LineMappings.ReplaceWith(BuildLineRows(_exchange, saved));
             FillMappings.ReplaceWith(BuildFillRows(_exchange, saved));
@@ -162,7 +180,7 @@ namespace YangTools.Revit.UI
             {
                 row.Action = snapshot.Action;
                 row.TargetName = snapshot.TargetName;
-                if (!string.IsNullOrWhiteSpace(snapshot.NewTypeName)) row.NewTypeName = snapshot.NewTypeName;
+                row.NewTypeName = snapshot.NewTypeName;
             }
             else if (!string.IsNullOrWhiteSpace(suggested))
             {
@@ -203,7 +221,11 @@ namespace YangTools.Revit.UI
                 ? $"映射完成 {all.Count - skipped}/{all.Count}（跳过 {skipped}）"
                 : $"待完善 {invalid} 项 · 跳过 {skipped} 项";
             TxtMappingStatus.Foreground = FindResource(invalid == 0 ? "SuccessColor" : "WarningColor") as System.Windows.Media.Brush;
-            BtnConvert.IsEnabled = _exchange != null && invalid == 0 && all.Any(x => x.Action != CadToRevitMappingActions.Skip);
+            int selected = all.Where(row => row.Action != CadToRevitMappingActions.Skip).Sum(row => row.Count);
+            TxtBottomHint.Text = _exchange == null
+                ? "请选择要转换的文件。"
+                : $"目标：{_view.Name} · 计划转换 {selected} 项";
+            BtnConvert.IsEnabled = _exchange != null && invalid == 0 && selected > 0;
         }
 
         private static bool IsIncomplete(CadToRevitMappingRow row)
@@ -235,7 +257,7 @@ namespace YangTools.Revit.UI
             {
                 CommitPendingGridEdits();
                 CadToRevitMappingStore.Save(GetAllRows());
-                MessageBox.Show($"映射已保存到：\n{CadToRevitMappingStore.MappingPath}", "CAD 转 Revit 图纸", MessageBoxButton.OK, MessageBoxImage.Information);
+                TxtBottomHint.Text = "映射已保存。";
             }
             catch (Exception ex)
             {
@@ -255,8 +277,11 @@ namespace YangTools.Revit.UI
                 return;
             }
 
+            if (!BtnConvert.IsEnabled) return;
+
             string dimLineStyle = (TxtDimensionReferenceStyle.Text ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(dimLineStyle))
+            if (DimensionMappings.Any(row => row.Action != CadToRevitMappingActions.Skip) &&
+                string.IsNullOrWhiteSpace(dimLineStyle))
             {
                 MessageBox.Show("请输入尺寸界线专用 Revit 线样式名称。", "CAD 转 Revit 图纸", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;

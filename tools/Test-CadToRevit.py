@@ -70,7 +70,7 @@ add("icon_16_exists", (SRC / "Icons" / "cad_to_revit_16.png").exists())
 add("theme_helper", "ThemeHelper.InitializeWithTheme(this, InitializeComponent)" in window and "ThemeHelper.ApplyToWindow(this)" in window)
 add("four_mapping_tabs", all(token in xaml for token in ('Header="文字 / 引线"', 'Header="线条"', 'Header="填充"', 'Header="标注"')))
 add("five_actions", all(token in models for token in ("使用现有类型", "复制现有类型", "自动新建", "CAD炸开参照（备用）", "跳过")))
-add("skip_is_legal", "row.Action == CadToRevitMappingActions.Skip" in window and "跳过是合法选择" in xaml)
+add("skip_is_legal", "row.Action == CadToRevitMappingActions.Skip" in window and "CadToRevitMappingActions.Skip" in window[window.index("private void UpdateMappingStatus"):window.index("private static bool IsIncomplete")])
 add("exploded_not_default", "CadExplodedReference" in models and "row.Action = CadToRevitMappingActions.CadExplodedReference" not in window)
 
 # Mapping semantics
