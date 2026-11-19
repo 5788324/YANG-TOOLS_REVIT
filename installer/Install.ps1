@@ -67,55 +67,60 @@ function Install-Version([string]$version) {
     $backup = Join-Path $versionRoot 'YangTools.backup'
     $manifestBackup = Join-Path $versionRoot 'YangTools.Revit.addin.backup'
     New-Item -ItemType Directory -Force -Path $versionRoot | Out-Null
-    # 只清理当前未完成的 staging；旧安装目录/manifest 在新 payload 校验之前不得删除。
-    if (Test-Path -LiteralPath $staging) { Remove-Item -LiteralPath $staging -Recurse -Force -ErrorAction Stop }
-    $hadTarget = Test-Path -LiteralPath $target
-    $hadManifest = Test-Path -LiteralPath $manifest
-    $movedTarget = $false
-    $movedManifest = $false
-    if (($hadTarget -and -not $hadManifest) -or (-not $hadTarget -and $hadManifest)) {
-        throw "Revit $version 插件文件和 manifest 状态不一致，已停止安装；请检查现有文件。"
-    }
-    if (-not $hadTarget -and ((Test-Path -LiteralPath $backup) -or (Test-Path -LiteralPath $manifestBackup))) {
-        throw "Revit $version 尚有上一版备份但当前插件目录不存在，请先检查或恢复备份。"
-    }
-
+    $addinsLock = Open-YangToolsAddinsOperation -VersionRoot $versionRoot
     try {
-        Copy-Item -LiteralPath $sourcePlugin -Destination $staging -Recurse -Force
-        if (-not (Test-Path -LiteralPath (Join-Path $staging 'YangTools.Revit.dll'))) {
-            throw '复制到临时目录后未找到 YangTools.Revit.dll。'
+        Assert-NoPendingYangToolsRollback -VersionRoot $versionRoot
+        # 只清理当前未完成的 staging；旧安装目录/manifest 在新 payload 校验之前不得删除。
+        if (Test-Path -LiteralPath $staging) { Remove-Item -LiteralPath $staging -Recurse -Force -ErrorAction Stop }
+        $hadTarget = Test-Path -LiteralPath $target
+        $hadManifest = Test-Path -LiteralPath $manifest
+        $movedTarget = $false
+        $movedManifest = $false
+        if (($hadTarget -and -not $hadManifest) -or (-not $hadTarget -and $hadManifest)) {
+            throw "Revit $version 插件文件和 manifest 状态不一致，已停止安装；请检查现有文件。"
         }
-        if ($hadTarget) {
-            # 保留最新的上一版；只有新 payload 已备好才替换旧备份。
-            if (Test-Path -LiteralPath $backup) { Remove-Item -LiteralPath $backup -Recurse -Force -ErrorAction Stop }
-            if (Test-Path -LiteralPath $manifestBackup) { Remove-Item -LiteralPath $manifestBackup -Force -ErrorAction Stop }
-            Move-Item -LiteralPath $target -Destination $backup
-            $movedTarget = $true
-            Move-Item -LiteralPath $manifest -Destination $manifestBackup
-            $movedManifest = $true
+        if (-not $hadTarget -and ((Test-Path -LiteralPath $backup) -or (Test-Path -LiteralPath $manifestBackup))) {
+            throw "Revit $version 尚有上一版备份但当前插件目录不存在，请先检查或恢复备份。"
         }
-        Move-Item -LiteralPath $staging -Destination $target
-        Copy-Item -LiteralPath $sourceManifest -Destination $manifest -Force
-        # 安装成功后保留 YangTools.backup 和 manifest.backup，以便一键回退。
+
+        try {
+            Copy-Item -LiteralPath $sourcePlugin -Destination $staging -Recurse -Force
+            if (-not (Test-Path -LiteralPath (Join-Path $staging 'YangTools.Revit.dll'))) {
+                throw '复制到临时目录后未找到 YangTools.Revit.dll。'
+            }
+            if ($hadTarget) {
+                # 保留最新的上一版；只有新 payload 已备好才替换旧备份。
+                if (Test-Path -LiteralPath $backup) { Remove-Item -LiteralPath $backup -Recurse -Force -ErrorAction Stop }
+                if (Test-Path -LiteralPath $manifestBackup) { Remove-Item -LiteralPath $manifestBackup -Force -ErrorAction Stop }
+                Move-Item -LiteralPath $target -Destination $backup
+                $movedTarget = $true
+                Move-Item -LiteralPath $manifest -Destination $manifestBackup
+                $movedManifest = $true
+            }
+            Move-Item -LiteralPath $staging -Destination $target
+            Copy-Item -LiteralPath $sourceManifest -Destination $manifest -Force
+            # 安装成功后保留 YangTools.backup 和 manifest.backup，以便一键回退。
+        }
+        catch {
+            Remove-Item -LiteralPath $staging -Recurse -Force -ErrorAction SilentlyContinue
+            if ($movedTarget) {
+                Remove-Item -LiteralPath $target -Recurse -Force -ErrorAction SilentlyContinue
+                Move-Item -LiteralPath $backup -Destination $target
+            }
+            elseif (-not $hadTarget) {
+                Remove-Item -LiteralPath $target -Recurse -Force -ErrorAction SilentlyContinue
+            }
+            if ($movedManifest) {
+                Remove-Item -LiteralPath $manifest -Force -ErrorAction SilentlyContinue
+                Move-Item -LiteralPath $manifestBackup -Destination $manifest
+            }
+            elseif (-not $hadManifest) {
+                Remove-Item -LiteralPath $manifest -Force -ErrorAction SilentlyContinue
+            }
+            throw
+        }
     }
-    catch {
-        Remove-Item -LiteralPath $staging -Recurse -Force -ErrorAction SilentlyContinue
-        if ($movedTarget) {
-            Remove-Item -LiteralPath $target -Recurse -Force -ErrorAction SilentlyContinue
-            Move-Item -LiteralPath $backup -Destination $target
-        }
-        elseif (-not $hadTarget) {
-            Remove-Item -LiteralPath $target -Recurse -Force -ErrorAction SilentlyContinue
-        }
-        if ($movedManifest) {
-            Remove-Item -LiteralPath $manifest -Force -ErrorAction SilentlyContinue
-            Move-Item -LiteralPath $manifestBackup -Destination $manifest
-        }
-        elseif (-not $hadManifest) {
-            Remove-Item -LiteralPath $manifest -Force -ErrorAction SilentlyContinue
-        }
-        throw
-    }
+    finally { $addinsLock.Dispose() }
 }
 
 try {

@@ -15,3 +15,21 @@ function Assert-TargetRevitClosed {
         }
     }
 }
+
+function Open-YangToolsAddinsOperation {
+    param([Parameter(Mandatory=$true)][string]$VersionRoot)
+
+    $path = Join-Path $VersionRoot 'YangTools.operation.lock'
+    return [IO.File]::Open($path, [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::ReadWrite,
+        [IO.FileShare]::None)
+}
+
+function Assert-NoPendingYangToolsRollback {
+    param([Parameter(Mandatory=$true)][string]$VersionRoot)
+
+    foreach ($name in @('YangTools.rollback-step', 'YangTools.rollback_current', 'YangTools.Revit.addin.rollback_current')) {
+        if (Test-Path -LiteralPath (Join-Path $VersionRoot $name)) {
+            throw "检测到未完成的回退。请先用 Rollback.ps1 恢复该年份，再安装或卸载。"
+        }
+    }
+}
