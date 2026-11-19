@@ -32,12 +32,8 @@ namespace YangTools.Revit.UI
         // failure must not turn an already completed delete/collect/run into a false error.
         private void SavePreferencesBestEffort()
         {
-            try { _settings.Save(); }
-            catch (Exception ex)
-            {
-                DiagnosticLog.WriteError("保存临时插件箱上次选择失败", ex);
+            if (!_settings.Save())
                 StatusText.Text = "操作已完成，但无法保存上次选择偏好；请查看诊断日志。";
-            }
         }
 
         private void LoadProjects()

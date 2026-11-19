@@ -891,7 +891,7 @@ namespace YangTools.Revit.UI
             var tabAtRequest = _currentTabName;
             var versionAtRequest = _tabLoadVersion;
             var rowAtRequest = vm;
-            _handler.SetAction(_ =>
+            _handler.EnqueueAndRaise(_externalEvent, _ =>
             {
                 if (_isClosed || versionAtRequest != _tabLoadVersion ||
                     tabAtRequest != _currentTabName || _currentTabName != "LineStyles" ||
@@ -933,7 +933,6 @@ namespace YangTools.Revit.UI
                             refreshError.Message + "。请重新加载列表，不要重复提交。");
                 }
             }, operationName: "编辑线样式", showSuccess: false);
-            _externalEvent.Raise();
         }
 
         private void FilledRegionDataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
@@ -974,7 +973,7 @@ namespace YangTools.Revit.UI
             int versionAtRequest = _tabLoadVersion;
             int sequenceAtRequest = ++_filledRegionEditRequestVersion;
             var rowAtRequest = vm;
-            _handler.SetAction(app =>
+            _handler.EnqueueAndRaise(_externalEvent, app =>
             {
                 if (_isClosed || versionAtRequest != _tabLoadVersion ||
                     sequenceAtRequest != _filledRegionEditRequestVersion ||
@@ -1015,7 +1014,6 @@ namespace YangTools.Revit.UI
                         "。请刷新列表，勿重复提交。");
                 }
             }, operationName: "编辑填充区域", showSuccess: false);
-            _externalEvent.Raise();
         }
 
         private void PatternComboBox_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
@@ -1051,7 +1049,7 @@ namespace YangTools.Revit.UI
             };
             var versionAtRequest = _tabLoadVersion;
             var sequenceAtRequest = ++_linePatternRequestVersion;
-            _handler.SetAction(_ =>
+            _handler.EnqueueAndRaise(_externalEvent, _ =>
             {
                 if (_isClosed || versionAtRequest != _tabLoadVersion ||
                     sequenceAtRequest != _linePatternRequestVersion ||
@@ -1096,7 +1094,6 @@ namespace YangTools.Revit.UI
                     TaskDialog.Show("线图案已提交", "模型写入已成功，但界面刷新失败，请重新加载列表：" + refreshEx.Message);
                 }
             }, operationName: "更改线型图案", showSuccess: false);
-            _externalEvent.Raise();
         }
 
         private void FillPattern_DropDownClosed(object sender, EventArgs e)
@@ -1116,7 +1113,7 @@ namespace YangTools.Revit.UI
                 PatternId = newId
             };
             int tabVersion = _tabLoadVersion;
-            _handler.SetAction(app =>
+            _handler.EnqueueAndRaise(_externalEvent, app =>
             {
                 var result = ProjectAssetFilledRegionVisualService.Execute(_doc, request);
                 if (_isClosed || tabVersion != _tabLoadVersion ||
@@ -1125,7 +1122,6 @@ namespace YangTools.Revit.UI
                     TaskDialog.Show("已提交，需检查", "填充图案修改已提交，但模型读回不一致，请刷新列表核对。");
                 else StatusText.Text = result.Changed ? "填充图案已保存，可 Ctrl+Z 撤销。" : "填充图案未改变。";
             }, operationName: "更改填充图案", showSuccess: false);
-            _externalEvent.Raise();
         }
 
         private void DuplicateLineStyle_Click(object sender, RoutedEventArgs e)
@@ -1140,7 +1136,7 @@ namespace YangTools.Revit.UI
                 SourceName = selected.Name
             };
             int tabVersion = _tabLoadVersion;
-            _handler.SetAction(app =>
+            _handler.EnqueueAndRaise(_externalEvent, app =>
             {
                 var result = ProjectAssetLineDuplicateService.Execute(_doc, request);
                 if (!result.ReadbackConfirmed)
@@ -1157,7 +1153,6 @@ namespace YangTools.Revit.UI
                     TaskDialog.Show("线样式已复制，界面刷新失败", "模型已提交，请重新打开列表：" + refreshError.Message);
                 }
             }, operationName: "复制线型", showSuccess: false);
-            _externalEvent.Raise();
         }
 
         private void DuplicateFilledRegion_Click(object sender, RoutedEventArgs e)
@@ -1170,7 +1165,7 @@ namespace YangTools.Revit.UI
                 TypeId = vm.Id, Kind = ProjectAssetFilledRegionVisualKind.Duplicate
             };
             int tabVersion = _tabLoadVersion;
-            _handler.SetAction(app =>
+            _handler.EnqueueAndRaise(_externalEvent, app =>
             {
                 var result = ProjectAssetFilledRegionVisualService.Execute(_doc, request);
                 if (_isClosed || tabVersion != _tabLoadVersion || _currentTabName != "FilledRegions") return;
@@ -1182,7 +1177,6 @@ namespace YangTools.Revit.UI
                     TaskDialog.Show("已复制，界面刷新失败", "模型已提交，请重开窗口：" + refreshError.Message);
                 }
             }, operationName: "复制填充区域", showSuccess: false);
-            _externalEvent.Raise();
         }
 
         private void LineStyleColor_Click(object sender, RoutedEventArgs e)
@@ -1212,7 +1206,7 @@ namespace YangTools.Revit.UI
             var tabAtRequest = _currentTabName;
             var versionAtRequest = _tabLoadVersion;
             var rowAtRequest = viewModel;
-            _handler.SetAction(_ =>
+            _handler.EnqueueAndRaise(_externalEvent, _ =>
             {
                 // Never apply a queued click to a closed or replaced list/document context.
                 if (_isClosed || versionAtRequest != _tabLoadVersion ||
@@ -1251,7 +1245,6 @@ namespace YangTools.Revit.UI
                     TaskDialog.Show("线颜色已提交", "模型修改已完成，但界面刷新失败，请重新加载列表：" + refreshEx.Message);
                 }
             }, operationName: "更改线颜色", showSuccess: false);
-            _externalEvent.Raise();
         }
 
         private void FilledRegionColor_Click(object sender, RoutedEventArgs e)
@@ -1277,7 +1270,7 @@ namespace YangTools.Revit.UI
                 Color = new Autodesk.Revit.DB.Color(newColor.Red, newColor.Green, newColor.Blue)
             };
             int tabVersion = _tabLoadVersion;
-            _handler.SetAction(app =>
+            _handler.EnqueueAndRaise(_externalEvent, app =>
             {
                 var result = ProjectAssetFilledRegionVisualService.Execute(_doc, request);
                 if (_isClosed || tabVersion != _tabLoadVersion ||
@@ -1300,7 +1293,6 @@ namespace YangTools.Revit.UI
                     TaskDialog.Show("已提交，界面刷新失败", "模型已保存，请刷新列表：" + refreshError.Message);
                 }
             }, operationName: "更改填充颜色", showSuccess: false);
-            _externalEvent.Raise();
         }
 
         private void AssetDataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
@@ -1378,7 +1370,7 @@ namespace YangTools.Revit.UI
             var nodeAtRequest = _selectedNode;
             var itemAtRequest = vm;
             var committed = false;
-            _handler.SetAction(app =>
+            _handler.EnqueueAndRaise(_externalEvent, app =>
             {
                 // Avoid writing an old cell edit after navigating or closing the window.
                 if (_isClosed || versionAtRequest != _tabLoadVersion ||
@@ -1418,7 +1410,6 @@ namespace YangTools.Revit.UI
                         TaskDialog.Show("界面刷新失败", "资产编辑已提交，但表格刷新失败：" + refreshError.Message + "。请刷新数据，不要重复提交。");
                 }
             }, operationName: "编辑项目资产单元格", showSuccess: false);
-            _externalEvent.Raise();
         }
 
         private void AnalyzeFilter_Click(object sender, RoutedEventArgs e)
@@ -1548,7 +1539,7 @@ namespace YangTools.Revit.UI
             var tabVersionAtRequest = _tabLoadVersion;
             var nodeAtRequest = _selectedNode;
             var importVersionAtRequest = ++_excelImportRequestVersion;
-            _handler.SetAction(app =>
+            _handler.EnqueueAndRaise(_externalEvent, app =>
             {
                 // A queued write should not execute against a window that has since been closed
                 // or a different asset view. The handler itself is bound to the original document.
@@ -1610,7 +1601,6 @@ namespace YangTools.Revit.UI
                         summary.ToString().TrimEnd());
                 });
             }, operationName: "导入Excel同步", showSuccess: false);
-            _externalEvent.Raise();
         }
 
         private bool IsProjectInfoParameterView()
@@ -1641,7 +1631,7 @@ namespace YangTools.Revit.UI
                 return;
             }
 
-            _handler.SetAction(app =>
+            _handler.EnqueueAndRaise(_externalEvent, app =>
             {
                 try
                 {
@@ -1654,7 +1644,6 @@ namespace YangTools.Revit.UI
                     Dispatcher.Invoke(() => TaskDialog.Show("Error", "Could not select: " + ex.Message));
                 }
             }, operationName: "在视图中选择");
-            _externalEvent.Raise();
         }
 
         private List<ElementId> GetCheckedElementIds()
@@ -1759,7 +1748,7 @@ namespace YangTools.Revit.UI
             var tabAtRequest = _currentTabName;
             var nodeAtRequest = _selectedNode;
             var tabVersionAtRequest = _tabLoadVersion;
-            _handler.SetAction(app =>
+            _handler.EnqueueAndRaise(_externalEvent, app =>
             {
                 if (_isClosed || tabVersionAtRequest != _tabLoadVersion ||
                     _currentTabName != tabAtRequest || _selectedNode != nodeAtRequest) return;
@@ -1846,7 +1835,6 @@ namespace YangTools.Revit.UI
                         });
                 }
             }, operationName: "删除图元", showSuccess: false);
-            _externalEvent.Raise();
         }
 
         private static void RemoveDeletedIdsFromAssetTree(AssetTreeNode node, HashSet<long> deletedIds)
@@ -1897,7 +1885,7 @@ namespace YangTools.Revit.UI
             var tabVersionAtRequest = _tabLoadVersion;
             var nodeAtRequest = _selectedNode;
 
-            _handler.SetAction(app =>
+            _handler.EnqueueAndRaise(_externalEvent, app =>
             {
                 if (_isClosed) return;
                 ProjectAssetBatchRenameResult result;
@@ -1932,7 +1920,6 @@ namespace YangTools.Revit.UI
                 var undoHint = result.RenamedCount > 0 ? "可在 Revit 中按一次 Ctrl+Z 撤销。" : "未创建撤销记录。";
                 StatusText.Text = $"批量重命名：修改 {result.RenamedCount} 个，未变化 {result.UnchangedCount} 个。{undoHint}";
             }, operationName: "批量重命名", showSuccess: false);
-            _externalEvent.Raise();
         }
 
         private void HideCurrentColumn_Click(object sender, RoutedEventArgs e)

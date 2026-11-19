@@ -52,7 +52,37 @@ namespace YangTools.Revit.Core
                 _cancelledOperations.TryAdd(operationId, 0);
         }
 
-        private static void NotifySkipped(Action<string> callback, string reason, string operationName)
+        internal void EnqueueAndRaise(ExternalEvent externalEvent, Action<UIApplication> action,
+            string operationName = "YangTools 操作", bool showSuccess = true, string? operationId = null,
+            Action<string>? onSkipped = null)
+        {
+            string id = operationId ?? Guid.NewGuid().ToString("N");
+            bool rejected = false;
+            SetAction(action, operationName, showSuccess, id, reason =>
+            {
+                if (!rejected) onSkipped?.Invoke(reason);
+            });
+
+            string detail;
+            try
+            {
+                ExternalEventRequest request = externalEvent.Raise();
+                if (request == ExternalEventRequest.Accepted || request == ExternalEventRequest.Pending)
+                    return;
+                detail = "Revit 暂时无法接收请求，请结束当前命令后重试。";
+            }
+            catch (Exception ex)
+            {
+                detail = ex.Message;
+            }
+
+            rejected = true;
+            CancelPendingAction(id);
+            NotifySkipped(onSkipped, detail, operationName);
+            TaskDialog.Show("操作未执行", operationName + "：" + detail);
+        }
+
+        private static void NotifySkipped(Action<string>? callback, string reason, string operationName)
         {
             if (callback == null) return;
             try { callback(reason); }

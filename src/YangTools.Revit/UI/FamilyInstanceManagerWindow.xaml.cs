@@ -1002,7 +1002,7 @@ namespace YangTools.Revit.UI
                 return rows.All(row => activeRows.Contains(row) && grid.SelectedItems.Contains(row));
             }
 
-            _handler.SetAction(app =>
+            _handler.EnqueueAndRaise(_externalEvent, app =>
             {
                 if (!IsCurrentRequest())
                 {
@@ -1036,7 +1036,6 @@ namespace YangTools.Revit.UI
                         "，但界面更新失败：" + uiError.Message + "。请重新打开窗口核查。");
                 }
             }, operationName: "批量更换实例类型", showSuccess: false, operationId: operationId);
-            _externalEvent.Raise();
         }
 
         private void BatchSetParameter_Click(object sender, RoutedEventArgs e)
@@ -1077,7 +1076,7 @@ namespace YangTools.Revit.UI
                     grid.SelectedItems.Contains(row));
             }
 
-            _handler.SetAction(app =>
+            _handler.EnqueueAndRaise(_externalEvent, app =>
             {
                 if (!IsCurrentRequest())
                 {
@@ -1108,7 +1107,6 @@ namespace YangTools.Revit.UI
                         "，但界面更新失败：" + uiError.Message + "。请重新打开窗口核查。");
                 }
             }, operationName: "批量写入实例参数", showSuccess: false, operationId: operationId);
-            _externalEvent.Raise();
         }
 
         private void SystemSearchChanged(object sender, TextChangedEventArgs e)
@@ -1119,7 +1117,7 @@ namespace YangTools.Revit.UI
         private void SelectElements_Click(object sender, RoutedEventArgs e)
         {
             this.Hide();
-            _handler.SetAction(app =>
+            _handler.EnqueueAndRaise(_externalEvent, app =>
             {
                 try
                 {
@@ -1159,8 +1157,10 @@ namespace YangTools.Revit.UI
                         RestoreAfterSelection();
                     });
                 }
+            }, "拾取族实例", onSkipped: _ =>
+            {
+                if (!_isWindowClosed) RestoreAfterSelection();
             });
-            _externalEvent.Raise();
         }
 
         private void ExportExcel_Click(object sender, RoutedEventArgs e)
@@ -1234,7 +1234,7 @@ namespace YangTools.Revit.UI
                 return;
             }
 
-            _handler.SetAction(app =>
+            _handler.EnqueueAndRaise(_externalEvent, app =>
             {
                 if (_isWindowClosed) return;
                 var doc = app.ActiveUIDocument?.Document;
@@ -1270,7 +1270,6 @@ namespace YangTools.Revit.UI
                 else
                     TaskDialog.Show("实例参数已导入", details + "\n整批提交，可通过 Ctrl+Z 撤销。");
             }, operationName: "实例参数 Excel 整批导入", showSuccess: false);
-            _externalEvent.Raise();
         }
 
         private void SearchChanged(object sender, TextChangedEventArgs e)
@@ -1341,7 +1340,7 @@ namespace YangTools.Revit.UI
                         _pendingCellEdits.TryGetValue(cellKey, out long latest) && latest == sequenceAtRequest;
                 }
 
-                _handler.SetAction(app =>
+                _handler.EnqueueAndRaise(_externalEvent, app =>
                 {
                     if (!IsRequestCurrent()) return;
                     FamilyInstanceCellEditResult result;
@@ -1378,8 +1377,12 @@ namespace YangTools.Revit.UI
                             TaskDialog.Show("实例参数已提交", "模型修改已提交，但界面更新失败：" + uiEx.Message);
                         }
                     });
-                }, "编辑族实例参数", showSuccess: false);
-                _externalEvent.Raise();
+                }, "编辑族实例参数", showSuccess: false, onSkipped: _ =>
+                {
+                    if (!IsRequestCurrent()) return;
+                    _pendingCellEdits.Remove(cellKey);
+                    parameterVm.Value = before;
+                });
             }
             catch (Exception ex)
             {
@@ -1421,13 +1424,12 @@ namespace YangTools.Revit.UI
             if (selectedItems.Count == 0) return;
             
             var ids = System.Linq.Enumerable.ToList(System.Linq.Enumerable.Select(System.Linq.Enumerable.Where(selectedItems, x => x.InstanceId != ElementId.InvalidElementId), x => x.InstanceId));
-            _handler.SetAction(app =>
+            _handler.EnqueueAndRaise(_externalEvent, app =>
             {
                 var uidoc = app.ActiveUIDocument;
                 uidoc.Selection.SetElementIds(ids);
                 uidoc.ShowElements(ids);
             });
-            _externalEvent.Raise();
         }
 
         private void Delete_Click(object sender, RoutedEventArgs e)
@@ -1444,8 +1446,10 @@ namespace YangTools.Revit.UI
 
         private void ExecuteDelete(System.Collections.Generic.List<ElementId> ids, string sourceDesc)
         {
-            _handler.SetAction(app =>
+            _handler.EnqueueAndRaise(_externalEvent, app =>
             {
+                if (_isWindowClosed) return;
+                bool committed = false;
                 try
                 {
                     var doc = app.ActiveUIDocument?.Document;
@@ -1541,6 +1545,7 @@ namespace YangTools.Revit.UI
                                 if (tg.GetStatus() == TransactionStatus.Started) tg.RollBack();
                                 throw new InvalidOperationException("实例删除事务组合并失败。");
                             }
+                            committed = true;
                             Dispatcher.Invoke(() => 
                             {
                                 if (MainTabControl.SelectedIndex == 1) LoadSystemData();
@@ -1555,10 +1560,11 @@ namespace YangTools.Revit.UI
                 }
                 catch (Exception ex)
                 {
-                    Dispatcher.Invoke(() => TaskDialog.Show("错误", "删除失败: " + ex.Message));
+                    Dispatcher.Invoke(() => TaskDialog.Show(
+                        committed ? "删除已提交" : "删除失败",
+                        committed ? "模型已删除选中实例，列表刷新失败。请重新打开窗口核对：" + ex.Message : ex.Message));
                 }
-            });
-            _externalEvent.Raise();
+            }, "删除族实例", showSuccess: false);
         }
     }
 
