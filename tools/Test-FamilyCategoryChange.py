@@ -28,7 +28,7 @@ csproj = SRC / "YangTools.Revit.csproj"
 for p in (command, service, window_xaml, window_cs):
     checks.append((f"exists:{p.name}", p.exists(), "exists", str(p.relative_to(ROOT))))
 
-for token in ("族类别修改", "FamilyCategoryChangeService.Execute", "TaskDialogCommonButtons.Yes", "Abutments", "Generic Models"):
+for token in ("族类别修改", "FamilyCategoryChangeService.Execute", "TaskDialogCommonButtons.Yes", "request.FamilyIds.Count", "if (result.ChangedCount > 0)"):
     require(command, token, f"command:{token}")
 
 for token in (
@@ -45,6 +45,10 @@ for token in ("全选", "反选", "全不选", "目标类别", "类型数", "实
 
 for token in ("OST_GenericModel", "BuildTargetCategories", "BuildRows", "CurrentCategory", "InstanceCount"):
     require(window_cs, token, f"window:{token}")
+
+require(window_cs, "var selected = VisibleRows().Where", "apply only visible checked rows")
+require(window_cs, "selected.Where(row => row.CurrentCategoryId != target.CategoryId)", "exclude already matching families before confirmation")
+require(window_cs, "SetSelection(_rows, _ => false)", "clear hidden selections")
 
 removed_paths = [
     SRC / "Commands" / "CopilotCommand.cs",
