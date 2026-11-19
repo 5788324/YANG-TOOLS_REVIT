@@ -5,11 +5,11 @@
         Title="项目文件信息" Height="650" Width="640" MinHeight="560" MinWidth="560"
         WindowStartupLocation="CenterOwner" WindowStyle="None" ResizeMode="CanResizeWithGrip"
         BorderThickness="1" BorderBrush="{DynamicResource WindowBorder}"
-        MouseDown="Window_MouseDown">
+        Closing="Window_Closing">
     <Grid>
         <Grid.RowDefinitions><RowDefinition Height="52"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Background="{DynamicResource TitleBarGradient}">
+        <Border Grid.Row="0" MouseDown="Window_MouseDown" Background="{DynamicResource TitleBarGradient}">
             <Grid Margin="16,0,10,0">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="项目文件信息" Style="{DynamicResource WindowTitle}"/>
@@ -31,7 +31,7 @@
                                 <TextBlock x:Name="TxtRevitVersion" Text="加载中…" Margin="0,4,0,0"/>
                             </StackPanel>
                             <StackPanel Grid.Column="1">
-                                <TextBlock Text="文件名称" Style="{DynamicResource FieldLabel}"/>
+                                <TextBlock Text="项目名称" Style="{DynamicResource FieldLabel}"/>
                                 <TextBlock x:Name="TxtFileName" Text="未保存" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/>
                             </StackPanel>
                         </Grid>
@@ -40,7 +40,7 @@
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                             <TextBox x:Name="TxtDocPath" Text="加载中…" IsReadOnly="True" TextWrapping="Wrap"/>
-                            <Button Grid.Column="1" Content="复制" Width="70" Margin="10,0,0,0" Click="CopyPath_Click"/>
+                            <Button Grid.Column="1" Content="复制" Width="70" Margin="10,0,0,0" x:Name="BtnCopyPath" Click="CopyPath_Click"/>
                         </Grid>
 
                         <StackPanel x:Name="PanelCentralPath" Visibility="Collapsed" Margin="0,0,0,10">
@@ -48,7 +48,7 @@
                             <Grid>
                                 <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                 <TextBox x:Name="TxtCentralPath" Text="加载中…" IsReadOnly="True" TextWrapping="Wrap"/>
-                                <Button Grid.Column="1" Content="复制" Width="70" Margin="10,0,0,0" Click="CopyCentralPath_Click"/>
+                                <Button Grid.Column="1" Content="复制" Width="70" Margin="10,0,0,0" x:Name="BtnCopyCentralPath" Click="CopyCentralPath_Click"/>
                             </Grid>
                         </StackPanel>
 
@@ -56,7 +56,7 @@
                         <Grid>
                             <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
                             <StackPanel>
-                                <TextBlock Text="当前文件大小" Style="{DynamicResource FieldLabel}"/>
+                                <TextBlock Text="磁盘文件大小" Style="{DynamicResource FieldLabel}"/>
                                 <TextBlock x:Name="TxtFileSize" Text="-" FontSize="15" FontWeight="SemiBold" Margin="0,4,0,0"/>
                             </StackPanel>
                             <StackPanel Grid.Column="1">
@@ -68,16 +68,17 @@
                 </Border>
 
                 <TextBlock Text="清理预估" Style="{DynamicResource SectionTitle}" Margin="0,4,0,8"/>
+                <TextBlock x:Name="TxtEstimateHint" Style="{DynamicResource SecondaryLabel}" TextWrapping="Wrap" Margin="0,0,0,8"/>
                 <Border Style="{DynamicResource CardBorder}" Margin="0">
                     <Grid>
                         <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
                         <Grid.RowDefinitions><RowDefinition/><RowDefinition/></Grid.RowDefinitions>
                         <StackPanel Margin="0,0,12,14">
-                            <TextBlock Text="检测到的未使用图元" Style="{DynamicResource FieldLabel}"/>
+                            <TextBlock Text="当前模型可清理项" Style="{DynamicResource FieldLabel}"/>
                             <TextBlock x:Name="TxtUnusedCount" Text="检测中…" Foreground="{DynamicResource WarningColor}" FontSize="15" FontWeight="SemiBold" Margin="0,4,0,0"/>
                         </StackPanel>
                         <StackPanel Grid.Column="1" Margin="12,0,0,14">
-                            <TextBlock Text="当前大小" Style="{DynamicResource FieldLabel}"/>
+                            <TextBlock Text="磁盘基准大小" Style="{DynamicResource FieldLabel}"/>
                             <TextBlock x:Name="TxtCurrentSizeCard2" Text="-" FontSize="15" FontWeight="SemiBold" Margin="0,4,0,0"/>
                         </StackPanel>
                         <StackPanel Grid.Row="1" Margin="0,0,12,0">
@@ -85,7 +86,7 @@
                             <TextBlock x:Name="TxtPurgedSize" Text="-" Foreground="{DynamicResource SuccessColor}" FontSize="15" FontWeight="SemiBold" Margin="0,4,0,0"/>
                         </StackPanel>
                         <StackPanel Grid.Row="1" Grid.Column="1" Margin="12,0,0,0">
-                            <TextBlock Text="预计节省空间" Style="{DynamicResource FieldLabel}"/>
+                            <TextBlock Text="体积变化" Style="{DynamicResource FieldLabel}"/>
                             <TextBlock x:Name="TxtSavedSize" Text="-" Foreground="{DynamicResource SuccessColor}" FontSize="15" FontWeight="SemiBold" Margin="0,4,0,0"/>
                         </StackPanel>
                     </Grid>
