@@ -84,12 +84,7 @@ namespace YangTools.Revit.Core.ProjectAssets
                     throw new InvalidOperationException("无法启动资产删除事务，项目未修改。");
                 try
                 {
-                    var deleted = document.Delete(ids)?.ToList() ?? new List<ElementId>();
-                    // An unexpected cascade must not silently delete more elements than confirmed.
-                    var expected = new HashSet<long>(preview.DeletedIds.Select(id => id.GetIdValue()));
-                    var actual = new HashSet<long>(deleted.Select(id => id.GetIdValue()));
-                    if (!expected.SetEquals(actual))
-                        throw new InvalidOperationException("实际删除集合与预演确认不一致，取消并回滚本次删除。");
+                    var deleted = ApplyConfirmedDeletion(document, preview, ids);
                     if (transaction.Commit() != TransactionStatus.Committed)
                         throw new InvalidOperationException("资产删除事务未能提交，请核查模型状态。");
                     return new ProjectAssetDeleteResult { DeletedIds = deleted };
@@ -111,6 +106,17 @@ namespace YangTools.Revit.Core.ProjectAssets
                     throw;
                 }
             }
+        }
+
+        internal static IReadOnlyList<ElementId> ApplyConfirmedDeletion(Document document, ProjectAssetDeletePreview preview,
+            ICollection<ElementId> ids)
+        {
+            var deleted = document.Delete(ids)?.ToList() ?? new List<ElementId>();
+            var expected = new HashSet<long>(preview.DeletedIds.Select(id => id.GetIdValue()));
+            var actual = new HashSet<long>(deleted.Select(id => id.GetIdValue()));
+            if (!expected.SetEquals(actual))
+                throw new InvalidOperationException("实际删除集合与预演确认不一致，取消并回滚本次删除。");
+            return deleted;
         }
 
         private static List<ElementId> ValidateAndCapture(Document document, ProjectAssetDeleteRequest request)

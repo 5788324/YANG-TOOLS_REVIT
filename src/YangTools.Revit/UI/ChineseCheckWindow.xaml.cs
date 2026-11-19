@@ -14,12 +14,13 @@ using Autodesk.Revit.DB.Architecture;
 using Autodesk.Revit.DB.Mechanical;
 using Autodesk.Revit.UI;
 using YangTools.Revit.Core;
+using YangTools.Revit.Core.ProjectAssets;
 
 namespace YangTools.Revit.UI
 {
     /// <summary>
     /// 项目中文检查与清理。分类扫描中文内容，并提供定位、重命名、删除/清空能力。
-    /// 所有写操作均在 Revit 事务中执行；批量删除/清空使用单事务 + 子事务，便于一次撤销。
+    /// 所有写操作均在 Revit 事务中执行；批量删除和清空使用同一事务，便于一次撤销。
     /// </summary>
     public partial class ChineseCheckWindow : Window
     {
@@ -276,6 +277,7 @@ namespace YangTools.Revit.UI
 
         private void RunScan()
         {
+            ChineseGroup? previousGroup = _currentGroup;
             foreach (ChineseGroup group in _groups)
             {
                 group.Items.Clear();
@@ -317,7 +319,7 @@ namespace YangTools.Revit.UI
             TotalCountText.Text = $"{total} 条";
             SummaryText.Text = $"发现 {total} 条中文结果；扫描实例元素 {_scannedInstanceElements} 个；读取异常 {_scanErrors} 个。";
 
-            ChineseGroup? firstNonEmpty = _groups.FirstOrDefault(group => group.Items.Count > 0) ?? _groups.FirstOrDefault();
+            ChineseGroup? firstNonEmpty = previousGroup ?? _groups.FirstOrDefault(group => group.Items.Count > 0) ?? _groups.FirstOrDefault();
             if (firstNonEmpty != null)
             {
                 GroupList.SelectedItem = firstNonEmpty;
@@ -1090,7 +1092,7 @@ namespace YangTools.Revit.UI
             List<ChineseItem> displayed = GetDisplayedItems();
             List<ChineseItem> checkedItems = displayed.Where(item => item.IsChecked).ToList();
             if (checkedItems.Count > 0) return checkedItems;
-            return ResultGrid.SelectedItems.Cast<object>().OfType<ChineseItem>().Distinct().ToList();
+            return ResultGrid.SelectedItems.OfType<ChineseItem>().Where(displayed.Contains).Distinct().ToList();
         }
 
         private void UpdateSelectionSummary()
@@ -1319,8 +1321,16 @@ namespace YangTools.Revit.UI
             }
 
             _uiDoc.Selection.SetElementIds(ids);
-            try { _uiDoc.ShowElements(ids); } catch { }
-            SummaryText.Text = $"已在 Revit 中选择 {ids.Count} 个图元。";
+            try
+            {
+                _uiDoc.ShowElements(ids);
+                SummaryText.Text = $"已在 Revit 中选择 {ids.Count} 个图元。";
+            }
+            catch (Exception ex)
+            {
+                SummaryText.Text = $"已选中 {ids.Count} 个图元，无法缩放到所选图元。";
+                SummaryText.ToolTip = ex.Message;
+            }
         }
 
         private void BtnCopyIds_Click(object sender, RoutedEventArgs e)
@@ -1364,162 +1374,84 @@ namespace YangTools.Revit.UI
                 return;
             }
 
-            int elementDeleteCount = deletable.Count(item => item.DeleteKind == DeleteKind.Element);
-            int clearCount = deletable.Count(item => item.DeleteKind == DeleteKind.ClearParameter);
-            int unsupportedCount = requested.Count - deletable.Count;
-            int affectedCount = PreviewDeleteAffectedCount(deletable, out int previewFailures);
-            bool hasHighRisk = deletable.Any(item => string.Equals(item.RiskText, "高", StringComparison.Ordinal));
+            var deleteIds = deletable.Where(item => item.DeleteKind == DeleteKind.Element)
+                .Select(item => item.Id).Distinct().ToList();
+            var clearItems = deletable.Where(item => item.DeleteKind == DeleteKind.ClearParameter).ToList();
 
-            string warning =
-                $"准备处理 {deletable.Count} 条结果：\r\n" +
-                $"• 删除图元：{elementDeleteCount}\r\n" +
-                $"• 清空参数文本值：{clearCount}\r\n" +
-                $"• Revit 删除预检预计影响图元：{affectedCount}\r\n" +
-                $"• 预检失败：{previewFailures}\r\n" +
-                (unsupportedCount > 0 ? $"• 不支持删除/清空而跳过：{unsupportedCount}\r\n" : string.Empty) +
-                (hasHighRisk ? "\r\n包含高风险对象（如族、类型、标高、图纸、项目参数或链接），删除可能级联影响模型。\r\n" : "\r\n") +
-                "执行后可使用一次 Ctrl+Z 撤销本批操作。是否继续？";
-
-            if (MessageBox.Show(warning, "确认删除 / 清空", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
-                return;
-
-            ExecuteDeleteOrClear(deletable, out int success, out List<string> failures);
-            RunScan();
-
-            string message = $"删除/清空完成：成功 {success} 条，失败 {failures.Count} 条。";
-            if (failures.Count > 0)
-                message += "\r\n\r\n" + string.Join("\r\n", failures.Take(8));
-            MessageBox.Show(message, "项目中文检查与清理",
-                MessageBoxButton.OK, failures.Count == 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
-        }
-
-        private int PreviewDeleteAffectedCount(List<ChineseItem> items, out int failures)
-        {
-            failures = 0;
-            var affected = new HashSet<long>();
-            List<ChineseItem> elementDeletes = items.Where(item => item.DeleteKind == DeleteKind.Element).ToList();
-            if (elementDeletes.Count == 0) return 0;
-
-            using (var transaction = new Transaction(_doc, "YangTools - 中文清理删除预检"))
+            ProjectAssetDeletePreview? preview = null;
+            if (deleteIds.Count > 0)
             {
                 try
                 {
-                    if (transaction.Start() != TransactionStatus.Started) return 0;
-                    foreach (ChineseItem item in elementDeletes)
-                    {
-                        using (var sub = new SubTransaction(_doc))
-                        {
-                            try
-                            {
-                                sub.Start();
-                                ICollection<ElementId> deleted = _doc.Delete(item.Id);
-                                foreach (ElementId id in deleted)
-                                    affected.Add(id.GetIdValue());
-                                sub.RollBack();
-                            }
-                            catch
-                            {
-                                failures++;
-                                if (sub.GetStatus() == TransactionStatus.Started)
-                                {
-                                    try { sub.RollBack(); } catch { }
-                                }
-                            }
-                        }
-                    }
-                }
-                finally
-                {
-                    if (transaction.GetStatus() == TransactionStatus.Started)
-                    {
-                        try { transaction.RollBack(); } catch { }
-                    }
-                }
-            }
-            return affected.Count;
-        }
-
-        private void ExecuteDeleteOrClear(List<ChineseItem> items, out int success, out List<string> failures)
-        {
-            success = 0;
-            failures = new List<string>();
-
-            using (var transaction = new Transaction(_doc, "YangTools - 中文检查批量清理"))
-            {
-                if (transaction.Start() != TransactionStatus.Started)
-                {
-                    failures.Add("无法启动 Revit 清理事务。");
-                    return;
-                }
-
-                foreach (ChineseItem item in items)
-                {
-                    using (var sub = new SubTransaction(_doc))
-                    {
-                        try
-                        {
-                            sub.Start();
-                            switch (item.DeleteKind)
-                            {
-                                case DeleteKind.Element:
-                                    if (_doc.GetElement(item.Id) == null)
-                                        throw new InvalidOperationException("目标图元已不存在。");
-                                    _doc.Delete(item.Id);
-                                    break;
-
-                                case DeleteKind.ClearParameter:
-                                {
-                                    Parameter? parameter = FindParameter(item);
-                                    if (parameter == null) throw new InvalidOperationException("目标参数已不存在。");
-                                    if (parameter.IsReadOnly || parameter.StorageType != StorageType.String)
-                                        throw new InvalidOperationException("目标参数当前不可清空。");
-                                    if (!parameter.Set(string.Empty))
-                                        throw new InvalidOperationException("Revit 拒绝清空该参数值。");
-                                    break;
-                                }
-
-                                default:
-                                    throw new InvalidOperationException("当前结果不支持删除/清空。");
-                            }
-
-                            if (sub.Commit() != TransactionStatus.Committed)
-                                throw new InvalidOperationException("子事务未成功提交。");
-                            success++;
-                        }
-                        catch (Exception ex)
-                        {
-                            if (sub.GetStatus() == TransactionStatus.Started)
-                            {
-                                try { sub.RollBack(); } catch { }
-                            }
-                            failures.Add($"{Truncate(item.Value, 35)}：{ex.Message}");
-                            DiagnosticLog.WriteError("中文检查批量清理", ex);
-                        }
-                    }
-                }
-
-                try
-                {
-                    TransactionStatus status = transaction.Commit();
-                    if (status != TransactionStatus.Committed)
-                    {
-                        if (transaction.GetStatus() == TransactionStatus.Started)
-                            transaction.RollBack();
-                        failures.Add("主事务未成功提交，Revit 状态：" + status);
-                        success = 0;
-                    }
+                    preview = ProjectAssetDeleteService.Preview(_doc, new ProjectAssetDeleteRequest { ElementIds = deleteIds });
                 }
                 catch (Exception ex)
                 {
-                    if (transaction.GetStatus() == TransactionStatus.Started)
-                    {
-                        try { transaction.RollBack(); } catch { }
-                    }
-                    failures.Add("主事务提交失败：" + ex.Message);
-                    success = 0;
-                    DiagnosticLog.WriteError("中文检查批量清理提交", ex);
+                    MessageBox.Show(ex.Message, "删除预检失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
                 }
             }
+
+            var deletedIds = new HashSet<ElementId>(preview?.DeletedIds ?? Array.Empty<ElementId>());
+            clearItems.RemoveAll(item => deletedIds.Contains(item.Id));
+            int relatedCount = preview?.RelatedIds.Count ?? 0;
+            int skipped = requested.Count - deletable.Count;
+            string warning = $"删除 {deleteIds.Count} 个图元，连带删除 {relatedCount} 个图元，清空 {clearItems.Count} 个参数值。";
+            if (skipped > 0)
+                warning += $"\n跳过 {skipped} 条只读或重复结果。";
+            if (relatedCount > 0)
+            {
+                warning += "\n\n连带删除示例：" + string.Join("、", preview!.RelatedIds.Take(8).Select(GetElementNameSafe));
+                if (relatedCount > 8) warning += " 等";
+            }
+            if (deletable.Any(item => string.Equals(item.RiskText, "高", StringComparison.Ordinal)))
+                warning += "\n\n包含族、类型、标高、图纸、项目参数或链接等高风险对象。";
+
+            var confirm = new TaskDialog("确认删除 / 清空")
+            {
+                MainInstruction = "核对本次清理范围",
+                MainContent = warning,
+                CommonButtons = TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.No,
+                DefaultButton = TaskDialogResult.No
+            };
+            if (confirm.Show() != TaskDialogResult.Yes) return;
+
+            try
+            {
+                ExecuteDeleteOrClear(deleteIds, preview, clearItems);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "清理失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            RunScan();
+            SummaryText.Text = $"已删除 {deletedIds.Count} 个图元，清空 {clearItems.Count} 个参数。按一次 Ctrl+Z 可撤销。";
+        }
+
+        private void ExecuteDeleteOrClear(List<ElementId> deleteIds, ProjectAssetDeletePreview? preview, List<ChineseItem> clearItems)
+        {
+            using var transaction = new Transaction(_doc, "YangTools - 中文检查批量清理");
+            if (transaction.Start() != TransactionStatus.Started)
+                throw new InvalidOperationException("无法启动清理事务。");
+
+            if (preview != null)
+                ProjectAssetDeleteService.ApplyConfirmedDeletion(_doc, preview, deleteIds);
+
+            foreach (ChineseItem item in clearItems)
+            {
+                Parameter? parameter = FindParameter(item);
+                if (parameter == null || parameter.IsReadOnly || parameter.StorageType != StorageType.String)
+                    throw new InvalidOperationException($"图元 {item.IdText} 的参数已无法清空，请重新扫描。");
+                if (!string.Equals(parameter.AsString(), item.Value, StringComparison.Ordinal))
+                    throw new InvalidOperationException($"图元 {item.IdText} 的参数值已变化，请重新扫描。");
+                if (!parameter.Set(string.Empty))
+                    throw new InvalidOperationException($"Revit 拒绝清空图元 {item.IdText} 的参数值。");
+            }
+
+            if (transaction.Commit() != TransactionStatus.Committed)
+                throw new InvalidOperationException("Revit 未提交本次清理，请核对模型状态。");
         }
 
         private void HelpButton_Click(object sender, RoutedEventArgs e)
@@ -1533,12 +1465,12 @@ namespace YangTools.Revit.UI
                 "双击“名称 / 内容”列即可修改支持写入的对象。族、类型、材质、视图、图纸名称、图号、工作集、明细表列标题、文字注释、房间/空间/面积名称和编号，以及可写字符串参数均按对应 Revit API 修改。\r\n" +
                 "参数定义名称和部分 Revit 内置对象不允许直接重命名，表格会在“可改名”列标明。\r\n\r\n" +
                 "删除 / 清空\r\n" +
-                "删除实体对象前会在回滚事务中预检 Revit 的级联删除数量，再二次确认。高风险对象会明确提示。\r\n" +
-                "字符串参数值的“删除”不会删除宿主图元，而是清空该参数值。批量操作使用一个主事务和逐项子事务，单项失败不会破坏其它项，整批可一次 Ctrl+Z 撤销。\r\n\r\n" +
+                "删除图元前会预演并显示关联影响。实际删除范围与预演不一致时，整批回滚。\r\n" +
+                "字符串参数值的清理会清空其内容。删除与清空使用同一个事务，整批可一次 Ctrl+Z 撤销。\r\n\r\n" +
                 "扫描范围\r\n" +
                 "族、族类型、系统/其他类型、材质、组、装配；视图、视图模板、图纸、明细表/列标题、修订信息；标高、轴网、过滤器、工作集、设计选项、范围框、填充/线型图案、对象样式/子类别、阶段、项目位置；项目/共享参数、类型/实例参数文本、文字注释；房间、空间、面积、项目信息；Revit/CAD 链接、打印设置、视图/图纸集、DWG 导出设置。\r\n\r\n" +
                 "限制\r\n" +
-                "不扫描外部链接文档内部、族文件内部文本、数值参数的本地化显示字符串。某些内置或受 Revit 约束的对象即使显示中文，也可能只能检查不能改名/删除；实际写入失败时会逐项回滚并显示原因。每个分类最多显示 10000 条结果。 ");
+                "不扫描外部链接文档内部、族文件内部文本、数值参数的本地化显示字符串。某些内置或受 Revit 约束的对象即使显示中文，也可能只能检查不能改名/删除；清理失败时会取消整批并显示原因。每个分类最多显示 10000 条结果。 ");
         }
 
         private static string Truncate(string text, int maxLength)
