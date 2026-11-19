@@ -211,14 +211,14 @@ namespace YangTools.Revit.Models.BatchTask
             PdfCombine = _settings.BatchPdfCombine;
             PrintPdfFileName = NormalizeTemplate(_settings.BatchPrintPdfFileName);
 
-            SelectedNwc3DView = PickAvailable(Available3DViews, _settings.BatchNwcViewName, Auto3DViewOption);
-            SelectedIfc3DView = PickAvailable(Available3DViews, _settings.BatchIfcViewName, Auto3DViewOption);
-            SelectedDwgViewSheetSet = PickAvailable(AvailableViewSheetSets, _settings.BatchDwgViewSetName, AllSheetsOption);
-            SelectedPdfViewSheetSet = PickAvailable(AvailableViewSheetSets, _settings.BatchPdfViewSetName, AllSheetsOption);
-            SelectedPrintPdfViewSheetSet = PickAvailable(AvailableViewSheetSets, _settings.BatchPrintPdfViewSetName, AllSheetsOption);
-            SelectedDwgSetup = PickAvailable(AvailableDwgSetups, _settings.BatchDwgSetupName, DefaultSetupOption);
+            SelectedNwc3DView = RestoreNamedOption(_settings.BatchNwcViewName, Auto3DViewOption);
+            SelectedIfc3DView = RestoreNamedOption(_settings.BatchIfcViewName, Auto3DViewOption);
+            SelectedDwgViewSheetSet = RestoreNamedOption(_settings.BatchDwgViewSetName, AllSheetsOption);
+            SelectedPdfViewSheetSet = RestoreNamedOption(_settings.BatchPdfViewSetName, AllSheetsOption);
+            SelectedPrintPdfViewSheetSet = RestoreNamedOption(_settings.BatchPrintPdfViewSetName, AllSheetsOption);
+            SelectedDwgSetup = RestoreNamedOption(_settings.BatchDwgSetupName, DefaultSetupOption);
             SelectedPdfSetup = PickAvailable(AvailablePdfSetups, _settings.BatchPdfSetupName, AvailablePdfSetups.FirstOrDefault());
-            SelectedPrintPdfSetup = PickAvailable(AvailablePrintPdfSetups, _settings.BatchPrintPdfSetupName, CurrentPrintSetupOption);
+            SelectedPrintPdfSetup = RestoreNamedOption(_settings.BatchPrintPdfSetupName, CurrentPrintSetupOption);
             SelectedPrintPdfPrinterName = PickPrinterName(AvailablePrintPdfPrinters, _settings.BatchPrintPdfPrinterName);
             SelectedIfcVersion = AvailableIfcVersions.Contains(_settings.BatchIfcVersion)
                 ? _settings.BatchIfcVersion
@@ -709,6 +709,11 @@ namespace YangTools.Revit.Models.BatchTask
         {
             return !string.IsNullOrWhiteSpace(name)
                    && name.IndexOf("PDF", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static string RestoreNamedOption(string? preferred, string fallback)
+        {
+            return string.IsNullOrWhiteSpace(preferred) ? fallback : preferred.Trim();
         }
 
         private static string? PickAvailable(IEnumerable<string> values, string? preferred, string? fallback)

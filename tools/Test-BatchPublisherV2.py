@@ -44,6 +44,11 @@ def main() -> int:
     has(engine,'输出命名预检：','preflight naming diagnostics')
     has(engine,'File.Exists(path) && !viewModel.OverwriteExisting','preflight existing-file guard')
 
+    has(engine,'result.PlannedOutputs.Add','preflight lists planned main files')
+    has(code,'AppendSection("计划输出（主文件）", overall.PlannedOutputs)','preflight shows complete output plan')
+    has(vm,'RestoreNamedOption(_settings.BatchDwgViewSetName, AllSheetsOption)','keeps saved named scopes')
+    has(engine,'result.Error = "请选择视图/图纸范围。";','blank scope does not expand to all sheets')
+
     # Scope robustness
     for tok,label in [
         ('WholeModelOption','whole model scope'),('Auto3DViewOption','auto 3d scope'),('AllSheetsOption','all sheets scope'),

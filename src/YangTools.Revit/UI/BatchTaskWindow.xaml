@@ -57,7 +57,7 @@
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                         <Button Content="添加 RVT" Click="BtnAddDocument_Click" Width="88"/>
                         <Button Content="添加已打开模型（含云）" Click="BtnAddOpenDocuments_Click" Width="150"/>
-                        <Button Content="预检" Click="BtnPreflight_Click" Width="74" ToolTip="逐模型检查视图/图纸、导出设置、NWC Exporter、PDF 打印设置，不产生输出文件。"/>
+                        <Button Content="预检" Click="BtnPreflight_Click" Width="74" ToolTip="检查范围、导出设置、文件冲突，并列出计划输出的主文件路径。"/>
                     </StackPanel>
                 </DockPanel>
                 <DataGrid Grid.Row="1" ItemsSource="{Binding Documents}" AutoGenerateColumns="False"
@@ -167,7 +167,7 @@
                             <CheckBox IsChecked="{Binding OpenOutputFolderWhenDone}" Content="完成后打开目录"/>
                         </WrapPanel>
                         <TextBlock Margin="76,0,0,6" Foreground="{DynamicResource SecondaryText}" FontSize="11" TextWrapping="Wrap"
-                                   Text="命名占位符：{模型名}、{模型文件名}、{图纸号}、{图纸名}、{视图名}、{序号}、{日期}。DWG / 非合并 PDF / 非合并打印 PDF 会逐视图输出，从而保证文件名可控。"/>
+                                   Text="文件名可用 {模型名}、{模型文件名}、{图纸号}、{图纸名}、{视图名}、{序号}、{日期}。点击「预检」查看实际输出名称。"/>
                     </StackPanel>
 
                     <TabControl Grid.Row="2" Margin="0,2,0,0">

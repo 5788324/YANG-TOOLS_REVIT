@@ -1391,8 +1391,14 @@ namespace YangTools.Revit.Core.BatchTasks
         private static ViewSelectionResult GetViewIds(Document doc, string? viewSetName, bool requirePrintable = true)
         {
             var result = new ViewSelectionResult();
-            if (string.IsNullOrWhiteSpace(viewSetName)
-                || viewSetName == BatchTaskViewModel.AllSheetsOption)
+            if (string.IsNullOrWhiteSpace(viewSetName))
+            {
+                result.Error = "请选择视图/图纸范围。";
+                return result;
+            }
+
+            viewSetName = viewSetName.Trim();
+            if (viewSetName == BatchTaskViewModel.AllSheetsOption)
             {
                 foreach (ViewSheet sheet in new FilteredElementCollector(doc)
                     .OfClass(typeof(ViewSheet))
@@ -1486,6 +1492,12 @@ namespace YangTools.Revit.Core.BatchTasks
             catch (Exception ex)
             {
                 result.Errors.Add("输出命名预检：无法计算输出目录：" + ex.Message);
+                return;
+            }
+
+            if (File.Exists(outputFolder))
+            {
+                result.Errors.Add($"输出目录与现有文件同名：{outputFolder}");
                 return;
             }
 
@@ -1591,6 +1603,8 @@ namespace YangTools.Revit.Core.BatchTasks
                     continue;
                 }
                 plannedOutputReservations.Add(normalized);
+                string action = File.Exists(path) ? "覆盖已有文件" : "新建";
+                result.PlannedOutputs.Add($"{label} · {action} · {normalized}");
             }
 
             if (result.ErrorCount == beforeErrors)

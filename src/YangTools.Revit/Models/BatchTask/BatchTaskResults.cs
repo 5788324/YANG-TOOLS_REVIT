@@ -50,6 +50,7 @@ namespace YangTools.Revit.Models.BatchTask
         public List<string> Errors { get; } = new List<string>();
         public List<string> Warnings { get; } = new List<string>();
         public List<string> Successes { get; } = new List<string>();
+        public List<string> PlannedOutputs { get; } = new List<string>();
         public List<string> OutputFiles { get; } = new List<string>();
 
         public int ErrorCount => Errors.Count;
@@ -67,6 +68,8 @@ namespace YangTools.Revit.Models.BatchTask
                 Warnings.Add(prefix + value);
             foreach (string value in other.Successes)
                 Successes.Add(prefix + value);
+            foreach (string value in other.PlannedOutputs)
+                PlannedOutputs.Add(prefix + value);
             OutputFiles.AddRange(other.OutputFiles);
         }
     }
