@@ -21,14 +21,19 @@ namespace YangTools.Revit.Core.ParameterCleanup
             _document = document ?? throw new ArgumentNullException(nameof(document));
         }
 
-        public int DeleteSafeSources(ScanResult result, Action<string>? log)
+        internal static List<ParameterRecord> GetCandidates(ScanResult result, MergeOptions options)
         {
-            List<ParameterRecord> candidates = result.Groups
+            ParameterMergeService.EvaluateDeletionSafety(result.Groups.Where(x => x.Selected && x.ValuesMerged), options);
+            return result.Groups
                 .Where(x => x.Selected && x.IsCompatible && x.ValuesMerged)
                 .SelectMany(x => x.Sources)
                 .Where(x => string.IsNullOrEmpty(x.DeleteBlockReason) && !x.Deleted)
                 .ToList();
+        }
 
+        public int DeleteSafeSources(ScanResult result, MergeOptions options, Action<string>? log)
+        {
+            List<ParameterRecord> candidates = GetCandidates(result, options);
             if (candidates.Count == 0)
             {
                 log?.Invoke("没有可删除的重复参数。");

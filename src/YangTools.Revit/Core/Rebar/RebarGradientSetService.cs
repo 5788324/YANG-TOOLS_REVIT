@@ -155,6 +155,15 @@ namespace YangTools.Revit.Core.Rebar
             BuildState state,
             RebarGradientSetResult result)
         {
+#if REVIT2021
+            // Revit 2021 has no FreeFormAccessor.RebarStyle getter/setter; creating a
+            // style-unverifiable rebar would violate GR01's lossless readback contract.
+            // Reject BEFORE Transaction.Start until a version-specific, runtime-verified
+            // style-preserving implementation is provided.
+            throw new GradientValidationException(
+                "FREEFORM_STYLE_API_UNSUPPORTED_REVIT2021",
+                "Revit 2021 不支持 GR01 自由形式钢筋样式的可靠设置与回读，已在事务前阻止创建。请使用 Revit 2022+ 验证，或等待 2021 专用实现。");
+#endif
             IList<IList<Curve>> curves = BuildRevitCurves(state.PlannedBars);
             Transaction? tx = null;
             RevitRebar? created = null;
@@ -177,10 +186,12 @@ namespace YangTools.Revit.Core.Rebar
                     throw new GradientValidationException("FREEFORM_CREATE_FAILED", "Rebar.CreateFreeForm 失败：" + validation);
 
                 // Revit 2025 explicit CreateFreeForm(out validation) 没有 style 参数；用 FreeFormAccessor 写回控制筋 style。
+#if !REVIT2021
                 using (RebarFreeFormAccessor accessor = created.GetFreeFormAccessor())
                 {
                     accessor.RebarStyle = state.Style;
                 }
+#endif
 
                 doc.Regenerate();
 
@@ -470,8 +481,12 @@ namespace YangTools.Revit.Core.Rebar
                     throw new GradientValidationException("READBACK_CONSTRAINT_MODE_MISMATCH", "Explicit ManagedFreeForm 创建后不是 unconstrained。 ");
                 if (accessor.HasValidServer())
                     throw new GradientValidationException("READBACK_SERVER_UNEXPECTED", "Explicit ManagedFreeForm 创建后意外绑定了 RebarUpdateServer。 ");
+#if !REVIT2021
                 if (accessor.RebarStyle != state.Style)
                     throw new GradientValidationException("READBACK_STYLE_MISMATCH", $"创建结果 RebarStyle={accessor.RebarStyle}，控制筋={state.Style}。 ");
+#else
+                throw new GradientValidationException("FREEFORM_STYLE_API_UNSUPPORTED_REVIT2021", "Revit 2021 无法确认自由形式钢筋样式，拒绝提交。 ");
+#endif
             }
 
             double maxDeviation = 0.0;
@@ -698,8 +713,12 @@ namespace YangTools.Revit.Core.Rebar
         {
             if (rebar.IsRebarFreeForm())
             {
+#if REVIT2021
+                throw new GradientValidationException("CONTROL_STYLE_UNREADABLE_REVIT2021", "Revit 2021 无法通过 FreeFormAccessor 读取控制筋样式。 ");
+#else
                 using (RebarFreeFormAccessor accessor = rebar.GetFreeFormAccessor())
                     return accessor.RebarStyle;
+#endif
             }
             ElementId shapeId = rebar.GetShapeId();
             if (doc.GetElement(shapeId) is RebarShape shape)
@@ -1026,11 +1045,11 @@ namespace YangTools.Revit.Core.Rebar
             catch { }
 
             return rebar.GetCenterlineCurves(
-                adjustForSelfIntersection: false,
-                suppressHooks: false,
-                suppressBendRadius: false,
-                multiplanarOption: MultiplanarOption.IncludeAllMultiplanarCurves,
-                barPositionIndex: position);
+                false,
+                false, // Revit 2026+ renamed this argument suppressHooksAndCranks.
+                false,
+                MultiplanarOption.IncludeAllMultiplanarCurves,
+                position);
         }
 
         private static bool DoesBarExist(RevitRebar rebar, int index)

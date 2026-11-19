@@ -3,16 +3,22 @@ using Autodesk.Revit.UI;
 using YangTools.Revit.Core;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace YangTools.Revit.UI
 {
     public partial class ProjectInfoWindow : Window
     {
-        private UIApplication _uiapp;
-        private Document _doc;
+        private readonly UIApplication _uiapp;
+        private readonly Document _doc;
+        private string? _estimateSourcePath;
+        private string? _documentPath;
+        private string? _centralPath;
+        private bool _estimating;
 
         public ProjectInfoWindow(UIApplication uiapp)
         {
@@ -26,202 +32,174 @@ namespace YangTools.Revit.UI
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
         {
             if (e.LeftButton == MouseButtonState.Pressed)
-            {
                 DragMove();
-            }
         }
 
-        private void CloseButton_Click(object sender, RoutedEventArgs e)
-        {
-            Close();
-        }
+        private void Window_Closing(object sender, CancelEventArgs e) => e.Cancel = _estimating;
+
+        private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
 
         private void LoadInfo()
         {
+            bool cloud = _doc.IsModelInCloud;
             string path = _doc.PathName;
-            if (string.IsNullOrEmpty(path))
-            {
-                TxtDocPath.Text = "文件未保存";
-                TxtFileSize.Text = "-";
-                TxtLastModified.Text = "-";
-                BtnCalculatePurge.IsEnabled = false;
-            }
-            else
-            {
-                TxtDocPath.Text = path;
-                try
-                {
-                    TxtFileName.Text = Path.GetFileName(path);
-                    FileInfo fi = new FileInfo(path);
-                    if (fi.Exists)
-                    {
-                        double mb = fi.Length / 1024.0 / 1024.0;
-                        TxtFileSize.Text = $"{mb:F2} MB";
-                        TxtCurrentSizeCard2.Text = $"{mb:F2} MB";
-                        TxtLastModified.Text = fi.LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss");
-                    }
-                }
-                catch
-                {
-                    TxtFileSize.Text = "读取失败";
-                    TxtCurrentSizeCard2.Text = "读取失败";
-                }
-            }
-
+            TxtFileName.Text = _doc.Title;
             TxtRevitVersion.Text = _uiapp.Application.VersionName;
+            _documentPath = string.IsNullOrWhiteSpace(path) ? null : path;
 
-            if (_doc.IsWorkshared)
+            if (cloud)
+            {
+                try { _documentPath = ModelPathUtils.ConvertModelPathToUserVisiblePath(_doc.GetCloudModelPath()); }
+                catch (Exception ex) { DiagnosticLog.WriteError("读取云模型路径", ex); }
+            }
+
+            TxtDocPath.Text = _documentPath ?? (cloud ? "云模型路径无法读取" : "文件未保存");
+            BtnCopyPath.IsEnabled = !string.IsNullOrWhiteSpace(_documentPath);
+            if (_doc.IsWorkshared && !cloud)
             {
                 PanelCentralPath.Visibility = System.Windows.Visibility.Visible;
                 try
                 {
-                    ModelPath centralModelPath = _doc.GetWorksharingCentralModelPath();
-                    string centralPathStr = ModelPathUtils.ConvertModelPathToUserVisiblePath(centralModelPath);
-                    TxtCentralPath.Text = string.IsNullOrEmpty(centralPathStr) ? "无" : centralPathStr;
+                    var centralModelPath = _doc.GetWorksharingCentralModelPath();
+                    if (centralModelPath != null)
+                        _centralPath = ModelPathUtils.ConvertModelPathToUserVisiblePath(centralModelPath);
                 }
-                catch
+                catch (Exception ex) { DiagnosticLog.WriteError("读取中心模型路径", ex); }
+                TxtCentralPath.Text = _centralPath ?? "无法获取";
+                BtnCopyCentralPath.IsEnabled = !string.IsNullOrWhiteSpace(_centralPath);
+            }
+
+            bool hasDiskFile = !cloud && File.Exists(path);
+            if (hasDiskFile)
+            {
+                try
                 {
-                    TxtCentralPath.Text = "无法获取";
+                    var file = new FileInfo(path);
+                    TxtFileSize.Text = TxtCurrentSizeCard2.Text = FormatSize(file.Length);
+                    TxtLastModified.Text = file.LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss");
+                }
+                catch (IOException ex)
+                {
+                    TxtFileSize.Text = TxtCurrentSizeCard2.Text = "读取失败";
+                    DiagnosticLog.WriteError("读取 RVT 文件信息", ex);
                 }
             }
 
-            try
+#if REVIT2024_OR_GREATER
+            try { TxtUnusedCount.Text = $"{_doc.GetUnusedElements(new HashSet<ElementId>()).Count} 个"; }
+            catch (Exception ex)
             {
-                var unusedIds = new List<ElementId>();
-                var method = _doc.GetType().GetMethod("GetUnusedElements");
-                if (method != null)
-                {
-                    var res = method.Invoke(_doc, new object[] { new HashSet<ElementId>() }) as ICollection<ElementId>;
-                    if (res != null) { unusedIds.AddRange(res); }
-                }
-                else
-                {
-                    throw new NotSupportedException();
-                }
-                TxtUnusedCount.Text = $"{unusedIds.Count} 个";
+                TxtUnusedCount.Text = "读取失败";
+                DiagnosticLog.WriteError("读取可清理图元", ex);
             }
-            catch
+
+            if (cloud || _doc.IsWorkshared)
+                TxtEstimateHint.Text = "体积预估适用于已保存的独立 RVT。";
+            else if (!hasDiskFile)
+                TxtEstimateHint.Text = "保存当前项目并重新打开此窗口后可预估。";
+            else
             {
-                TxtUnusedCount.Text = "当前Revit版本不支持直接获取";
-                BtnCalculatePurge.IsEnabled = false;
+                _estimateSourcePath = path;
+                TxtEstimateHint.Text = "以磁盘已保存版本为准，在临时副本上执行一轮清理。";
             }
+#else
+            TxtUnusedCount.Text = "需 Revit 2024 或更新版本";
+            TxtEstimateHint.Text = "体积预估需 Revit 2024 或更新版本。";
+#endif
+            BtnCalculatePurge.IsEnabled = _estimateSourcePath != null;
         }
 
         private void BtnCalculatePurge_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_doc.PathName))
-            {
-                TaskDialog.Show("提示", "请先保存当前文档！");
-                return;
-            }
-
-            MessageBoxResult result = MessageBox.Show(
-                "计算清理后大小可能需要几秒钟到几十秒时间，期间Revit将无响应。\n是否继续？",
-                "提示", MessageBoxButton.YesNo, MessageBoxImage.Information);
-
-            if (result != MessageBoxResult.Yes) return;
-
-            string tempFile = "";
-            Document tempDoc = null;
+#if REVIT2024_OR_GREATER
+            if (_estimating || _estimateSourcePath == null) return;
+            _estimating = true;
+            BtnCalculatePurge.IsEnabled = false;
+            TxtPurgedSize.Text = TxtSavedSize.Text = "-";
+            string folder = Path.Combine(Path.GetTempPath(), "YangTools-Purge-" + Guid.NewGuid().ToString("N"));
+            Document? tempDoc = null;
 
             try
             {
-                TxtStatus.Text = "正在复制文件并后台打开...";
-                ForceUIToUpdate();
-
-                tempFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".rvt");
-                File.Copy(_doc.PathName, tempFile, true);
-
-                tempDoc = _uiapp.Application.OpenDocumentFile(tempFile);
-
-                TxtStatus.Text = "正在清理未使用图元...";
-                ForceUIToUpdate();
-
-                var unusedIds = new List<ElementId>();
-                var method = tempDoc.GetType().GetMethod("GetUnusedElements");
-                if (method != null)
+                SetStatus("正在打开临时副本…");
+                Directory.CreateDirectory(folder);
+                string copy = Path.Combine(folder, "估算副本.rvt");
+                File.Copy(_estimateSourcePath, copy);
+                using (var sourceInfo = BasicFileInfo.Extract(copy))
                 {
-                    var res = method.Invoke(tempDoc, new object[] { new HashSet<ElementId>() }) as ICollection<ElementId>;
-                    if (res != null) { unusedIds.AddRange(res); }
+                    if (sourceInfo.IsWorkshared)
+                        throw new InvalidOperationException("磁盘版本是工作共享模型，无法估算独立 RVT 的清理体积。");
                 }
-                if (unusedIds.Count > 0)
+                long originalSize = new FileInfo(copy).Length;
+                TxtCurrentSizeCard2.Text = FormatSize(originalSize);
+                tempDoc = _uiapp.Application.OpenDocumentFile(copy);
+
+                SetStatus("正在清理副本…");
+                var unused = tempDoc.GetUnusedElements(new HashSet<ElementId>());
+                if (unused.Count > 0)
                 {
-                    using (Transaction t = new Transaction(tempDoc, "Purge"))
-                    {
-                        t.Start();
-                        tempDoc.Delete(unusedIds);
-                        t.Commit();
-                    }
+                    using var transaction = new Transaction(tempDoc, "清理估算副本");
+                    if (transaction.Start() != TransactionStatus.Started)
+                        throw new InvalidOperationException("无法启动副本清理事务。");
+                    tempDoc.Delete(unused);
+                    if (transaction.Commit() != TransactionStatus.Committed)
+                        throw new InvalidOperationException("副本清理未成功提交。");
+                    tempDoc.Save();
                 }
 
-                TxtStatus.Text = "正在保存并计算大小...";
-                ForceUIToUpdate();
-
-                tempDoc.Save();
-                
-                FileInfo fi = new FileInfo(tempFile);
-                double mb = fi.Length / 1024.0 / 1024.0;
-                TxtPurgedSize.Text = $"{mb:F2} MB";
-
-                FileInfo currentFi = new FileInfo(_doc.PathName);
-                if (currentFi.Exists)
-                {
-                    double currentMb = currentFi.Length / 1024.0 / 1024.0;
-                    double saved = currentMb - mb;
-                    TxtSavedSize.Text = $"{Math.Max(0, saved):F2} MB";
-                }
-
-                TxtStatus.Text = "计算完成";
+                long purgedSize = new FileInfo(copy).Length;
+                TxtPurgedSize.Text = FormatSize(purgedSize);
+                TxtSavedSize.Text = purgedSize <= originalSize
+                    ? FormatSize(originalSize - purgedSize)
+                    : $"增加 {FormatSize(purgedSize - originalSize)}";
+                TxtStatus.Text = "预估完成";
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"计算时发生错误:\n{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-                TxtStatus.Text = "计算失败";
+                TxtStatus.Text = "预估失败";
+                MessageBox.Show(this, ex.Message, "文件体积预估", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
             finally
             {
-                if (tempDoc != null)
+                try
                 {
-                    tempDoc.Close(false);
+                    if (tempDoc != null && !tempDoc.Close(false))
+                        throw new InvalidOperationException("Revit 未关闭临时副本。");
+                    if (Directory.Exists(folder))
+                        Directory.Delete(folder, recursive: true);
                 }
-                if (!string.IsNullOrEmpty(tempFile) && File.Exists(tempFile))
+                catch (Exception ex)
                 {
-                    try
-                    {
-                        File.Delete(tempFile);
-                    }
-                    catch (Exception ex) { System.Diagnostics.Debug.WriteLine("[YangTools] ProjectInfoWindow.xaml.cs: {0}", ex.Message); }
+                    TxtStatus.Text += " · 临时目录清理失败";
+                    DiagnosticLog.WriteError($"清理体积预估目录：{folder}", ex);
+                }
+                finally
+                {
+                    _estimating = false;
+                    BtnCalculatePurge.IsEnabled = true;
                 }
             }
+#endif
         }
 
-        private void ForceUIToUpdate()
+        private void SetStatus(string message)
         {
-            System.Windows.Threading.DispatcherFrame frame = new System.Windows.Threading.DispatcherFrame();
-            System.Windows.Threading.Dispatcher.CurrentDispatcher.BeginInvoke(
-                System.Windows.Threading.DispatcherPriority.Background,
-                new System.Windows.Threading.DispatcherOperationCallback(delegate (object f)
-                {
-                    ((System.Windows.Threading.DispatcherFrame)f).Continue = false;
-                    return null;
-                }), frame);
-            System.Windows.Threading.Dispatcher.PushFrame(frame);
+            TxtStatus.Text = message;
+            Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
         }
+
+        private static string FormatSize(long bytes) => $"{bytes / (1024.0 * 1024.0):F2} MB";
 
         private void CopyPath_Click(object sender, RoutedEventArgs e)
         {
-            if (!string.IsNullOrEmpty(TxtDocPath.Text) && TxtDocPath.Text != "加载中..." && TxtDocPath.Text != "文件未保存")
-            {
-                System.Windows.Clipboard.SetText(TxtDocPath.Text);
-            }
+            if (!string.IsNullOrWhiteSpace(_documentPath))
+                Clipboard.SetText(_documentPath);
         }
 
         private void CopyCentralPath_Click(object sender, RoutedEventArgs e)
         {
-            if (!string.IsNullOrEmpty(TxtCentralPath.Text) && TxtCentralPath.Text != "加载中..." && TxtCentralPath.Text != "无" && TxtCentralPath.Text != "无法获取")
-            {
-                System.Windows.Clipboard.SetText(TxtCentralPath.Text);
-            }
+            if (!string.IsNullOrWhiteSpace(_centralPath))
+                Clipboard.SetText(_centralPath);
         }
     }
 }

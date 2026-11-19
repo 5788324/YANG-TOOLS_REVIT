@@ -7,7 +7,11 @@ using YangTools.Revit.UI;
 namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
-    [RibbonButton("项目管理区", "项目资产管理器", "项目资产浏览器与批量管理", "Icons/project_inspector_32.png", "Icons/project_inspector_16.png")]
+    [RibbonButton(
+        panelName: "项目管理区", buttonText: "资产管理",
+        tooltip: "浏览和管理项目的资产与资源。",
+        largeIcon: "Icons/project_inspector_32.png", smallIcon: "Icons/project_inspector_16.png",
+        usage: "使用：点击按钮，在窗口选择资产类别及目标项，可查询、重命名或批量管理。\n注意：修改、删除、Excel 导入前确认目标和回读结果。")]
     public class ProjectAssetManagerCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)

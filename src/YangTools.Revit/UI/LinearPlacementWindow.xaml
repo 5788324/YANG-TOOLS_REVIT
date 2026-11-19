@@ -182,27 +182,12 @@
 
             <!-- Bottom Action -->
             <Border Grid.Row="2" Background="{DynamicResource PanelBg}" CornerRadius="0,0,8,8" BorderBrush="{DynamicResource WindowBorder}" BorderThickness="0,1,0,0">
-                <Button Content="开始布置 (Start Placement)" Click="StartPlacement_Click" Width="200" Height="32" 
-                        Background="{DynamicResource AccentColor}" Foreground="{DynamicResource AccentText}" FontWeight="SemiBold" BorderThickness="0">
-                    <Button.Style>
-                        <Style TargetType="{x:Type Button}">
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate TargetType="{x:Type Button}">
-                                        <Border Background="{TemplateBinding Background}" CornerRadius="4">
-                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                        </Border>
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="{DynamicResource AccentColor}"/>
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
-                                    </ControlTemplate>
-                                </Setter.Value>
-                            </Setter>
-                        </Style>
-                    </Button.Style>
-                </Button>
+                <DockPanel Margin="14,0">
+                    <Button DockPanel.Dock="Right" Content="开始布置" Click="StartPlacement_Click" Width="110" Height="32"
+                            Margin="10,0,0,0" VerticalAlignment="Center" Style="{DynamicResource PrimaryButton}"/>
+                    <TextBlock x:Name="PlacementStatus" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                               Foreground="{DynamicResource SecondaryText}"/>
+                </DockPanel>
             </Border>
         </Grid>
     </Border>

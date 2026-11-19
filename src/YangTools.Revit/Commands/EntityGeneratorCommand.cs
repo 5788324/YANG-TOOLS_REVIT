@@ -11,7 +11,11 @@ using YangTools.Revit.UI;
 namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
-    [RibbonButton("模型修改区", "实体生成(Loft)", "基于轮廓生成放样/拉伸等三维实体", "Icons/entity_generator_32.png", "Icons/entity_generator_16.png")]
+    [RibbonButton(
+        panelName: "模型修改区", buttonText: "实体生成",
+        tooltip: "由轮廓生成放样或拉伸实体。",
+        largeIcon: "Icons/entity_generator_32.png", smallIcon: "Icons/entity_generator_16.png",
+        usage: "使用：点击按钮，选取生成所需的轮廓线或几何，在窗口设置生成方式及相关标高。\n注意：执行前核对轮廓闭合、标高和偏移。")]
     public class EntityGeneratorCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
@@ -64,21 +68,24 @@ namespace YangTools.Revit.Commands
                             var references = uiDoc.Selection.PickObjects(
                                 ObjectType.Element,
                                 new ProfileFamilyInstanceFilter(),
-                                "请选择至少两个包含闭合模型线轮廓的族实例");
+                                "请按放样方向依次选择至少两个闭合轮廓族实例，再点击完成。");
 
-                            state.Profiles = references
+                            var profiles = references
                                 .Select(reference => uiDoc.Document.GetElement(reference) as FamilyInstance)
                                 .Where(instance => instance != null)
                                 .Cast<FamilyInstance>()
                                 .ToList();
 
-                            DiagnosticLog.WriteInfo(
-                                "实体生成命令",
-                                $"已选择轮廓：Count={state.Profiles.Count}; IDs={string.Join(",", state.Profiles.Select(item => item.Id.ToString()))}");
-
-                            if (state.Profiles.Count < 2)
+                            if (profiles.Count >= 2)
                             {
-                                TaskDialog.Show("提示", "实体生成至少需要两个有效的族实例轮廓，请重新选择。");
+                                state.Profiles = profiles;
+                                DiagnosticLog.WriteInfo(
+                                    "实体生成命令",
+                                    $"已选择轮廓：Count={profiles.Count}; IDs={string.Join(",", profiles.Select(item => item.Id.ToString()))}");
+                            }
+                            else
+                            {
+                                TaskDialog.Show("实体生成", "至少选择两个轮廓，本次未替换已有选择。");
                             }
                         }
                         catch (Autodesk.Revit.Exceptions.OperationCanceledException)

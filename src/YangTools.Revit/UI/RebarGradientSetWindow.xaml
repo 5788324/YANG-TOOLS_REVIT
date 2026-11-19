@@ -17,11 +17,7 @@
         <Border Grid.Row="0" Background="{DynamicResource TitleBarGradient}"
                 MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
             <Grid Margin="16,0,10,0">
-                <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="渐变钢筋集" Style="{DynamicResource WindowTitle}"/>
-                    <TextBlock Text="根据首末控制钢筋生成渐变钢筋集"
-                               Foreground="{DynamicResource TitleText}" FontSize="10" Opacity="0.82"/>
-                </StackPanel>
+                <TextBlock Text="渐变钢筋" Style="{DynamicResource WindowTitle}" VerticalAlignment="Center"/>
                 <Button HorizontalAlignment="Right" Style="{DynamicResource CloseButton}" Click="Close_Click"/>
             </Grid>
         </Border>
@@ -29,9 +25,13 @@
         <ScrollViewer x:Name="MainScrollViewer" Grid.Row="1" VerticalScrollBarVisibility="Auto"
                       Style="{DynamicResource StandardScrollViewer}">
             <StackPanel Margin="18,16,18,14">
-                <Border Style="{DynamicResource CardBorder}">
+                <Border x:Name="ControlInputs" Style="{DynamicResource CardBorder}">
                     <StackPanel>
-                        <TextBlock Text="1. 控制钢筋" Style="{DynamicResource SectionTitle}" Margin="0,0,0,10"/>
+                        <DockPanel Margin="0,0,0,10">
+                            <Button DockPanel.Dock="Right" Content="连续拾取首尾筋" Style="{DynamicResource StandardButton}"
+                                    Click="PickBothControls_Click"/>
+                            <TextBlock Text="控制钢筋" Style="{DynamicResource SectionTitle}" VerticalAlignment="Center"/>
+                        </DockPanel>
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -59,14 +59,14 @@
                                     HorizontalAlignment="Right" VerticalAlignment="Center" Margin="10,0,0,0"
                                     Style="{DynamicResource StandardButton}" Click="SwapControls_Click"/>
                         </Grid>
-                        <TextBlock Text="控制筋只作为首末几何模板；最终钢筋集会重新包含第一根和最后一根，不修改原控制筋。"
+                        <TextBlock Text="新钢筋集包含首尾两根。请核对与原控制筋重合的位置。"
                                    Style="{DynamicResource SecondaryLabel}" TextWrapping="Wrap" Margin="0,10,0,0"/>
                     </StackPanel>
                 </Border>
 
-                <Border Style="{DynamicResource CardBorder}">
+                <Border x:Name="PathInputs" Style="{DynamicResource CardBorder}">
                     <StackPanel>
-                        <TextBlock Text="2. 分布基准" Style="{DynamicResource SectionTitle}" Margin="0,0,0,10"/>
+                            <TextBlock Text="分布基准" Style="{DynamicResource SectionTitle}" Margin="0,0,0,10"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="118"/>
@@ -79,7 +79,7 @@
                                       SelectedIndex="0" SelectionChanged="PathKindCombo_SelectionChanged">
                                 <ComboBoxItem Content="全局 Z 轴" Tag="ZAxis"/>
                                 <ComboBoxItem Content="模型线" Tag="ModelLine"/>
-                                <ComboBoxItem Content="模型 Edge" Tag="Edge"/>
+                                <ComboBoxItem Content="模型边线" Tag="Edge"/>
                             </ComboBox>
                             <TextBox Grid.Column="2" Text="{Binding PathText}" IsReadOnly="True"
                                      Style="{DynamicResource StandardTextBox}" Margin="10,0"/>
@@ -100,12 +100,12 @@
                             <TextBlock Grid.Column="3" Text="{Binding EffectiveLengthText}" VerticalAlignment="Center"/>
                         </Grid>
 
-                        <TextBlock Text="ModelLine / Edge 只提供分布轴线和可用范围；业务方向统一由“起始控制筋 → 结束控制筋”决定。Zone[0] 永远从起始控制筋一侧开始；交换首末即可反向。"
+                        <TextBlock Text="区段按起始筋到结束筋依次布置。交换首末可反转方向。"
                                    Style="{DynamicResource SecondaryLabel}" TextWrapping="Wrap" Margin="0,10,0,0"/>
                     </StackPanel>
                 </Border>
 
-                <Border Style="{DynamicResource CardBorder}">
+                <Border x:Name="ZoneInputs" Style="{DynamicResource CardBorder}">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -115,7 +115,7 @@
                         </Grid.RowDefinitions>
 
                         <Grid Grid.Row="0">
-                            <TextBlock Text="3. 分布区段" Style="{DynamicResource SectionTitle}" VerticalAlignment="Center"/>
+                            <TextBlock Text="分布区段" Style="{DynamicResource SectionTitle}" VerticalAlignment="Center"/>
                             <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
                                 <Button Content="+ 普通区" Width="86" Style="{DynamicResource StandardButton}" Click="AddNormalZone_Click"/>
                                 <Button Content="+ 加密区" Width="86" Margin="8,0,0,0" Style="{DynamicResource StandardButton}" Click="AddDenseZone_Click"/>
@@ -126,15 +126,15 @@
                         </Grid>
 
                         <TextBlock Grid.Row="1" Margin="0,9,0,8" Style="{DynamicResource SecondaryLabel}" TextWrapping="Wrap"
-                                   Text="默认保留 1 个“自动剩余”普通区：其长度=有效分布长度−其余固定区段。新增加密/普通区后会自动扣减；新行会插入到当前选中行之后。最多只能有 1 个自动区。"/>
+                                   Text="从起始筋往结束筋排列。自动区使用扣除固定区段后的剩余长度。"/>
 
                         <DataGrid x:Name="ZoneGrid" Grid.Row="2" ItemsSource="{Binding Zones}"
                                   Style="{DynamicResource SharedDataGridStyle}"
                                   ColumnHeaderStyle="{DynamicResource SharedDataGridColumnHeaderStyle}"
                                   SelectionMode="Single" RowHeaderWidth="0"
+                                  CanUserSortColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
                                   PreviewMouseWheel="ZoneGrid_PreviewMouseWheel"
-                                  BeginningEdit="ZoneGrid_BeginningEdit"
-                                  CellEditEnding="ZoneGrid_CellEditEnding">
+                                  BeginningEdit="ZoneGrid_BeginningEdit">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="类型" Binding="{Binding Label, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="88"/>
                                 <DataGridTemplateColumn Header="长度模式" Width="112">
@@ -168,15 +168,8 @@
                         </DataGrid>
 
                         <StackPanel Grid.Row="3" Margin="0,10,0,0">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock x:Name="ZoneTotalText" Text="固定区段：0 mm · 自动剩余：待计算" Style="{DynamicResource SecondaryLabel}"/>
-                                <TextBlock Grid.Column="1" Text="自动：均匀分配且实际间距 ≤ 最大间距 · 手动间距允许尾差"
-                                           Style="{DynamicResource SecondaryLabel}"/>
-                            </Grid>
+                            <TextBlock x:Name="ZoneTotalText" TextWrapping="Wrap" Style="{DynamicResource SecondaryLabel}"/>
+                            <TextBlock Text="手动间距留空时，按最大间距自动均分。" Style="{DynamicResource SecondaryLabel}"/>
                             <TextBlock Text="{Binding InputValidationText}" Foreground="{DynamicResource AccentColor}"
                                        TextWrapping="Wrap" Margin="0,5,0,0"/>
                         </StackPanel>
@@ -184,23 +177,12 @@
                 </Border>
 
                 <Border Style="{DynamicResource CardBorder}" Margin="0">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
                         <StackPanel>
-                            <TextBlock Text="4. 预览结果" Style="{DynamicResource SectionTitle}" Margin="0,0,0,7"/>
+                            <TextBlock Text="预览结果" Style="{DynamicResource SectionTitle}" Margin="0,0,0,7"/>
                             <TextBlock Text="{Binding PreviewSummary}" FontWeight="SemiBold" TextWrapping="Wrap"/>
                             <TextBlock Text="{Binding HostAndTypeText}" Style="{DynamicResource SecondaryLabel}"
                                        TextWrapping="Wrap" Margin="0,5,0,0"/>
-                            <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" Margin="0,7,0,0"
-                                       Foreground="{DynamicResource AccentColor}"/>
                         </StackPanel>
-                        <Button x:Name="PreviewButton" Grid.Column="1" Content="计算预览" Width="112" Height="38"
-                                VerticalAlignment="Center" Style="{DynamicResource StandardButton}"
-                                Click="Preview_Click"/>
-                    </Grid>
                 </Border>
             </StackPanel>
         </ScrollViewer>
@@ -211,11 +193,14 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Text="生成方式：Managed FreeForm（ManagedGeometry）；不会冒充 Revit Native ToCover。"
-                           Style="{DynamicResource SecondaryLabel}" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" Margin="0,0,12,0"
+                           Foreground="{DynamicResource AccentColor}" VerticalAlignment="Center"/>
                 <StackPanel Grid.Column="1" HorizontalAlignment="Right" Orientation="Horizontal">
+                    <Button x:Name="PreviewButton" Content="计算预览" Width="98" Height="36" Margin="0,0,10,0"
+                            Style="{DynamicResource StandardButton}" Click="Preview_Click"/>
                     <Button x:Name="CreateButton" Content="创建钢筋集" Width="116" Height="36"
                             Style="{DynamicResource PrimaryButton}" IsEnabled="False"
+                            ToolTipService.ShowOnDisabled="True"
                             Click="Create_Click"/>
                     <Button Content="关闭" Width="88" Height="36" Margin="10,0,0,0"
                             Style="{DynamicResource StandardButton}" Click="Close_Click"/>

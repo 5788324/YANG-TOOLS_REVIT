@@ -16,6 +16,7 @@ namespace YangTools.Revit.UI
     {
         private readonly ObservableCollection<FamilyCategoryRow> _rows;
         private readonly ICollectionView _view;
+        private bool _updatingSelection;
 
         internal FamilyCategoryChangeRequest Request { get; private set; }
 
@@ -63,6 +64,7 @@ namespace YangTools.Revit.UI
                         FamilyId = family.Id,
                         FamilyName = family.Name,
                         CurrentCategory = family.FamilyCategory?.Name ?? "未分类",
+                        CurrentCategoryId = family.FamilyCategory?.Id ?? ElementId.InvalidElementId,
                         TypeCount = family.GetFamilySymbolIds().Count,
                         InstanceCount = instanceCounts.TryGetValue(family.Id.GetIdValue(), out int count) ? count : 0,
                         IsEditable = editable,
@@ -88,6 +90,7 @@ namespace YangTools.Revit.UI
                 result.Add(new FamilyCategoryTargetItem
                 {
                     BuiltInCategory = builtIn,
+                    CategoryId = category.Id,
                     Name = category.Name,
                     DisplayName = $"{(category.CategoryType == CategoryType.Model ? "模型" : "注释")}｜{category.Name}"
                 });
@@ -132,37 +135,57 @@ namespace YangTools.Revit.UI
 
         private void SelectAll_Click(object sender, RoutedEventArgs e)
         {
-            foreach (FamilyCategoryRow row in VisibleRows().Where(row => row.IsEditable))
-                row.IsSelected = true;
-            UpdateSelectionStatus();
+            var target = TargetCategoryBox.SelectedItem as FamilyCategoryTargetItem;
+            SetSelection(VisibleRows(), row => row.IsEditable && row.CurrentCategoryId != target?.CategoryId);
         }
 
         private void SelectNone_Click(object sender, RoutedEventArgs e)
         {
-            foreach (FamilyCategoryRow row in VisibleRows())
-                row.IsSelected = false;
-            UpdateSelectionStatus();
+            SetSelection(_rows, _ => false);
         }
 
         private void Invert_Click(object sender, RoutedEventArgs e)
         {
-            foreach (FamilyCategoryRow row in VisibleRows().Where(row => row.IsEditable))
-                row.IsSelected = !row.IsSelected;
+            var target = TargetCategoryBox.SelectedItem as FamilyCategoryTargetItem;
+            SetSelection(VisibleRows(), row => row.IsEditable && row.CurrentCategoryId != target?.CategoryId && !row.IsSelected);
+        }
+
+        private void SetSelection(IEnumerable<FamilyCategoryRow> rows, Func<FamilyCategoryRow, bool> isSelected)
+        {
+            _updatingSelection = true;
+            try
+            {
+                foreach (FamilyCategoryRow row in rows)
+                    row.IsSelected = isSelected(row);
+            }
+            finally
+            {
+                _updatingSelection = false;
+            }
             UpdateSelectionStatus();
         }
 
         private void Row_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(FamilyCategoryRow.IsSelected))
+            if (!_updatingSelection && e.PropertyName == nameof(FamilyCategoryRow.IsSelected))
                 UpdateSelectionStatus();
+        }
+
+        private void TargetCategoryBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdateSelectionStatus();
         }
 
         private void UpdateSelectionStatus()
         {
-            int selected = _rows.Count(row => row.IsSelected && row.IsEditable);
-            int editable = _rows.Count(row => row.IsEditable);
-            if (SelectionStatus != null)
-                SelectionStatus.Text = $"已选择 {selected} / 可修改 {editable}";
+            if (_view == null || SelectionStatus == null) return;
+            var target = TargetCategoryBox.SelectedItem as FamilyCategoryTargetItem;
+            var checkedRows = VisibleRows().Where(row => row.IsSelected && row.IsEditable).ToList();
+            int unchanged = checkedRows.Count(row => row.CurrentCategoryId == target?.CategoryId);
+            int hidden = _rows.Count(row => row.IsSelected && row.IsEditable) - checkedRows.Count;
+            SelectionStatus.Text = $"待修改 {checkedRows.Count - unchanged} 个";
+            if (unchanged > 0) SelectionStatus.Text += $" · 已是目标 {unchanged} 个";
+            if (hidden > 0) SelectionStatus.Text += $" · 已隐藏 {hidden} 个";
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
@@ -172,7 +195,7 @@ namespace YangTools.Revit.UI
 
         private void Confirm_Click(object sender, RoutedEventArgs e)
         {
-            var selected = _rows.Where(row => row.IsSelected && row.IsEditable).ToList();
+            var selected = VisibleRows().Where(row => row.IsSelected && row.IsEditable).ToList();
             if (selected.Count == 0)
             {
                 MessageBox.Show("请至少选择一个可编辑的载入族。", "族类别修改", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -185,9 +208,17 @@ namespace YangTools.Revit.UI
                 return;
             }
 
+            var changedIds = selected.Where(row => row.CurrentCategoryId != target.CategoryId)
+                .Select(row => row.FamilyId).ToList();
+            if (changedIds.Count == 0)
+            {
+                MessageBox.Show("当前列表勾选的族已全部属于目标类别。", "族类别修改", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             Request = new FamilyCategoryChangeRequest
             {
-                FamilyIds = selected.Select(row => row.FamilyId).ToList(),
+                FamilyIds = changedIds,
                 TargetCategory = target.BuiltInCategory,
                 TargetCategoryName = target.Name
             };
@@ -201,6 +232,7 @@ namespace YangTools.Revit.UI
         public ElementId FamilyId { get; set; }
         public string FamilyName { get; set; } = string.Empty;
         public string CurrentCategory { get; set; } = string.Empty;
+        public ElementId CurrentCategoryId { get; set; } = ElementId.InvalidElementId;
         public int TypeCount { get; set; }
         public int InstanceCount { get; set; }
         public bool IsEditable { get; set; }
@@ -224,6 +256,7 @@ namespace YangTools.Revit.UI
     internal sealed class FamilyCategoryTargetItem
     {
         public BuiltInCategory BuiltInCategory { get; set; }
+        public ElementId CategoryId { get; set; } = ElementId.InvalidElementId;
         public string Name { get; set; } = string.Empty;
         public string DisplayName { get; set; } = string.Empty;
     }

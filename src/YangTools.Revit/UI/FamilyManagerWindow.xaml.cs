@@ -53,10 +53,12 @@ namespace YangTools.Revit.UI
 
         private void PopulateCategoryFilter()
         {
+            string selectedCategory = CategoryFilterComboBox.SelectedItem as string;
             var categories = FamilyList.Select(x => x.Category).Distinct().OrderBy(x => x).ToList();
             categories.Insert(0, "所有类别 (All)");
             CategoryFilterComboBox.ItemsSource = categories;
-            CategoryFilterComboBox.SelectedIndex = 0;
+            CategoryFilterComboBox.SelectedItem = categories.Contains(selectedCategory) ? selectedCategory : categories[0];
+            RefreshFamilyFilter();
         }
 
         private void LoadFamilyList()
@@ -102,7 +104,7 @@ namespace YangTools.Revit.UI
             _familyCollectionView.GroupDescriptions.Add(new PropertyGroupDescription("Category"));
             _familyCollectionView.Filter = FilterFamilyItem;
             FamilyListBox.ItemsSource = _familyCollectionView;
-            FamilyListStatusText.Text = $"族：{FamilyList.Count} · 有实例：{FamilyList.Count(x => x.InstanceCount > 0)} · 有未使用类型：{FamilyList.Count(x => x.UnusedTypeCount > 0)}";
+            RefreshFamilyFilter();
 
             if (previouslySelectedId != null && previouslySelectedId != ElementId.InvalidElementId)
             {
@@ -132,7 +134,7 @@ namespace YangTools.Revit.UI
 
         private void UnusedFamilyOnlyCheckBox_Changed(object sender, RoutedEventArgs e)
         {
-            _familyCollectionView?.Refresh();
+            RefreshFamilyFilter();
         }
 
         private void UnusedTypesOnlyCheckBox_Changed(object sender, RoutedEventArgs e)
@@ -142,12 +144,20 @@ namespace YangTools.Revit.UI
 
         private void FilterChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (_familyCollectionView != null) _familyCollectionView.Refresh();
+            RefreshFamilyFilter();
         }
-        
+
         private void FilterChanged(object sender, TextChangedEventArgs e)
         {
-            if (_familyCollectionView != null) _familyCollectionView.Refresh();
+            RefreshFamilyFilter();
+        }
+
+        private void RefreshFamilyFilter()
+        {
+            if (_familyCollectionView == null) return;
+            _familyCollectionView.Refresh();
+            var shown = _familyCollectionView.Cast<FamilyListItemViewModel>().ToList();
+            FamilyListStatusText.Text = $"显示 {shown.Count} / {FamilyList.Count} 个族 · 有实例 {shown.Count(x => x.InstanceCount > 0)} · 有未使用类型 {shown.Count(x => x.UnusedTypeCount > 0)}";
         }
 
         private void FamilyListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -167,6 +177,7 @@ namespace YangTools.Revit.UI
             }
 
             _selectedFamilyId = selected.FamilyId;
+            TypeList.Clear();
             SelectedFamilyTitle.Text = $"族：{selected.FamilyName} ({selected.Category})";
             SelectedFamilyStatsText.Text = $"实例 {selected.InstanceCount} · 使用类型 {selected.UsedTypeCount}/{selected.TypeCount} · 未使用类型 {selected.UnusedTypeCount} · 当前视图 {selected.CurrentViewInstanceCount}";
             RenameFamilyBtn.Visibility = System.Windows.Visibility.Visible;
@@ -601,14 +612,19 @@ namespace YangTools.Revit.UI
 
         private void ExportExcel_Click(object sender, RoutedEventArgs e)
         {
-            if (TypeList.Count == 0) return;
+            var rows = TypeDataGrid.Items.OfType<TypeItemViewModel>().ToList();
+            if (rows.Count == 0)
+            {
+                TaskDialog.Show("导出 Excel", "当前列表没有可导出的族类型。");
+                return;
+            }
             var dialog = new Microsoft.Win32.SaveFileDialog { Filter = "Excel File (*.xlsx)|*.xlsx", FileName = "FamilyTypes.xlsx" };
             if (dialog.ShowDialog() == true)
             {
                 try
                 {
                     var data = new System.Collections.Generic.List<System.Collections.Generic.Dictionary<string, object>>();
-                    foreach (var item in TypeList)
+                    foreach (var item in rows)
                     {
                         var row = new System.Collections.Generic.Dictionary<string, object>();
                         row["类型名称 (Type)"] = item.TypeName;
@@ -623,7 +639,7 @@ namespace YangTools.Revit.UI
                         data.Add(row);
                     }
                     MiniExcelLibs.MiniExcel.SaveAs(dialog.FileName, data);
-                    TaskDialog.Show("提示", "导出成功 (Export Successful)");
+                    TaskDialog.Show("导出完成", $"已导出当前列表中的 {data.Count} 个族类型。");
                 }
                 catch (Exception ex)
                 {
@@ -1030,76 +1046,92 @@ namespace YangTools.Revit.UI
 
         private void ExportSelectedRfa_Click(object sender, RoutedEventArgs e)
         {
-            var selectedFamilies = FamilyListBox.SelectedItems.Cast<FamilyListItemViewModel>().ToList();
-            if (selectedFamilies.Count == 0 && FamilyListBox.SelectedItem is FamilyListItemViewModel current)
-                selectedFamilies.Add(current);
-            if (selectedFamilies.Count == 0)
+            var ids = FamilyListBox.SelectedItems.OfType<FamilyListItemViewModel>()
+                .Where(item => FamilyListBox.Items.Contains(item))
+                .Select(item => item.FamilyId).Distinct().ToList();
+            if (ids.Count == 0)
             {
-                TaskDialog.Show("提示", "请先选择至少一个族。按 Ctrl/Shift 可在左侧多选。 ");
+                TaskDialog.Show("导出 RFA", "请先在左侧选中要导出的族。可用 Ctrl 或 Shift 多选。");
                 return;
             }
+            ExportFamiliesToRfa(ids);
+        }
 
+        private void ExportFamiliesToRfa(IReadOnlyList<ElementId> ids)
+        {
             string folder;
             using (var dialog = new System.Windows.Forms.FolderBrowserDialog())
             {
-                dialog.Description = "选择批量 RFA 导出文件夹";
+                dialog.Description = "选择 RFA 导出目录";
                 dialog.ShowNewFolderButton = true;
                 if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
                 folder = dialog.SelectedPath;
             }
 
-            var ids = selectedFamilies.Select(x => x.FamilyId).Where(x => x != ElementId.InvalidElementId).ToList();
-            var existingFiles = selectedFamilies
-                .Select(x => System.IO.Path.Combine(folder, SanitizeFileName(x.FamilyName) + ".rfa"))
-                .Where(System.IO.File.Exists)
-                .ToList();
-            if (existingFiles.Count > 0)
-            {
-                TaskDialogResult overwrite = TaskDialog.Show(
-                    "覆盖已有族文件",
-                    $"目标目录中已有 {existingFiles.Count} 个同名 RFA。\n\n继续将覆盖这些文件，是否继续？",
-                    TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.No);
-                if (overwrite != TaskDialogResult.Yes) return;
-            }
-
             _handler.SetAction(app =>
             {
                 var doc = app.ActiveUIDocument.Document;
-                int success = 0;
+                var targets = new Dictionary<string, Family>(StringComparer.OrdinalIgnoreCase);
                 var failures = new List<string>();
-
-                foreach (ElementId familyId in ids)
+                foreach (ElementId id in ids)
                 {
-                    var family = doc.GetElement(familyId) as Family;
-                    if (family == null || !family.IsEditable)
+                    if (!(doc.GetElement(id) is Family family) || !family.IsEditable)
                     {
-                        failures.Add($"{familyId.GetIdValue()}：族不存在或不可编辑。");
+                        failures.Add($"{id.GetIdValue()}：族已不存在或不可编辑。");
                         continue;
                     }
+                    string path = System.IO.Path.Combine(folder, SanitizeFileName(family.Name) + ".rfa");
+                    if (targets.TryGetValue(path, out Family other))
+                    {
+                        TaskDialog.Show("导出文件名冲突", $"「{other.Name}」和「{family.Name}」会生成同一文件：\n{path}\n请选择其中一个，或修改族名后再次导出。");
+                        return;
+                    }
+                    targets.Add(path, family);
+                }
 
-                    string savePath = System.IO.Path.Combine(folder, SanitizeFileName(family.Name) + ".rfa");
+                var approvedOverwrites = new HashSet<string>(targets.Keys.Where(System.IO.File.Exists), StringComparer.OrdinalIgnoreCase);
+                if (approvedOverwrites.Count > 0)
+                {
+                    string names = string.Join("\n", approvedOverwrites.Take(10).Select(path => System.IO.Path.GetFileName(path)));
+                    if (approvedOverwrites.Count > 10) names += "\n…";
+                    var confirm = new TaskDialog("确认覆盖已有 RFA")
+                    {
+                        MainInstruction = $"目标目录中已有 {approvedOverwrites.Count} 个同名文件",
+                        MainContent = folder + "\n\n" + names,
+                        CommonButtons = TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.No,
+                        DefaultButton = TaskDialogResult.No
+                    };
+                    if (confirm.Show() != TaskDialogResult.Yes) return;
+                }
+
+                int success = 0;
+                var closeWarnings = new List<string>();
+                foreach (var target in targets)
+                {
                     Document familyDoc = null;
                     try
                     {
-                        familyDoc = doc.EditFamily(family);
-                        if (familyDoc == null) throw new InvalidOperationException("无法打开族文档。");
-                        familyDoc.SaveAs(savePath, new SaveAsOptions { OverwriteExistingFile = true });
+                        familyDoc = doc.EditFamily(target.Value);
+                        using var options = new SaveAsOptions { OverwriteExistingFile = approvedOverwrites.Contains(target.Key) };
+                        familyDoc.SaveAs(target.Key, options);
                         success++;
                     }
                     catch (Exception ex)
                     {
-                        failures.Add($"{family.Name}：{ex.Message}");
+                        failures.Add($"{target.Value.Name}：{ex.Message}");
                     }
                     finally
                     {
-                        try { familyDoc?.Close(false); } catch { }
+                        try { familyDoc?.Close(false); }
+                        catch (Exception ex) { closeWarnings.Add($"{target.Value.Name}：{ex.Message}"); }
                     }
                 }
 
-                string detail = failures.Count == 0 ? string.Empty :
-                    "\n\n失败明细（最多 8 条）：\n" + string.Join("\n", failures.Take(8));
-                TaskDialog.Show("批量导出 RFA", $"成功：{success}\n失败：{failures.Count}\n目录：{folder}{detail}");
-            }, operationName: "批量导出 RFA", showSuccess: false);
+                string detail = failures.Count == 0 ? string.Empty : "\n\n失败明细：\n" + string.Join("\n", failures.Take(8));
+                if (closeWarnings.Count > 0)
+                    detail += "\n\n关闭后台族文档时出错：\n" + string.Join("\n", closeWarnings.Take(8));
+                TaskDialog.Show("导出 RFA", $"成功 {success} 个，失败 {failures.Count} 个。\n{folder}{detail}");
+            }, operationName: "导出 RFA", showSuccess: false);
             _externalEvent.Raise();
         }
 
@@ -1215,53 +1247,7 @@ namespace YangTools.Revit.UI
         private void ExportRfa_Click(object sender, RoutedEventArgs e)
         {
             if (_selectedFamilyId == null || _selectedFamilyId == ElementId.InvalidElementId) return;
-            ElementId selectedFamilyId = _selectedFamilyId;
-
-            string folder;
-            using (var dialog = new System.Windows.Forms.FolderBrowserDialog())
-            {
-                dialog.Description = "选择 RFA 导出文件夹";
-                dialog.ShowNewFolderButton = true;
-                if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
-                    return;
-                folder = dialog.SelectedPath;
-            }
-
-            _handler.SetAction(app =>
-            {
-                var doc = app.ActiveUIDocument.Document;
-                var family = doc.GetElement(selectedFamilyId) as Family;
-                if (family == null || !family.IsEditable)
-                    throw new InvalidOperationException("当前族不可编辑或已经不存在。");
-
-                string fileName = SanitizeFileName(family.Name) + ".rfa";
-                string savePath = System.IO.Path.Combine(folder, fileName);
-                if (System.IO.File.Exists(savePath))
-                {
-                    TaskDialogResult overwrite = TaskDialog.Show(
-                        "覆盖已有族文件",
-                        $"文件已经存在：\n{savePath}\n\n是否覆盖？",
-                        TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.No);
-                    if (overwrite != TaskDialogResult.Yes)
-                        return;
-                }
-
-                Document familyDoc = doc.EditFamily(family);
-                if (familyDoc == null)
-                    throw new InvalidOperationException("无法打开族文档。");
-
-                try
-                {
-                    familyDoc.SaveAs(savePath, new SaveAsOptions { OverwriteExistingFile = true });
-                }
-                finally
-                {
-                    familyDoc.Close(false);
-                }
-
-                TaskDialog.Show("导出完成", $"族文件已导出：\n{savePath}");
-            }, operationName: "导出 RFA", showSuccess: false);
-            _externalEvent.Raise();
+            ExportFamiliesToRfa(new[] { _selectedFamilyId });
         }
 
         private void Delete_Click(object sender, RoutedEventArgs e)

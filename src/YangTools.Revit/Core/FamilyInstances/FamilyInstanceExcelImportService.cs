@@ -8,6 +8,7 @@ namespace YangTools.Revit.Core.FamilyInstances
     internal sealed class FamilyInstanceExcelImportRequest
     {
         public IReadOnlyList<IDictionary<string, object>> Rows { get; set; }
+        public ISet<long>? VisibleInstanceIds { get; set; }
     }
 
     internal sealed class FamilyInstanceExcelImportResult
@@ -72,6 +73,8 @@ namespace YangTools.Revit.Core.FamilyInstances
                     throw new InvalidOperationException($"Excel 第 {excelRow} 行图元ID无效，整个批次未修改模型。");
                 if (!seenIds.Add(idValue))
                     throw new InvalidOperationException($"Excel 图元ID {idValue} 重复，整个批次未修改模型。");
+                if (request.VisibleInstanceIds != null && !request.VisibleInstanceIds.Contains(idValue))
+                    throw new InvalidOperationException($"Excel 第 {excelRow} 行的图元 {idValue} 不在当前筛选结果中。请调整筛选或删除该行后再导入。");
                 ElementId elementId = ElementIdExtensions.CreateId(idValue);
                 Element element = doc.GetElement(elementId);
                 if (element == null || !element.IsValidObject)
@@ -87,14 +90,14 @@ namespace YangTools.Revit.Core.FamilyInstances
                     Parameter parameter = StableParameterKey.ResolveByDisplayLabel(element, cell.Key);
                     if (parameter == null)
                         throw new InvalidOperationException($"Excel 第 {excelRow} 行参数“{cell.Key}”不存在或同名不唯一，已取消整批导入。");
-                    if (!ParameterValueHelper.CanEditAsText(parameter))
-                        throw new InvalidOperationException($"Excel 第 {excelRow} 行参数“{cell.Key}”为只读或不支持文本写入，已取消整批导入。");
                     string stableId = StableParameterKey.Create(parameter);
                     if (!parameterIds.Add(stableId))
                         throw new InvalidOperationException($"Excel 第 {excelRow} 行多个列映射到同一个参数“{cell.Key}”，已取消整批导入。");
                     hasImportedCells = true;
                     if (string.Equals(ParameterValueHelper.GetDisplayValue(parameter), cell.Value.ToString(), StringComparison.Ordinal))
-                        continue; // Unchanged values must not create an artificial Undo step.
+                        continue;
+                    if (!ParameterValueHelper.CanEditAsText(parameter))
+                        throw new InvalidOperationException($"Excel 第 {excelRow} 行参数“{cell.Key}”为只读或不支持文本写入，已取消整批导入。");
                     plan.Parameters.Add(new ParameterPlan
                     {
                         Label = cell.Key,
@@ -136,7 +139,7 @@ namespace YangTools.Revit.Core.FamilyInstances
                     // is not compared here because Revit may normalize units/precision.
                     foreach (RowPlan row in plans)
                     {
-                        if (doc.GetElement(row.ElementId) == null || row.Parameters.Any(p => p.Parameter == null || !p.Parameter.IsValidObject))
+                        if (doc.GetElement(row.ElementId) == null || row.Parameters.Any(p => p.Parameter == null))
                             throw new InvalidOperationException($"第 {row.RowNumber} 行的写入目标回读失效，取消整批导入。");
                     }
                     TransactionStatus status = transaction.Commit();
@@ -172,7 +175,7 @@ namespace YangTools.Revit.Core.FamilyInstances
                     return row.Parameters.All(p =>
                     {
                         Parameter actual = StableParameterKey.ResolveByDisplayLabel(element, p.Label);
-                        return actual != null && actual.IsValidObject &&
+                        return actual != null &&
                             InternalValuesEqual(ReadInternalValue(actual), p.AppliedValue);
                     });
                 });

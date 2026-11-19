@@ -11,83 +11,8 @@ $Project = Join-Path $ProjectRoot 'src\YangTools.Revit\YangTools.Revit.csproj'
 $Artifacts = Join-Path $ProjectRoot 'artifacts\payload'
 $Manifest = Join-Path $ProjectRoot 'src\YangTools.Revit\YangTools.Revit.addin'
 
-$YangToolsUserDataRoot = Join-Path $env:APPDATA 'YangTools'
-$LegacyAssistantDirectory = Join-Path $YangToolsUserDataRoot 'Assistant'
-$LegacyAssistantFiles = @(
-    (Join-Path $YangToolsUserDataRoot 'copilot_settings.json'),
-    (Join-Path $YangToolsUserDataRoot 'copilot_history.json'),
-    (Join-Path $YangToolsUserDataRoot 'moyu_settings.json'),
-    (Join-Path $YangToolsUserDataRoot 'moyu_history.json')
-)
-
-function Remove-LegacyAssistantData {
-    $removed = @()
-    if (Test-Path -LiteralPath $LegacyAssistantDirectory) {
-        Remove-Item -LiteralPath $LegacyAssistantDirectory -Recurse -Force -ErrorAction Stop
-        $removed += $LegacyAssistantDirectory
-    }
-    foreach ($path in $LegacyAssistantFiles) {
-        if (Test-Path -LiteralPath $path) {
-            Remove-Item -LiteralPath $path -Force -ErrorAction Stop
-            $removed += $path
-        }
-    }
-    return @($removed)
-}
-
-
-
-if ($Deploy -and (Get-Process Revit -ErrorAction SilentlyContinue)) {
-    throw 'Revit 正在运行。请先关闭全部 Revit 窗口，再执行部署。'
-}
-
 if ($Deploy) {
-    $removedAssistantData = @(Remove-LegacyAssistantData)
-    if ($removedAssistantData.Count -gt 0) {
-        Write-Host "已清理旧 AI/摸鱼助手历史、设置和 API Key：$($removedAssistantData.Count) 项。" -ForegroundColor DarkCyan
-    }
-}
-
-function Deploy-Version([string]$Version, [string]$SourcePlugin, [string]$SourceManifest) {
-    $versionRoot = Join-Path (Join-Path $env:APPDATA 'Autodesk\Revit\Addins') $Version
-    $target = Join-Path $versionRoot 'YangTools'
-    $manifest = Join-Path $versionRoot 'YangTools.Revit.addin'
-    $staging = Join-Path $versionRoot 'YangTools.installing'
-    $backup = Join-Path $versionRoot 'YangTools.backup'
-    $manifestBackup = Join-Path $versionRoot 'YangTools.Revit.addin.backup'
-
-    New-Item -ItemType Directory -Force -Path $versionRoot | Out-Null
-    Remove-Item -LiteralPath $staging -Recurse -Force -ErrorAction SilentlyContinue
-    Remove-Item -LiteralPath $backup -Recurse -Force -ErrorAction SilentlyContinue
-    Remove-Item -LiteralPath $manifestBackup -Force -ErrorAction SilentlyContinue
-
-    try {
-        Copy-Item -LiteralPath $SourcePlugin -Destination $staging -Recurse -Force
-        if (-not (Test-Path -LiteralPath (Join-Path $staging 'YangTools.Revit.dll'))) {
-            throw "Revit $Version 部署临时目录缺少 YangTools.Revit.dll。"
-        }
-
-        if (Test-Path -LiteralPath $target) { Move-Item -LiteralPath $target -Destination $backup }
-        if (Test-Path -LiteralPath $manifest) { Move-Item -LiteralPath $manifest -Destination $manifestBackup }
-        Move-Item -LiteralPath $staging -Destination $target
-        Copy-Item -LiteralPath $SourceManifest -Destination $manifest -Force
-
-        # 3.1.30 已将重复参数清理并入 YangTools，移除本项目历史独立插件入口，避免功能区出现两套按钮。
-        Remove-Item -LiteralPath (Join-Path $versionRoot 'RevitParameterDeduplicator.addin') -Force -ErrorAction SilentlyContinue
-        Remove-Item -LiteralPath (Join-Path $versionRoot 'RevitParameterDeduplicator') -Recurse -Force -ErrorAction SilentlyContinue
-
-        Remove-Item -LiteralPath $backup -Recurse -Force -ErrorAction SilentlyContinue
-        Remove-Item -LiteralPath $manifestBackup -Force -ErrorAction SilentlyContinue
-        Write-Host "已部署 Revit $Version：$versionRoot" -ForegroundColor Green
-    }
-    catch {
-        Remove-Item -LiteralPath $staging -Recurse -Force -ErrorAction SilentlyContinue
-        Remove-Item -LiteralPath $target -Recurse -Force -ErrorAction SilentlyContinue
-        Remove-Item -LiteralPath $manifest -Force -ErrorAction SilentlyContinue
-        if (Test-Path -LiteralPath $backup) { Move-Item -LiteralPath $backup -Destination $target -Force }
-        if (Test-Path -LiteralPath $manifestBackup) { Move-Item -LiteralPath $manifestBackup -Destination $manifest -Force }
-        throw
-    }
+    throw '自动部署模式已禁用。请先隔离编译，然后通过中文安装器选择明确的 Revit 年份安装（保留上一版备份）。'
 }
 
 if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
@@ -121,10 +46,6 @@ foreach ($version in $Versions) {
     $artifactManifest = Join-Path $targetRoot 'YangTools.Revit.addin'
     Copy-Item $Manifest $artifactManifest -Force
 
-    if ($Deploy) {
-        Deploy-Version -Version $version -SourcePlugin $targetPlugin -SourceManifest $artifactManifest
-    }
 }
 
 Write-Host "全部构建完成：$Artifacts" -ForegroundColor Green
-if ($Deploy) { Write-Host '所选年份已完成当前用户级部署。' -ForegroundColor Green }

@@ -1,11 +1,14 @@
 using System;
 using System.IO;
+using System.Threading;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace YangTools.Revit.Core
 {
     public sealed class UserSettings
     {
+        private JObject? _loadedValues;
         public int SettingsVersion { get; set; } = 7;
 
         // EntityGenerator (Loft)
@@ -135,6 +138,7 @@ namespace YangTools.Revit.Core
                     if (loaded != null)
                     {
                         loaded.Normalize();
+                        loaded._loadedValues = JObject.FromObject(loaded);
                         return loaded;
                     }
                 }
@@ -147,27 +151,59 @@ namespace YangTools.Revit.Core
             var settings = new UserSettings();
             settings.LoadLegacyTemplatePath();
             settings.Normalize();
+            settings._loadedValues = JObject.FromObject(settings);
             return settings;
         }
 
-        public void Save()
+        public bool Save()
         {
             try
             {
                 Normalize();
+                JObject current = JObject.FromObject(this);
+                JObject baseline = _loadedValues ?? JObject.FromObject(new UserSettings());
                 Directory.CreateDirectory(SettingsDirectory);
+                using var mutex = new Mutex(false, @"Local\YangTools.UserSettings");
+                bool acquired;
+                try { acquired = mutex.WaitOne(TimeSpan.FromSeconds(2)); }
+                catch (AbandonedMutexException) { acquired = true; }
+                if (!acquired)
+                    throw new IOException("其他 YangTools 实例正在保存设置，请稍后重试。");
+                try
+                {
+                    bool exists = File.Exists(JsonSettingsFilePath);
+                    JObject merged = exists ? JObject.Parse(File.ReadAllText(JsonSettingsFilePath)) : new JObject();
+                    bool changed = !exists;
+                    foreach (JProperty property in current.Properties())
+                    {
+                        if (exists && JToken.DeepEquals(baseline[property.Name], property.Value))
+                            continue;
+                        merged[property.Name] = property.Value.DeepClone();
+                        changed = true;
+                    }
 
-                string json = JsonConvert.SerializeObject(this, Formatting.Indented);
-                string tempPath = JsonSettingsFilePath + ".tmp";
-                File.WriteAllText(tempPath, json);
-
-                if (File.Exists(JsonSettingsFilePath))
-                    File.Delete(JsonSettingsFilePath);
-                File.Move(tempPath, JsonSettingsFilePath);
+                    if (changed)
+                    {
+                        string tempPath = JsonSettingsFilePath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+                        try
+                        {
+                            File.WriteAllText(tempPath, merged.ToString(Formatting.Indented));
+                            if (exists)
+                                File.Replace(tempPath, JsonSettingsFilePath, null);
+                            else
+                                File.Move(tempPath, JsonSettingsFilePath);
+                        }
+                        finally { File.Delete(tempPath); }
+                    }
+                    _loadedValues = current;
+                    return true;
+                }
+                finally { mutex.ReleaseMutex(); }
             }
             catch (Exception ex)
             {
                 DiagnosticLog.WriteError("保存用户输入设置", ex);
+                return false;
             }
         }
 

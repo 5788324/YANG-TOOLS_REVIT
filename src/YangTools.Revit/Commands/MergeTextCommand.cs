@@ -12,7 +12,11 @@ using YangTools.Revit.UI;
 namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
-    [RibbonButton("文本工具区", "文本合并", "用指定分隔符合并多个文本", "Icons/merge_text_32.png", "Icons/merge_text_16.png")]
+    [RibbonButton(
+        panelName: "文本工具区", buttonText: "文本合并",
+        tooltip: "将多个 TextNote 按指定分隔符合并。",
+        largeIcon: "Icons/merge_text_32.png", smallIcon: "Icons/merge_text_16.png",
+        usage: "使用：点击按钮并拾取多个 TextNote，在窗口设置合并顺序与分隔符，确认后执行。\n注意：合并会修改原文字对象；需保留独立段落时不要执行。")]
     public class MergeTextCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
@@ -26,7 +30,7 @@ namespace YangTools.Revit.Commands
             }
 
             Document doc = uiDoc.Document;
-            var state = new MergeTextState();
+            var state = new MergeTextState { SelectedTexts = TextNoteHelper.SelectedInActiveView(uiDoc) };
 
             try
             {
@@ -80,25 +84,56 @@ namespace YangTools.Revit.Commands
             List<TextNote> textNotes = state.SelectedTexts
                 .Where(note => note != null && note.Document.Equals(doc) && doc.GetElement(note.Id) != null)
                 .ToList();
+            // Keep source selection in the active view and avoid altering pinned/group-bound objects.
+            if (textNotes.Any(note => note.OwnerViewId.GetIdValue() != doc.ActiveView.Id.GetIdValue()
+                || note.Pinned || note.GroupId.GetIdValue() != ElementId.InvalidElementId.GetIdValue()))
+            {
+                TaskDialog.Show("文本合并", "所选文本包含其他视图或被固定/编组的元素，已取消。");
+                return Result.Cancelled;
+            }
             if (textNotes.Count < 2)
             {
                 TaskDialog.Show("提示", "选择的文本已失效，请重新选择。 ");
                 return Result.Cancelled;
             }
 
+            if (!TextLayoutMerger.CanMerge(textNotes, out string formatError))
+            {
+                TaskDialog.Show("文本合并", formatError);
+                return Result.Cancelled;
+            }
+
+            XYZ right = doc.ActiveView.RightDirection.Normalize();
+            XYZ up = doc.ActiveView.UpDirection.Normalize();
+            var rows = new List<TextLayoutMerger.ReadingRow>();
             MergeSortMode sortMode = Enum.TryParse(state.SortTag, true, out MergeSortMode parsed)
                 ? parsed
                 : MergeSortMode.SelectionOrder;
             switch (sortMode)
             {
-                case MergeSortMode.XAsc: textNotes = textNotes.OrderBy(note => note.Coord.X).ToList(); break;
-                case MergeSortMode.XDesc: textNotes = textNotes.OrderByDescending(note => note.Coord.X).ToList(); break;
-                case MergeSortMode.YAsc: textNotes = textNotes.OrderBy(note => note.Coord.Y).ToList(); break;
-                case MergeSortMode.YDesc: textNotes = textNotes.OrderByDescending(note => note.Coord.Y).ToList(); break;
+                case MergeSortMode.ReadingOrder:
+                    rows = TextLayoutMerger.Rows(TextLayoutMerger.Capture(doc.ActiveView, textNotes));
+                    textNotes = rows.SelectMany(row => row.Items.Select(x => x.Note)).ToList();
+                    break;
+                case MergeSortMode.XAsc: textNotes = textNotes.OrderBy(note => note.Coord.DotProduct(right)).ToList(); break;
+                case MergeSortMode.XDesc: textNotes = textNotes.OrderByDescending(note => note.Coord.DotProduct(right)).ToList(); break;
+                case MergeSortMode.YAsc: textNotes = textNotes.OrderBy(note => note.Coord.DotProduct(up)).ToList(); break;
+                case MergeSortMode.YDesc: textNotes = textNotes.OrderByDescending(note => note.Coord.DotProduct(up)).ToList(); break;
             }
 
             string separator = state.UseNewlineSeparator ? "\r" : state.SeparatorText;
-            string mergedText = string.Join(separator, textNotes.Select(note => note.Text));
+            string mergedText = sortMode == MergeSortMode.ReadingOrder
+                ? TextLayoutMerger.ReadingText(rows, state.CleanWhitespace, separator)
+                : string.Join(separator, textNotes.Select(note => TextLayoutMerger.Clean(note.Text, state.CleanWhitespace)));
+            if (string.IsNullOrWhiteSpace(mergedText))
+            {
+                TaskDialog.Show("提示", "合并后内容为空，已取消。 ");
+                return Result.Cancelled;
+            }
+
+            string previewText = mergedText.Length > 320 ? mergedText.Substring(0, 320) + "…" : mergedText;
+            if (TaskDialog.Show("文本合并预览", $"按当前顺序合并 {textNotes.Count} 个文本为 1 个。\n\n{previewText}\n\n该操作删除其余文本，可一次 Ctrl+Z 撤销。", TaskDialogCommonButtons.Ok | TaskDialogCommonButtons.Cancel) != TaskDialogResult.Ok)
+                return Result.Cancelled;
 
             using (var transaction = new Transaction(doc, "文本合并"))
             {
@@ -112,8 +147,8 @@ namespace YangTools.Revit.Commands
                     {
                         ElementId removeId = textNotes[index].Id;
                         var deleted = doc.Delete(removeId);
-                        if (!deleted.Contains(removeId) || doc.GetElement(removeId) != null)
-                            throw new InvalidOperationException($"文本 {removeId} 未确认删除，整次合并取消。");
+                        if (deleted.Count != 1 || !deleted.Contains(removeId))
+                            throw new InvalidOperationException("删除原文本会影响关联元素，整次合并取消。");
                     }
 
                     TransactionStatus status = transaction.Commit();
@@ -142,7 +177,7 @@ namespace YangTools.Revit.Commands
                 DiagnosticLog.WriteError("文本合并提交后界面刷新", ex);
                 uiWarning = "\n提示：合并已经提交，但选择或刷新视图失败。";
             }
-            TaskDialog.Show("完成", $"已合并 {textNotes.Count} 个文本，并保留第一个文本。{uiWarning}");
+            if (uiWarning.Length > 0) TaskDialog.Show("文本已合并", uiWarning.Trim());
             return Result.Succeeded;
         }
     }

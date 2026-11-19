@@ -74,7 +74,7 @@
             <Border Grid.Row="0" CornerRadius="7,7,0,0" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown"
                     Background="{DynamicResource TitleBarGradient}">
                 <Grid>
-                    <TextBlock Text="视图图形覆盖清理器" Foreground="{DynamicResource TitleText}" VerticalAlignment="Center" Margin="15,0,0,0"/>
+                    <TextBlock Text="覆盖清理" Foreground="{DynamicResource TitleText}" VerticalAlignment="Center" Margin="15,0,0,0"/>
                     <Button HorizontalAlignment="Right" VerticalAlignment="Top" Width="40" Height="40" Click="CloseButton_Click" Background="Transparent" BorderThickness="0">
                         <Button.Template>
                             <ControlTemplate TargetType="{x:Type Button}">
@@ -107,7 +107,7 @@
                     
                     <Button Grid.Column="0" Content="全选" Style="{StaticResource RegularButton}" Click="SelectAll_Click"/>
                     <Button Grid.Column="2" Content="反选" Style="{StaticResource RegularButton}" Click="InvertSelection_Click"/>
-                    <Button Grid.Column="4" Content="计算选中视图预估数量" Style="{StaticResource RegularButton}" Click="CalculateSelected_Click"/>
+                    <Button Grid.Column="4" Content="统计覆盖" Style="{StaticResource RegularButton}" Click="CalculateSelected_Click"/>
                     
                     <!-- Search box -->
                     <Border Grid.Column="6" Background="{DynamicResource GridHover}" BorderBrush="{DynamicResource BtnBorder}" BorderThickness="1" CornerRadius="4">
@@ -136,7 +136,7 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="1" Text="视图名称" FontWeight="Bold" Foreground="{DynamicResource SecondaryText}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="2" Text="视图类型" FontWeight="Bold" Foreground="{DynamicResource SecondaryText}" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="3" Text="被覆盖元素预估数量" FontWeight="Bold" Foreground="{DynamicResource SecondaryText}" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="3" Text="元素覆盖数量" FontWeight="Bold" Foreground="{DynamicResource SecondaryText}" VerticalAlignment="Center"/>
                 </Grid>
                 
                 <!-- ListBox -->
@@ -185,7 +185,7 @@
             <Border Grid.Row="3" Background="{DynamicResource BottomBarBg}" CornerRadius="0,0,7,7" BorderBrush="{DynamicResource BtnBorder}" BorderThickness="0,1,0,0" Padding="15,0">
                 <Grid>
                     <TextBlock x:Name="StatusText" Text="准备就绪" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryText}"/>
-                    <Button Content="执行清理" Style="{StaticResource ActionButton}" HorizontalAlignment="Right" Width="120" Click="ExecuteClean_Click"/>
+                    <Button Content="清理已勾选" Style="{StaticResource ActionButton}" HorizontalAlignment="Right" Width="120" Click="ExecuteClean_Click"/>
                 </Grid>
             </Border>
         </Grid>

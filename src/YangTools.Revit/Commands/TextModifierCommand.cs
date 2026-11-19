@@ -10,7 +10,11 @@ using YangTools.Revit.UI;
 namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
-    [RibbonButton("文本工具区", "文本修改", "查找、替换、格式化文本", "Icons/text_modifier_32.png", "Icons/text_modifier_16.png")]
+    [RibbonButton(
+        panelName: "文本工具区", buttonText: "文本编辑",
+        tooltip: "查找、替换及格式化项目中的文本。",
+        largeIcon: "Icons/text_modifier_32.png", smallIcon: "Icons/text_modifier_16.png",
+        usage: "使用：点击按钮，在窗口选择检查范围、输入查找与替换规则，核对匹配内容后执行。\n注意：批量替换前确认筛选范围和格式规则。")]
     public class TextModifierCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)

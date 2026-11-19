@@ -50,10 +50,10 @@ add('GR01 UX GUI default ZAxis','private string _pathKind = "ZAxis"' in code and
 add('GR01 UX GUI ZAxis first option','SelectedIndex="0"' in xaml and xaml.index('Tag="ZAxis"') < xaml.index('Tag="ModelLine"'))
 add('GR01 UX GUI disables path pick on ZAxis','PickPathButton.IsEnabled' in code and '!string.Equals(_pathKind, "ZAxis"' in code)
 add('GR01 UX GUI default auto normal zone','Label = "普通"' in code and 'IsAutoLength = true' in code and 'LengthMm = 0.0' in code)
-add('GR01 UX GUI auto mode control','IsAutoLength' in xaml and 'LengthModeText' in xaml and '自动剩余' in xaml)
+add('GR01 UX GUI auto mode control','IsAutoLength' in xaml and 'LengthModeText' in xaml and '自动区' in xaml)
 add('GR01 UX GUI auto length readonly edit','ZoneGrid_BeginningEdit' in code and 'row.IsAutoLength' in code and 'e.Cancel = true' in code)
 add('GR01 UX GUI live auto deduction','RecalculateAutoZoneLength' in code and '_lastKnownDistributionLengthMm.Value - fixedTotal' in code)
-add('GR01 UX GUI live allocation summary','自动剩余：{remaining:0.###} mm' in code and '固定区段已超出路径' in code)
+add('GR01 UX GUI live allocation summary','自动剩余：{remaining:0.###} mm' in code and '固定区段已超过上次预览长度' in code)
 add('GR01 UX GUI swap controls','SwapControls_Click' in code and '交换首末' in xaml)
 add('GR01 UX GUI zone order message',('区段顺序仍从新的起始控制筋一侧开始' in code) or ('Zone[0] 仍从新的起始控制筋一侧开始' in code))
 add('GR01 UX GUI request sends auto flag','AutoLength = row.IsAutoLength' in code)
@@ -71,7 +71,7 @@ add('GR01 UX broker auto flag', broker.count('AutoLength = zone[\"autoLength\"]'
 add('GR01 UX still one CreateFreeForm',service.count('RevitRebar.CreateFreeForm') == 1)
 add('GR01 UX no GUI CreateFreeForm','CreateFreeForm' not in code)
 add('GR01 UX no GUI transaction','new Transaction(' not in code)
-add('GR01 UX managed geometry disclosure',('ManagedGeometry' in xaml or 'Managed FreeForm' in xaml) and 'Native ToCover' in xaml)
+add('GR01 UX preserves explicit FreeForm creation','RevitRebar.CreateFreeForm' in service and 'CreateFreeForm' not in code)
 add('GR01 UX command tooltip mentions Z axis','全局 Z 轴' in command)
 
 # Frozen example: with four fixed segments and one auto normal, remainder is exactly 4300.

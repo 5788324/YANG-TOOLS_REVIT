@@ -11,7 +11,11 @@ using YangTools.Revit.Models;
 namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
-    [RibbonButton(panelName: "模型修改区", buttonText: "布尔几何", tooltip: "对两个族实例进行布尔运算(连接/剪切/融合)", largeIcon: "Icons/boolean_geometry_32.png", smallIcon: "Icons/boolean_geometry_16.png")]
+    [RibbonButton(
+        panelName: "模型修改区", buttonText: "布尔运算",
+        tooltip: "对载入族实例进行连接、剪切或融合等操作。",
+        largeIcon: "Icons/boolean_geometry_32.png", smallIcon: "Icons/boolean_geometry_16.png",
+        usage: "使用：点击按钮，在窗口选择主体与参与融合/剪切的族实例，核对目标和删除选项再执行。\n注意：涉及几何与实例删除，确认主体/工具对象顺序。")]
     public class BooleanGeometryCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
@@ -27,9 +31,12 @@ namespace YangTools.Revit.Commands
                 }
                 var doc = uidoc.Document;
 
+                var preselected = uidoc.Selection.GetElementIds()
+                    .Select(id => doc.GetElement(id)).OfType<FamilyInstance>().ToList();
                 UserSettings settings = UserSettings.Load();
                 var state = new Models.BooleanGeometryState
                 {
+                    MainInst = preselected.Count == 1 ? preselected : new List<FamilyInstance>(),
                     DeleteTargetInst = settings.BooleanDeleteTargetInst,
                     DeleteTargetFam = settings.BooleanDeleteTargetFam
                 };
@@ -45,7 +52,7 @@ namespace YangTools.Revit.Commands
 
                     state = win.State;
                     if (uiapp.ActiveUIDocument == null ||
-                        !ReferenceEquals(uiapp.ActiveUIDocument.Document, doc))
+                        !DocumentIdentityGuard.IsSameActiveDocument(uiapp, doc))
                         throw new InvalidOperationException("操作期间项目文档已切换，选择和写入均已停止。");
 
                     if (win.ActionToPerform == "PickMain")
@@ -122,7 +129,7 @@ namespace YangTools.Revit.Commands
                 }
 
                 if (uiapp.ActiveUIDocument == null ||
-                    !ReferenceEquals(uiapp.ActiveUIDocument.Document, doc))
+                    !DocumentIdentityGuard.IsSameActiveDocument(uiapp, doc))
                     throw new InvalidOperationException("当前 Revit 项目已切换，禁止对原文档继续执行布尔操作。");
 
                 if (state.MainInst.Count == 0)
@@ -159,7 +166,7 @@ namespace YangTools.Revit.Commands
                 var allSelected = allTargets.Concat(new[] { mainFi }).ToList();
                 foreach (FamilyInstance instance in allSelected)
                 {
-                    if (!ReferenceEquals(instance.Document, doc) ||
+                    if (!doc.Equals(instance.Document) ||
                         !(doc.GetElement(instance.Id) is FamilyInstance current) ||
                         current.Symbol == null || current.Symbol.Family == null)
                         throw new InvalidOperationException($"选择中存在跨项目、已删除或无效族实例（ID：{instance.Id}），请重新选择。");

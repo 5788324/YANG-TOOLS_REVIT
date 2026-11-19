@@ -2,6 +2,9 @@
 
   <PropertyGroup>
     <UseWPF>true</UseWPF>
+    <!-- Revit version configurations are numeric; implicit /define:2024 is not a valid C# identifier.
+         Explicit REVIT20xx_OR_GREATER constants below remain unchanged. -->
+    <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
     <UseWindowsForms>true</UseWindowsForms>
     <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -74,10 +77,21 @@
     <DefineConstants>REVIT2021_OR_GREATER;REVIT2022_OR_GREATER;REVIT2023_OR_GREATER;REVIT2024_OR_GREATER;REVIT2025_OR_GREATER;REVIT2026_OR_GREATER;REVIT2027_OR_GREATER</DefineConstants>
   </PropertyGroup>
 
-  <!-- Reference specific Revit API version -->
+  <!-- Revit 2025.4.20 / 2026.4.0 are minimum confirmed .NET 8 patch levels.
+       Do not allow 2025.* / 2026.* to drift to higher RevitAPIUI assembly versions.
+       Later .NET 10 patches require separate configurations and runtime testing. -->
+  <PropertyGroup Condition="'$(Configuration)' == '2025'">
+    <PinnedRevitApiVersion>2025.4.20</PinnedRevitApiVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == '2026'">
+    <PinnedRevitApiVersion>2026.4.0</PinnedRevitApiVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(PinnedRevitApiVersion)' == ''">
+    <PinnedRevitApiVersion>$(Configuration).*</PinnedRevitApiVersion>
+  </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="$(Configuration).*" PrivateAssets="All" />
-    <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="$(Configuration).*" PrivateAssets="All" />
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="$(PinnedRevitApiVersion)" PrivateAssets="All" />
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="$(PinnedRevitApiVersion)" PrivateAssets="All" />
   </ItemGroup>
 
   <!-- net48 specifics -->
@@ -158,6 +172,8 @@
            Text="检测到历史 AI 窗口残留。AI/摸鱼助手已整体删除，请清理旧源码目录。" />
     <Error Condition="Exists('Mcp\McpExternalEventHandler.cs') Or Exists('Mcp\McpHttpServer.cs')"
            Text="检测到已删除的旧 MCP 执行器或 HTTP 服务残留。请删除整个解压目录后重新解压源码包，禁止覆盖旧目录。" />
+    <Error Condition="Exists('Commands\RebarInspectorCommand.cs') Or Exists('Commands\RebarShapeDrivenCreateCommand.cs') Or Exists('Commands\RebarFaceDrivenCreateCommand.cs') Or Exists('Commands\RebarSurfaceVaryingCreateCommand.cs') Or Exists('Commands\RebarShapeDrivenModifyCommand.cs') Or Exists('Commands\RebarConstraintRebindCommand.cs') Or Exists('Commands\RebarHookModifyCommand.cs') Or Exists('Commands\RebarRelationshipCommand.cs') Or Exists('Commands\RebarFreeFormCreateCommand.cs') Or Exists('Commands\RebarFreeFormModifyCommand.cs') Or Exists('Commands\RebarCouplerCommand.cs') Or Exists('Commands\RebarClearanceCommand.cs')"
+           Text="检测到已移除的12个钢筋测试命令残留。必须使用新目录全新解压 RC3H，禁止覆盖旧版源码。" />
   </Target>
 
   <!-- 仅显式传入 -p:DeployAfterBuild=true 时部署，普通构建不修改本机 Revit。 -->

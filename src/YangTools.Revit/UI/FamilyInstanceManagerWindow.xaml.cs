@@ -6,6 +6,8 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using Binding = System.Windows.Data.Binding;
+using TextBox = System.Windows.Controls.TextBox;
 using System.Windows.Input;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
@@ -881,9 +883,8 @@ namespace YangTools.Revit.UI
         private void QuickFilterChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_suppressQuickFilterEvents) return;
-            _collectionView?.Refresh();
-            _systemCollectionView?.Refresh();
-            UpdateStatusText();
+            RefreshFilteredRows(InstanceDataGrid, _collectionView);
+            RefreshFilteredRows(SystemDataGrid, _systemCollectionView);
         }
 
         private void Refresh_Click(object sender, RoutedEventArgs e)
@@ -953,7 +954,7 @@ namespace YangTools.Revit.UI
         {
             DataGrid grid = MainTabControl.SelectedIndex == 1 ? SystemDataGrid : InstanceDataGrid;
             return grid.SelectedItems.Cast<InstanceItemViewModel>()
-                .Where(x => x.InstanceId != null && x.InstanceId != ElementId.InvalidElementId)
+                .Where(x => grid.Items.Contains(x) && x.InstanceId != null && x.InstanceId != ElementId.InvalidElementId)
                 .ToList();
         }
 
@@ -1001,7 +1002,7 @@ namespace YangTools.Revit.UI
                 return rows.All(row => activeRows.Contains(row) && grid.SelectedItems.Contains(row));
             }
 
-            _handler.SetAction(app =>
+            _handler.EnqueueAndRaise(_externalEvent, app =>
             {
                 if (!IsCurrentRequest())
                 {
@@ -1035,7 +1036,6 @@ namespace YangTools.Revit.UI
                         "，但界面更新失败：" + uiError.Message + "。请重新打开窗口核查。");
                 }
             }, operationName: "批量更换实例类型", showSuccess: false, operationId: operationId);
-            _externalEvent.Raise();
         }
 
         private void BatchSetParameter_Click(object sender, RoutedEventArgs e)
@@ -1076,7 +1076,7 @@ namespace YangTools.Revit.UI
                     grid.SelectedItems.Contains(row));
             }
 
-            _handler.SetAction(app =>
+            _handler.EnqueueAndRaise(_externalEvent, app =>
             {
                 if (!IsCurrentRequest())
                 {
@@ -1107,19 +1107,17 @@ namespace YangTools.Revit.UI
                         "，但界面更新失败：" + uiError.Message + "。请重新打开窗口核查。");
                 }
             }, operationName: "批量写入实例参数", showSuccess: false, operationId: operationId);
-            _externalEvent.Raise();
         }
 
         private void SystemSearchChanged(object sender, TextChangedEventArgs e)
         {
-            if (_systemCollectionView != null) _systemCollectionView.Refresh();
-            UpdateStatusText();
+            RefreshFilteredRows(SystemDataGrid, _systemCollectionView);
         }
 
         private void SelectElements_Click(object sender, RoutedEventArgs e)
         {
             this.Hide();
-            _handler.SetAction(app =>
+            _handler.EnqueueAndRaise(_externalEvent, app =>
             {
                 try
                 {
@@ -1159,17 +1157,20 @@ namespace YangTools.Revit.UI
                         RestoreAfterSelection();
                     });
                 }
+            }, "拾取族实例", onSkipped: _ =>
+            {
+                if (!_isWindowClosed) RestoreAfterSelection();
             });
-            _externalEvent.Raise();
         }
 
         private void ExportExcel_Click(object sender, RoutedEventArgs e)
         {
-            bool isSystem = MainTabControl.SelectedIndex == 1;
-            var activeView = isSystem ? _systemCollectionView : _collectionView;
-            var activeItems = activeView?.Cast<InstanceItemViewModel>().ToList() ?? new List<InstanceItemViewModel>();
-
-            if (activeItems.Count == 0) return;
+            var activeItems = GetVisibleRows().ToList();
+            if (activeItems.Count == 0)
+            {
+                TaskDialog.Show("导出 Excel", "当前筛选结果没有可导出的实例。");
+                return;
+            }
             var dialog = new Microsoft.Win32.SaveFileDialog { Filter = "Excel File (*.xlsx)|*.xlsx", FileName = "Instances.xlsx" };
             if (dialog.ShowDialog() == true)
             {
@@ -1194,7 +1195,7 @@ namespace YangTools.Revit.UI
                         data.Add(row);
                     }
                     MiniExcelLibs.MiniExcel.SaveAs(dialog.FileName, data);
-                    TaskDialog.Show("提示", "导出成功 (Export Successful)");
+                    InstanceStatusText.Text = $"已导出 {data.Count} 个实例。";
                 }
                 catch (Exception ex)
                 {
@@ -1203,23 +1204,50 @@ namespace YangTools.Revit.UI
             }
         }
 
+        private IEnumerable<InstanceItemViewModel> GetVisibleRows()
+        {
+            var grid = MainTabControl.SelectedIndex == 1 ? SystemDataGrid : InstanceDataGrid;
+            return grid.Items.OfType<InstanceItemViewModel>();
+        }
+
         private void ImportExcel_Click(object sender, RoutedEventArgs e)
         {
             if (_isWindowClosed) return;
+            var visibleIds = new HashSet<long>(GetVisibleRows().Select(row => row.InstanceId.GetIdValue()));
+            if (visibleIds.Count == 0)
+            {
+                TaskDialog.Show("导入 Excel", "请先筛选要导入参数的实例。");
+                return;
+            }
+            long viewVersion = _readRequestVersion;
             var dialog = new Microsoft.Win32.OpenFileDialog { Filter = "Excel File (*.xlsx)|*.xlsx" };
             if (dialog.ShowDialog() != true) return;
             string importPath = dialog.FileName;
-            _handler.SetAction(app =>
+            List<IDictionary<string, object>> rows;
+            try
+            {
+                rows = ExcelService.ReadExcel(importPath).ToList();
+            }
+            catch (Exception ex)
+            {
+                TaskDialog.Show("读取 Excel 失败", ex.Message);
+                return;
+            }
+
+            _handler.EnqueueAndRaise(_externalEvent, app =>
             {
                 if (_isWindowClosed) return;
                 var doc = app.ActiveUIDocument?.Document;
                 if (doc == null || !doc.Equals(_doc))
                     throw new InvalidOperationException("当前项目已切换，实例参数导入已取消。");
-                var rows = MiniExcelLibs.MiniExcel.Query(importPath, useHeaderRow: true)
-                    .Cast<IDictionary<string, object>>()
-                    .ToList();
+                if (_readRequestVersion != viewVersion ||
+                    !visibleIds.SetEquals(GetVisibleRows().Select(row => row.InstanceId.GetIdValue())))
+                {
+                    TaskDialog.Show("导入已取消", "实例筛选范围已变化，请按当前范围重新导入。");
+                    return;
+                }
                 var result = FamilyInstanceExcelImportService.Execute(doc,
-                    new FamilyInstanceExcelImportRequest { Rows = rows });
+                    new FamilyInstanceExcelImportRequest { Rows = rows, VisibleInstanceIds = visibleIds });
                 if (_isWindowClosed) return;
                 // A GUI refresh error must not turn a committed model edit into a false failure.
                 try
@@ -1242,16 +1270,20 @@ namespace YangTools.Revit.UI
                 else
                     TaskDialog.Show("实例参数已导入", details + "\n整批提交，可通过 Ctrl+Z 撤销。");
             }, operationName: "实例参数 Excel 整批导入", showSuccess: false);
-            _externalEvent.Raise();
         }
 
         private void SearchChanged(object sender, TextChangedEventArgs e)
         {
-            if (_collectionView != null) _collectionView.Refresh();
-            UpdateStatusText();
+            RefreshFilteredRows(InstanceDataGrid, _collectionView);
         }
 
-
+        private void RefreshFilteredRows(DataGrid grid, ICollectionView view)
+        {
+            if (view == null || !grid.CommitEdit(DataGridEditingUnit.Row, true)) return;
+            grid.UnselectAll();
+            view.Refresh();
+            UpdateStatusText();
+        }
 
         private void InstanceDataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
         {
@@ -1308,7 +1340,7 @@ namespace YangTools.Revit.UI
                         _pendingCellEdits.TryGetValue(cellKey, out long latest) && latest == sequenceAtRequest;
                 }
 
-                _handler.SetAction(app =>
+                _handler.EnqueueAndRaise(_externalEvent, app =>
                 {
                     if (!IsRequestCurrent()) return;
                     FamilyInstanceCellEditResult result;
@@ -1345,8 +1377,12 @@ namespace YangTools.Revit.UI
                             TaskDialog.Show("实例参数已提交", "模型修改已提交，但界面更新失败：" + uiEx.Message);
                         }
                     });
-                }, "编辑族实例参数", showSuccess: false);
-                _externalEvent.Raise();
+                }, "编辑族实例参数", showSuccess: false, onSkipped: _ =>
+                {
+                    if (!IsRequestCurrent()) return;
+                    _pendingCellEdits.Remove(cellKey);
+                    parameterVm.Value = before;
+                });
             }
             catch (Exception ex)
             {
@@ -1388,13 +1424,12 @@ namespace YangTools.Revit.UI
             if (selectedItems.Count == 0) return;
             
             var ids = System.Linq.Enumerable.ToList(System.Linq.Enumerable.Select(System.Linq.Enumerable.Where(selectedItems, x => x.InstanceId != ElementId.InvalidElementId), x => x.InstanceId));
-            _handler.SetAction(app =>
+            _handler.EnqueueAndRaise(_externalEvent, app =>
             {
                 var uidoc = app.ActiveUIDocument;
                 uidoc.Selection.SetElementIds(ids);
                 uidoc.ShowElements(ids);
             });
-            _externalEvent.Raise();
         }
 
         private void Delete_Click(object sender, RoutedEventArgs e)
@@ -1411,8 +1446,10 @@ namespace YangTools.Revit.UI
 
         private void ExecuteDelete(System.Collections.Generic.List<ElementId> ids, string sourceDesc)
         {
-            _handler.SetAction(app =>
+            _handler.EnqueueAndRaise(_externalEvent, app =>
             {
+                if (_isWindowClosed) return;
+                bool committed = false;
                 try
                 {
                     var doc = app.ActiveUIDocument?.Document;
@@ -1508,6 +1545,7 @@ namespace YangTools.Revit.UI
                                 if (tg.GetStatus() == TransactionStatus.Started) tg.RollBack();
                                 throw new InvalidOperationException("实例删除事务组合并失败。");
                             }
+                            committed = true;
                             Dispatcher.Invoke(() => 
                             {
                                 if (MainTabControl.SelectedIndex == 1) LoadSystemData();
@@ -1522,10 +1560,11 @@ namespace YangTools.Revit.UI
                 }
                 catch (Exception ex)
                 {
-                    Dispatcher.Invoke(() => TaskDialog.Show("错误", "删除失败: " + ex.Message));
+                    Dispatcher.Invoke(() => TaskDialog.Show(
+                        committed ? "删除已提交" : "删除失败",
+                        committed ? "模型已删除选中实例，列表刷新失败。请重新打开窗口核对：" + ex.Message : ex.Message));
                 }
-            });
-            _externalEvent.Raise();
+            }, "删除族实例", showSuccess: false);
         }
     }
 

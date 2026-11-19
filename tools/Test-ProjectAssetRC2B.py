@@ -50,7 +50,7 @@ check('UI snapshots selected ID collection','ElementIds = ids.ToArray()' in hand
 check('UI snapshots tab name', 'var tabAtRequest = _currentTabName;' in handler)
 check('UI snapshots tab version', 'var tabVersionAtRequest = _tabLoadVersion;' in handler)
 check('UI snapshots tree node', 'var nodeAtRequest = _selectedNode;' in handler)
-check('UI queues via existing ExternalEvent', '_handler.SetAction(app =>' in handler and '_externalEvent.Raise();' in handler)
+check('UI queues via existing ExternalEvent', '_handler.EnqueueAndRaise(_externalEvent, app =>' in handler)
 check('UI service invoked inside event', 'ProjectAssetBatchRenameService.Execute(_doc, request)' in handler)
 check('UI keeps modeless close guard in callback','if (_isClosed) return;' in handler)
 check('UI skips refresh on outdated tab', 'tabVersionAtRequest == _tabLoadVersion' in handler and '_currentTabName == tabAtRequest' in handler)

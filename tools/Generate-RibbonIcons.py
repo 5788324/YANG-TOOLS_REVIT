@@ -58,6 +58,15 @@ def icon(name, draw):
         cairosvg.svg2png(bytestring=data.encode(),write_to=str(ROOT/f'{name}_{size}.png'),output_width=size,output_height=size)
 
 
+def family_coordinates(g):
+    line(g,8,24,26,24)
+    line(g,8,24,8,6)
+    line(g,8,24,20,12)
+    poly(g,[(22,21),(26,24),(22,27)])
+    poly(g,[(5,10),(8,6),(11,10)])
+    dot(g,20,12,2.5)
+
+
 def align_line(g):
     line(g,5,24,27,24,accent=True)
     line(g,9,8,9,21); line(g,6,8,12,8); line(g,6,14,12,14)
@@ -288,25 +297,88 @@ def text_modifier(g):
     line(g,6,8,19,8); line(g,6,13,19,13); line(g,6,18,15,18)
     path(g,'M14 25l8-8 3 3-8 8-4 1z',accent=True); line(g,21,18,24,21,accent=True)
 
+def dwg_view_link(g):
+    rect(g,4,5,17,17,2)
+    line(g,7,10,15,10); line(g,7,14,13,14)
+    rect(g,17,16,11,10,1,accent=True)
+    poly(g,[(15,21),(20,21),(18,19),(20,21),(18,23)],accent=True)
+
 def visibility_copier(g):
     path(g,'M3 15s5-7 13-7 13 7 13 7-5 7-13 7S3 15 3 15z')
     circle(g,16,15,3,accent=True)
     rect(g,19,19,8,8,1,accent=True); line(g,17,17,23,17); line(g,17,17,17,23)
 
+
+# RC3I/RC3J and Ribbon UX: each formal command has a dedicated semantic icon family.
+def merge_lines(g):
+    # Two adjacent, end-touching collinear segments become a continuous stroke.
+    line(g,4,12,14,12); line(g,16,12,28,12)
+    dot(g,15,12,1.3)
+    line(g,5,23,26,23,accent=True)
+    poly(g,[(23,20),(26,23),(23,26)],accent=True)
+
+def merge_columns(g):
+    # Left and right text columns are joined row-wise.
+    for y in (7,13,19):
+        line(g,4,y,11,y); line(g,21,y,28,y)
+    line(g,13.5,13,18,13,accent=True)
+    poly(g,[(16,10.5),(18.5,13),(16,15.5)],accent=True)
+    line(g,10,26,22,26,accent=True)
+
+def overlap_lines(g):
+    # Overlapping mid-span is explicitly crossed out, unique from end-join icon.
+    line(g,4,10,23,10)
+    line(g,11,15,28,15)
+    line(g,11,20,23,20,accent=True)
+    line(g,15,23,21,29,accent=True)
+    line(g,21,23,15,29,accent=True)
+
+def filledregion_invisible(g):
+    # A filled region with an eye-slash: boundary hidden, face retained.
+    rect(g,5,4,22,22,1.4)
+    for x in (10,16,22):
+        dot(g,x,10,.9,True)
+        dot(g,x,16,.9,True)
+    path(g,'M9 23c4-5 11-5 15 0',accent=True)
+    path(g,'M9 23l15-8',accent=True)
+
+def material_binding(g):
+    # Single cube / material drop / attachment link.
+    poly(g,[(6,11),(13,7),(20,11),(13,15)],closed=True)
+    poly(g,[(6,11),(6,20),(13,24),(13,15)],closed=True)
+    poly(g,[(13,15),(20,11),(20,20),(13,24)],closed=True)
+    path(g,'M25 10c-2 3-3.1 4.3-3.1 6.4a3.1 3.1 0 006.2 0C28.1 14.3 27 13 25 10z',accent=True)
+
+def batch_material_binding(g):
+    # Repeated family instances are connected to a shared material swatch.
+    rect(g,4,5,9,9,1)
+    rect(g,4,19,9,9,1)
+    rect(g,19,11,9,10,1.4,accent=True)
+    line(g,13,9.5,18,14.5,accent=True)
+    line(g,13,23.5,18,17.5,accent=True)
+    path(g,'M23.5 13c-1.2 1.7-2 2.7-2 3.8a2 2 0 004 0C25.5 15.7 24.7 14.7 23.5 13z',accent=True)
+
+def family_category(g):
+    # Family object plus category tag to distinguish family management.
+    poly(g,[(4,10),(11,6),(18,10),(11,14)],closed=True)
+    poly(g,[(4,10),(4,20),(11,24),(11,14)],closed=True)
+    poly(g,[(11,14),(18,10),(18,20),(11,24)],closed=True)
+    path(g,'M21 7h6v6l-7 7-4-4z',accent=True)
+    circle(g,24.5,10,1,accent=True)
+
 icons={
 'align_line':align_line,'align_text':align_text,'batch_task':batch_task,'boolean_geometry':boolean_geometry,
 'cn_check':cn_check,'column_along_path':column_path,'dim_override':dim_override,
-'distribute_text':distribute_text,'entity_generator':loft,'solid_extract':solid_extract,'face_based':face_based,'family_instance':family_instance,
+'distribute_text':distribute_text,'entity_generator':loft,'solid_extract':solid_extract,'face_based':face_based,'family_coordinates':family_coordinates, 'family_instance':family_instance,
 'family_manager':family_manager,'level_modifier':level_modifier,'linear_placement':linear_placement,'merge_text':merge_text,
 'micro_tool':micro_tool,'override_cleaner':override_cleaner,'paste_cad':paste_cad,'project_info':project_info,
 'project_inspector':project_inspector,'parameter_cleanup':parameter_cleanup,'sample_window':settings,'section_line':section_line,'sheet_manager':sheet_manager,
-'text_modifier':text_modifier,'visibility_copier':visibility_copier,'cad_to_revit':cad_to_revit,
-'rebar_test':rebar_test,'rebar_gradient_set':rebar_gradient_set,'rebar_face':rebar_face,
-'rebar_surface_varying':rebar_surface_varying,'rebar_shape_create':rebar_shape_create,
-'rebar_freeform_create':rebar_freeform_create,'rebar_shape_modify':rebar_shape_modify,
-'rebar_constraint':rebar_constraint,'rebar_freeform_modify':rebar_freeform_modify,
-'rebar_hook':rebar_hook,'rebar_relationship':rebar_relationship,'rebar_coupler':rebar_coupler,
-'rebar_inspector':rebar_inspector,'rebar_clearance':rebar_clearance,
+'text_modifier':text_modifier,'visibility_copier':visibility_copier,'dwg_view_link':dwg_view_link,'cad_to_revit':cad_to_revit,
+'rebar_gradient_set':rebar_gradient_set,
+'merge_lines':merge_lines,'merge_columns':merge_columns,'overlap_lines':overlap_lines,
+'filledregion_invisible':filledregion_invisible,
+'material_binding':material_binding,'batch_material_binding':batch_material_binding,
+'family_category':family_category,
 }
 
 # Remove existing icon assets; write only the currently referenced set.

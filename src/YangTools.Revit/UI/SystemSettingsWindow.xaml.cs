@@ -271,7 +271,6 @@ namespace YangTools.Revit.UI
         private void LoadPanelSettings()
         {
             _panelSettings.Clear();
-            PanelTabControl.Items.Clear();
 
             var assembly = Assembly.GetExecutingAssembly();
             var commands = assembly.GetTypes()
@@ -305,35 +304,15 @@ namespace YangTools.Revit.UI
                 }
 
                 _panelSettings[panelName] = list;
-                var tabItem = new TabItem { Header = panelName };
-                var listBox = new ListBox
-                {
-                    ItemsSource = list,
-                    BorderThickness = new Thickness(0),
-                    Margin = new Thickness(5),
-                    Background = System.Windows.Media.Brushes.Transparent
-                };
-
-                var template = new DataTemplate();
-                var checkBox = new FrameworkElementFactory(typeof(CheckBox));
-                checkBox.SetBinding(CheckBox.IsCheckedProperty, new System.Windows.Data.Binding(nameof(CommandSettingItem.IsVisible))
-                {
-                    Mode = System.Windows.Data.BindingMode.TwoWay
-                });
-                checkBox.SetBinding(CheckBox.ContentProperty, new System.Windows.Data.Binding(nameof(CommandSettingItem.DisplayName)));
-                checkBox.SetBinding(CheckBox.IsEnabledProperty, new System.Windows.Data.Binding(nameof(CommandSettingItem.CanToggle)));
-                checkBox.SetBinding(FrameworkElement.ToolTipProperty, new System.Windows.Data.Binding(nameof(CommandSettingItem.LockReason)));
-                checkBox.SetValue(CheckBox.MarginProperty, new Thickness(5));
-                checkBox.SetValue(CheckBox.ForegroundProperty,
-                    TryFindResource("PrimaryText") ?? System.Windows.Media.Brushes.Black);
-                template.VisualTree = checkBox;
-                listBox.ItemTemplate = template;
-                tabItem.Content = listBox;
-                PanelTabControl.Items.Add(tabItem);
             }
 
-            if (PanelTabControl.Items.Count > 0)
-                PanelTabControl.SelectedIndex = 0;
+            PanelList.ItemsSource = _panelSettings.Keys.ToList();
+            PanelList.SelectedIndex = 0;
+        }
+
+        private void PanelList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            PanelCommands.ItemsSource = GetCurrentPanelItems();
         }
 
         protected override void OnClosed(EventArgs e)
@@ -381,7 +360,7 @@ namespace YangTools.Revit.UI
             try
             {
                 SavePanelSettings();
-                MessageBox.Show("面板设置已保存。请重启 Revit 后生效。", "YangTools", MessageBoxButton.OK, MessageBoxImage.Information);
+                Close();
             }
             catch (Exception ex)
             {
@@ -391,7 +370,7 @@ namespace YangTools.Revit.UI
 
         private IEnumerable<CommandSettingItem> GetCurrentPanelItems()
         {
-            if (PanelTabControl.SelectedItem is TabItem tab && tab.Header is string panelName &&
+            if (PanelList.SelectedItem is string panelName &&
                 _panelSettings.TryGetValue(panelName, out var items))
                 return items;
             return Enumerable.Empty<CommandSettingItem>();

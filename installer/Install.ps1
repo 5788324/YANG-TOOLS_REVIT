@@ -12,30 +12,8 @@ $ArtifactsPayloadRoot = Join-Path $ProjectRoot 'artifacts\payload'
 $BuildOutputRoot = Join-Path $ProjectRoot 'src\YangTools.Revit\bin\x64'
 $ProjectManifest = Join-Path $ProjectRoot 'src\YangTools.Revit\YangTools.Revit.addin'
 $AddinsRoot = Join-Path $env:APPDATA 'Autodesk\Revit\Addins'
+. (Join-Path $PSScriptRoot 'Assert-TargetRevitClosed.ps1')
 
-$YangToolsUserDataRoot = Join-Path $env:APPDATA 'YangTools'
-$LegacyAssistantDirectory = Join-Path $YangToolsUserDataRoot 'Assistant'
-$LegacyAssistantFiles = @(
-    (Join-Path $YangToolsUserDataRoot 'copilot_settings.json'),
-    (Join-Path $YangToolsUserDataRoot 'copilot_history.json'),
-    (Join-Path $YangToolsUserDataRoot 'moyu_settings.json'),
-    (Join-Path $YangToolsUserDataRoot 'moyu_history.json')
-)
-
-function Remove-LegacyAssistantData {
-    $removed = @()
-    if (Test-Path -LiteralPath $LegacyAssistantDirectory) {
-        Remove-Item -LiteralPath $LegacyAssistantDirectory -Recurse -Force -ErrorAction Stop
-        $removed += $LegacyAssistantDirectory
-    }
-    foreach ($path in $LegacyAssistantFiles) {
-        if (Test-Path -LiteralPath $path) {
-            Remove-Item -LiteralPath $path -Force -ErrorAction Stop
-            $removed += $path
-        }
-    }
-    return @($removed)
-}
 
 
 function Get-VersionSource([string]$version) {
@@ -60,11 +38,6 @@ function Get-VersionSource([string]$version) {
     return $null
 }
 
-function Stop-IfRevitRunning {
-    if (Get-Process Revit -ErrorAction SilentlyContinue) {
-        throw 'Revit 正在运行。请先关闭全部 Revit 窗口，再重新安装。'
-    }
-}
 
 function Get-DetectedVersions {
     $detected = @()
@@ -94,57 +67,61 @@ function Install-Version([string]$version) {
     $backup = Join-Path $versionRoot 'YangTools.backup'
     $manifestBackup = Join-Path $versionRoot 'YangTools.Revit.addin.backup'
     New-Item -ItemType Directory -Force -Path $versionRoot | Out-Null
-    Remove-Item -LiteralPath $staging -Recurse -Force -ErrorAction SilentlyContinue
-    Remove-Item -LiteralPath $backup -Recurse -Force -ErrorAction SilentlyContinue
-    Remove-Item -LiteralPath $manifestBackup -Force -ErrorAction SilentlyContinue
+    # 只清理当前未完成的 staging；旧安装目录/manifest 在新 payload 校验之前不得删除。
+    if (Test-Path -LiteralPath $staging) { Remove-Item -LiteralPath $staging -Recurse -Force -ErrorAction Stop }
+    $hadTarget = Test-Path -LiteralPath $target
+    $hadManifest = Test-Path -LiteralPath $manifest
+    $movedTarget = $false
+    $movedManifest = $false
+    if (($hadTarget -and -not $hadManifest) -or (-not $hadTarget -and $hadManifest)) {
+        throw "Revit $version 插件文件和 manifest 状态不一致，已停止安装；请检查现有文件。"
+    }
+    if (-not $hadTarget -and ((Test-Path -LiteralPath $backup) -or (Test-Path -LiteralPath $manifestBackup))) {
+        throw "Revit $version 尚有上一版备份但当前插件目录不存在，请先检查或恢复备份。"
+    }
 
     try {
         Copy-Item -LiteralPath $sourcePlugin -Destination $staging -Recurse -Force
         if (-not (Test-Path -LiteralPath (Join-Path $staging 'YangTools.Revit.dll'))) {
             throw '复制到临时目录后未找到 YangTools.Revit.dll。'
         }
-
-        if (Test-Path -LiteralPath $target) {
+        if ($hadTarget) {
+            # 保留最新的上一版；只有新 payload 已备好才替换旧备份。
+            if (Test-Path -LiteralPath $backup) { Remove-Item -LiteralPath $backup -Recurse -Force -ErrorAction Stop }
+            if (Test-Path -LiteralPath $manifestBackup) { Remove-Item -LiteralPath $manifestBackup -Force -ErrorAction Stop }
             Move-Item -LiteralPath $target -Destination $backup
-        }
-        if (Test-Path -LiteralPath $manifest) {
+            $movedTarget = $true
             Move-Item -LiteralPath $manifest -Destination $manifestBackup
+            $movedManifest = $true
         }
         Move-Item -LiteralPath $staging -Destination $target
         Copy-Item -LiteralPath $sourceManifest -Destination $manifest -Force
-        Remove-Item -LiteralPath $backup -Recurse -Force -ErrorAction SilentlyContinue
-        Remove-Item -LiteralPath $manifestBackup -Force -ErrorAction SilentlyContinue
-        Write-Host "[完成] Revit $version" -ForegroundColor Green
+        # 安装成功后保留 YangTools.backup 和 manifest.backup，以便一键回退。
     }
     catch {
-        # 无论旧版本是否存在，都先清理本次可能留下的半成品，再恢复备份。
         Remove-Item -LiteralPath $staging -Recurse -Force -ErrorAction SilentlyContinue
-        Remove-Item -LiteralPath $target -Recurse -Force -ErrorAction SilentlyContinue
-        Remove-Item -LiteralPath $manifest -Force -ErrorAction SilentlyContinue
-        if (Test-Path -LiteralPath $backup) {
-            Move-Item -LiteralPath $backup -Destination $target -Force
+        if ($movedTarget) {
+            Remove-Item -LiteralPath $target -Recurse -Force -ErrorAction SilentlyContinue
+            Move-Item -LiteralPath $backup -Destination $target
         }
-        if (Test-Path -LiteralPath $manifestBackup) {
-            Move-Item -LiteralPath $manifestBackup -Destination $manifest -Force
+        elseif (-not $hadTarget) {
+            Remove-Item -LiteralPath $target -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        if ($movedManifest) {
+            Remove-Item -LiteralPath $manifest -Force -ErrorAction SilentlyContinue
+            Move-Item -LiteralPath $manifestBackup -Destination $manifest
+        }
+        elseif (-not $hadManifest) {
+            Remove-Item -LiteralPath $manifest -Force -ErrorAction SilentlyContinue
         }
         throw
     }
 }
 
 try {
-    Stop-IfRevitRunning
-    $removedAssistantData = @(Remove-LegacyAssistantData)
-    if ($removedAssistantData.Count -gt 0) {
-        Write-Host "已清理旧 AI/摸鱼助手数据：$($removedAssistantData.Count) 项。" -ForegroundColor DarkCyan
-    }
     if (-not $Versions -or $Versions.Count -eq 0) {
-        $Versions = @(Get-DetectedVersions | Where-Object { $null -ne (Get-VersionSource $_) })
-        if ($Versions.Count -eq 0) {
-            $Versions = @($SupportedVersions | Where-Object { $null -ne (Get-VersionSource $_) })
-            Write-Host '未检测到 Revit 安装目录，将安装当前可用的全部独立编译版本。' -ForegroundColor Yellow
-        }
+        throw '请明确指定 Revit 年份，例如 -Versions 2025；或使用中文图形安装器选择年份。不会自动安装全部版本。'
     }
-
     if ($Versions.Count -eq 0) { throw '没有找到任何可安装的独立编译版本。' }
     $available = @($Versions | Where-Object { $null -ne (Get-VersionSource $_) })
     $skipped = @($Versions | Where-Object { $null -eq (Get-VersionSource $_) })
@@ -152,6 +129,7 @@ try {
         Write-Host "[跳过] Revit $version：没有该年份独立编译文件。" -ForegroundColor Yellow
     }
     if ($available.Count -eq 0) { throw '所选版本均没有独立编译文件。' }
+    Assert-TargetRevitClosed -Versions $available
     Write-Host "将安装：Revit $($available -join '、Revit ')"
     foreach ($version in $available) { Install-Version $version }
     Write-Host 'YangTools 安装完成，请启动 Revit。' -ForegroundColor Cyan

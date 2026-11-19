@@ -1,0 +1,36 @@
+<Window x:Class="YangTools.Revit.UI.FamilyInstanceCoordinatesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="族实例坐标" Width="550" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{DynamicResource WindowBg}" Foreground="{DynamicResource PrimaryText}">
+    <StackPanel Margin="18">
+        <TextBlock Text="族实例" Style="{DynamicResource FieldLabel}" Margin="0,0,0,6"/>
+        <ComboBox x:Name="InstanceBox" DisplayMemberPath="Label" SelectionChanged="InstanceChanged" Margin="0,0,0,14"/>
+        <DataGrid x:Name="CoordinateGrid" AutoGenerateColumns="False" HeadersVisibility="Column"
+                  CanUserAddRows="False" IsReadOnly="True" SelectionMode="Single"
+                  SelectionChanged="CoordinateChanged" ClipboardCopyMode="IncludeHeader" Height="128">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="坐标系" Binding="{Binding Label}" Width="*"/>
+                <DataGridTextColumn Header="X / 东 (mm)" Binding="{Binding X}" Width="105"/>
+                <DataGridTextColumn Header="Y / 北 (mm)" Binding="{Binding Y}" Width="105"/>
+                <DataGridTextColumn Header="Z / 高程 (mm)" Binding="{Binding Z}" Width="105"/>
+            </DataGrid.Columns>
+        </DataGrid>
+        <TextBlock x:Name="TargetLabel" Margin="0,14,0,6" Style="{DynamicResource FieldLabel}"/>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/><ColumnDefinition/><ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="TargetX" AutomationProperties.Name="目标 X 或东坐标" Margin="0,0,8,0" Style="{DynamicResource StandardTextBox}"/>
+            <TextBox x:Name="TargetY" AutomationProperties.Name="目标 Y 或北坐标" Grid.Column="1" Margin="0,0,8,0" Style="{DynamicResource StandardTextBox}"/>
+            <TextBox x:Name="TargetZ" AutomationProperties.Name="目标 Z 或高程" Grid.Column="2" Style="{DynamicResource StandardTextBox}"/>
+        </Grid>
+        <TextBlock x:Name="StatusText" TextWrapping="Wrap" MinHeight="20" Margin="0,10,0,4"/>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="ApplyButton" Content="应用" MinWidth="82" Margin="0,0,8,0" IsDefault="True"
+                    Style="{DynamicResource PrimaryButton}" Click="Apply_Click"/>
+            <Button Content="关闭" MinWidth="82" IsCancel="True" Style="{DynamicResource StandardButton}"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

@@ -11,7 +11,11 @@ using YangTools.Revit.UI;
 namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
-    [RibbonButton("文本工具区", "基准对齐", "按源文本对齐目标文本的 X/Y 坐标、旋转角度或段落宽度", "Icons/align_text_32.png", "Icons/align_text_16.png")]
+    [RibbonButton(
+        panelName: "文本工具区", buttonText: "基准对齐",
+        tooltip: "按参考文字对齐目标文字的位置、角度或宽度。",
+        largeIcon: "Icons/align_text_32.png", smallIcon: "Icons/align_text_16.png",
+        usage: "使用：点击按钮，按提示拾取参考 TextNote 和待调整 TextNote，并在设置窗口指定对齐项目。\n注意：可选择 X/Y、角度或文本框宽度，执行前确认参考和目标。")]
     public class AlignTextToTextCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
@@ -25,7 +29,7 @@ namespace YangTools.Revit.Commands
             }
 
             Document doc = uiDoc.Document;
-            var state = new AlignTextToTextState();
+            var state = new AlignTextToTextState { TargetTexts = TextNoteHelper.SelectedInActiveView(uiDoc) };
 
             try
             {
@@ -114,13 +118,23 @@ namespace YangTools.Revit.Commands
                 return Result.Cancelled;
             }
 
+            if (state.MatchParagraphWidth && !sourceText.IsTextWrappingActive)
+            {
+                TaskDialog.Show("复制段落宽度", "源文本没有固定段落宽度。请先在 Revit 中调整源文本框，或取消勾选「复制段落宽度」。");
+                return Result.Cancelled;
+            }
+
+            XYZ right = doc.ActiveView.RightDirection.Normalize();
+            XYZ up = doc.ActiveView.UpDirection.Normalize();
+            XYZ normal = right.CrossProduct(up);
             using (var transaction = new Transaction(doc, "对齐文本到文本"))
             {
                 try
                 {
-                    transaction.Start();
+                    if (transaction.Start() != TransactionStatus.Started)
+                        throw new InvalidOperationException("无法开始文本对齐事务。");
                     XYZ sourceCoord = sourceText.Coord;
-                    double sourceAngle = TextNoteHelper.GetTextNoteAngle(sourceText);
+                    double sourceAngle = TextNoteHelper.GetTextNoteAngle(sourceText, right, up);
                     double sourceWidth = sourceText.Width;
 
                     int succeeded = 0;
@@ -135,22 +149,20 @@ namespace YangTools.Revit.Commands
                             {
                                 if (state.AlignRotation)
                                 {
-                                    double targetAngle = TextNoteHelper.GetTextNoteAngle(target);
+                                    double targetAngle = TextNoteHelper.GetTextNoteAngle(target, right, up);
                                     double angleDiff = NormalizeAngle(sourceAngle - targetAngle);
                                     if (Math.Abs(angleDiff) > 1e-9)
                                     {
-                                        Line rotationAxis = Line.CreateBound(target.Coord, target.Coord + XYZ.BasisZ);
+                                        Line rotationAxis = Line.CreateBound(target.Coord, target.Coord + normal);
                                         ElementTransformUtils.RotateElement(doc, target.Id, rotationAxis, angleDiff);
                                     }
                                 }
 
                                 if (state.AlignX || state.AlignY)
                                 {
-                                    XYZ targetCoord = target.Coord;
-                                    XYZ offset = new XYZ(
-                                        state.AlignX ? sourceCoord.X - targetCoord.X : 0.0,
-                                        state.AlignY ? sourceCoord.Y - targetCoord.Y : 0.0,
-                                        0.0);
+                                    XYZ delta = sourceCoord - target.Coord;
+                                    XYZ offset = right * (state.AlignX ? delta.DotProduct(right) : 0.0)
+                                        + up * (state.AlignY ? delta.DotProduct(up) : 0.0);
                                     if (offset.GetLength() > 1e-9)
                                         ElementTransformUtils.MoveElement(doc, target.Id, offset);
                                 }
@@ -203,15 +215,15 @@ namespace YangTools.Revit.Commands
                 }
             }
 
-            uiDoc.RefreshActiveView();
+            TextNoteHelper.RefreshAfterCommit(uiDoc, "文本对齐后刷新");
             string resultText = $"已对齐 {state.LastSucceededCount} 个目标文本。";
             if (state.LastSkippedCount > 0)
             {
                 resultText += $"\n跳过 {state.LastSkippedCount} 个无法移动、旋转或设置段落宽度的目标。";
                 if (state.LastSkipDetails.Count > 0)
                     resultText += "\n\n部分原因：\n" + string.Join("\n", state.LastSkipDetails);
+                TaskDialog.Show("部分文本已对齐", resultText);
             }
-            TaskDialog.Show("完成", resultText);
             return Result.Succeeded;
         }
 

@@ -119,8 +119,14 @@ namespace YangTools.Revit.Core.Rebar
             {
                 if (freeForm)
                 {
+#if REVIT2021
+                    // Revit 2021 API has no RebarFreeFormAccessor.RebarStyle.
+                    // Unknown is not Standard; do not misreport the rebar style.
+                    return "UNAVAILABLE_REVIT2021_FREEFORM_STYLE";
+#else
                     using (RebarFreeFormAccessor accessor = rebar.GetFreeFormAccessor())
                         return accessor.RebarStyle.ToString();
+#endif
                 }
 
                 ElementId shapeId = rebar.GetShapeId();
@@ -567,11 +573,11 @@ namespace YangTools.Revit.Core.Rebar
         private static IList<Curve> GetCenterlineCurves(Autodesk.Revit.DB.Structure.Rebar rebar, int position)
         {
             return rebar.GetCenterlineCurves(
-                adjustForSelfIntersection: false,
-                suppressHooks: false,
-                suppressBendRadius: false,
-                multiplanarOption: MultiplanarOption.IncludeAllMultiplanarCurves,
-                barPositionIndex: position);
+                false,
+                false, // Revit 2026+ renamed this argument suppressHooksAndCranks.
+                false,
+                MultiplanarOption.IncludeAllMultiplanarCurves,
+                position);
         }
 
         private static IList<Curve> GetActualPositionCenterlineCurves(

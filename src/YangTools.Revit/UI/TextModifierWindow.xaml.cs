@@ -151,7 +151,8 @@ namespace YangTools.Revit.UI
             {
                 try
                 {
-                    transaction.Start();
+                    if (transaction.Start() != TransactionStatus.Started)
+                        throw new InvalidOperationException("无法开始文本修改事务。");
                     foreach (TextNote note in textNotes)
                     {
                         if (ProcessTextNote(note)) count++;
@@ -172,7 +173,7 @@ namespace YangTools.Revit.UI
                 }
             }
 
-            _uiDoc.RefreshActiveView();
+            TextNoteHelper.RefreshAfterCommit(_uiDoc, "文本修改后刷新");
             TxtStatus.Text = count == 0 ? "没有文本需要修改。" : $"成功修改 {count} 个文本。";
             TaskDialog.Show("完成", count == 0 ? "没有文本符合修改条件。" : $"成功修改 {count} 个文本。 ");
             Close();
@@ -203,7 +204,7 @@ namespace YangTools.Revit.UI
 
         private bool ProcessTextNote(TextNote note)
         {
-            FormattedText formattedText = note.GetFormattedText();
+            using var formattedText = note.GetFormattedText();
             string originalText = formattedText.GetPlainText();
             string newText = originalText;
             bool isModified = false;
@@ -218,14 +219,15 @@ namespace YangTools.Revit.UI
                 string pattern = Regex.Escape(findText);
                 if (wholeWord) pattern = $@"\b{pattern}\b";
                 RegexOptions options = matchCase ? RegexOptions.None : RegexOptions.IgnoreCase;
-                newText = Regex.Replace(originalText, pattern, replaceText, options);
-
-                if (newText != originalText)
+                var matches = Regex.Matches(originalText, pattern, options);
+                for (int index = matches.Count - 1; index >= 0; index--)
                 {
-                    formattedText.SetPlainText(newText);
-                    note.SetFormattedText(formattedText);
+                    Match match = matches[index];
+                    if (match.Value == replaceText) continue;
+                    formattedText.SetPlainText(new TextRange(match.Index, match.Length), replaceText);
                     isModified = true;
                 }
+                if (isModified) note.SetFormattedText(formattedText);
             }
             else
             {
@@ -251,7 +253,7 @@ namespace YangTools.Revit.UI
 
                 if (newText != originalText || setBold || setItalic || setUnderline)
                 {
-                    formattedText.SetPlainText(newText);
+                    if (newText != originalText) formattedText.SetPlainText(newText);
                     if (newText.Length > 0)
                     {
                         var range = new TextRange(0, newText.Length);

@@ -10,7 +10,11 @@ using YangTools.Revit.UI;
 namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
-    [RibbonButton("文本工具区", "对齐到线", "将文本旋转并可移动到指定基准线", "Icons/align_line_32.png", "Icons/align_line_16.png")]
+    [RibbonButton(
+        panelName: "文本工具区", buttonText: "沿线对齐",
+        tooltip: "将 TextNote 旋转并按需要移动至指定基准线。",
+        largeIcon: "Icons/align_line_32.png", smallIcon: "Icons/align_line_16.png",
+        usage: "使用：点击按钮，选择待对齐的文本与基准线，在窗口中确认旋转/移动设置。\n注意：先检查选中线的方向，避免文字朝向错误。")]
     public class AlignTextToLineCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
@@ -25,6 +29,8 @@ namespace YangTools.Revit.Commands
 
             Document doc = uiDoc.Document;
             var state = new AlignTextToLineState();
+            var preselected = TextNoteHelper.SelectedInActiveView(uiDoc);
+            if (preselected.Count == 1) state.SelectedText = preselected[0];
 
             try
             {
@@ -100,8 +106,12 @@ namespace YangTools.Revit.Commands
 
             XYZ lineStart = state.LineStart;
             XYZ lineEnd = state.LineEnd;
-            XYZ planarDirection = new XYZ(lineEnd.X - lineStart.X, lineEnd.Y - lineStart.Y, 0.0);
-            if (planarDirection.GetLength() < 1e-9)
+            XYZ right = doc.ActiveView.RightDirection.Normalize();
+            XYZ up = doc.ActiveView.UpDirection.Normalize();
+            XYZ delta = lineEnd - lineStart;
+            double u = delta.DotProduct(right);
+            double v = delta.DotProduct(up);
+            if (u * u + v * v < 1e-18)
             {
                 TaskDialog.Show("提示", "基准线在当前视图平面内没有有效方向。 ");
                 return Result.Cancelled;
@@ -111,9 +121,9 @@ namespace YangTools.Revit.Commands
             {
                 try
                 {
-                    transaction.Start();
-                    XYZ lineDirection = planarDirection.Normalize();
-                    double lineAngle = Math.Atan2(lineDirection.Y, lineDirection.X);
+                    if (transaction.Start() != TransactionStatus.Started)
+                        throw new InvalidOperationException("无法开始基准线对齐事务。");
+                    double lineAngle = Math.Atan2(v, u);
                     if (state.KeepUpright)
                     {
                         if (lineAngle > Math.PI / 2.0) lineAngle -= Math.PI;
@@ -121,11 +131,11 @@ namespace YangTools.Revit.Commands
                     }
 
                     XYZ textCoord = targetText.Coord;
-                    double textAngle = TextNoteHelper.GetTextNoteAngle(targetText);
+                    double textAngle = TextNoteHelper.GetTextNoteAngle(targetText, right, up);
                     double rotationAngle = NormalizeAngle(lineAngle - textAngle);
                     if (Math.Abs(rotationAngle) > 1e-9)
                     {
-                        Line rotationAxis = Line.CreateBound(textCoord, textCoord + XYZ.BasisZ);
+                        Line rotationAxis = Line.CreateBound(textCoord, textCoord + right.CrossProduct(up));
                         ElementTransformUtils.RotateElement(doc, targetText.Id, rotationAxis, rotationAngle);
                     }
 
@@ -137,7 +147,8 @@ namespace YangTools.Revit.Commands
 
                     if (targetPosition != null)
                     {
-                        XYZ offset = targetPosition - targetText.Coord;
+                        XYZ displacement = targetPosition - targetText.Coord;
+                        XYZ offset = right * displacement.DotProduct(right) + up * displacement.DotProduct(up);
                         if (offset.GetLength() > 1e-9)
                             ElementTransformUtils.MoveElement(doc, targetText.Id, offset);
                     }
@@ -155,8 +166,7 @@ namespace YangTools.Revit.Commands
                 }
             }
 
-            uiDoc.RefreshActiveView();
-            TaskDialog.Show("完成", "文本已对齐到基准线。 ");
+            TextNoteHelper.RefreshAfterCommit(uiDoc, "基准线对齐后刷新");
             return Result.Succeeded;
         }
 

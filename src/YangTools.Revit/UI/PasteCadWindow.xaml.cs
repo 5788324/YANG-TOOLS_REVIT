@@ -57,17 +57,25 @@ namespace YangTools.Revit.UI
             try
             {
                 _candidates = CadClipboardFileHelper.FindCandidates();
+                CboCadFiles.SelectedIndex = -1;
                 CboCadFiles.ItemsSource = _candidates;
+                SelectedDwgPath = null;
+                BtnConfirm.IsEnabled = false;
                 if (_candidates.Count == 0)
                 {
-                    SelectedDwgPath = null;
                     TxtSelectedFile.Text = "（未检测到 AutoCAD 临时剪贴板文件）";
-                    BtnConfirm.IsEnabled = false;
                     SetStatus(
                         false,
                         "未检测到 AutoCAD 复制数据",
                         "请先在 AutoCAD 中选择图元并按 Ctrl+C，然后回到 Revit 点击“重新检测”。也可以手动选择 DWG 文件。",
                         "⚠");
+                    return;
+                }
+
+                if (_candidates[0].IsStale)
+                {
+                    TxtSelectedFile.Text = "请先选择 DWG 文件";
+                    SetStatus(false, "只检测到较早的 CAD 复制记录", "请从列表明确选择，或重新复制后检测。", "⚠");
                     return;
                 }
 
@@ -77,6 +85,7 @@ namespace YangTools.Revit.UI
             {
                 SelectedDwgPath = null;
                 BtnConfirm.IsEnabled = false;
+                TxtSelectedFile.Text = "尚未选择 DWG 文件";
                 string logPath = DiagnosticLog.WriteError("检测 AutoCAD 剪贴板", ex);
                 SetStatus(
                     false,
@@ -103,7 +112,7 @@ namespace YangTools.Revit.UI
                 SetStatus(
                     false,
                     "已选择较早的 DWG 临时文件",
-                    $"该文件修改于 {fileInfo.LastWriteTime:yyyy-MM-dd HH:mm:ss}。请确认它确实对应本次 AutoCAD 复制内容。",
+                    $"该文件修改于 {fileInfo.LastWriteTime:yyyy-MM-dd HH:mm:ss}。请核对是否为本次要导入的文件。",
                     "⚠");
             }
             else
@@ -122,7 +131,7 @@ namespace YangTools.Revit.UI
             TxtStatusTitle.Text = title;
             TxtStatusDesc.Text = description;
 
-            string borderResource = isSuccess ? "SuccessColor" : "DangerBg";
+            string borderResource = isSuccess ? "SuccessColor" : "WarningColor";
             BdrStatus.SetResourceReference(System.Windows.Controls.Border.BorderBrushProperty, borderResource);
             BdrStatus.SetResourceReference(System.Windows.Controls.Border.BackgroundProperty, "PanelBg");
             TxtStatusIcon.SetResourceReference(TextBlock.ForegroundProperty, borderResource);

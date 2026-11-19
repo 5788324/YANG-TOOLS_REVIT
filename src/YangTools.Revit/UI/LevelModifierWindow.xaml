@@ -132,7 +132,7 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <TextBlock Text="选择目标标高 (保持图元原位置):" Foreground="{DynamicResource PrimaryText}" FontSize="14" Margin="0,0,0,10" Grid.Row="0"/>
+                <TextBlock x:Name="TargetLevelHint" TextWrapping="Wrap" Foreground="{DynamicResource PrimaryText}" FontSize="14" Margin="0,0,0,10" Grid.Row="0"/>
                 
                 <ComboBox x:Name="LevelComboBox" Grid.Row="1" Height="30" DisplayMemberPath="Name" 
                           Background="{DynamicResource GridHover}" BorderBrush="{DynamicResource BtnBorder}" BorderThickness="1" Foreground="{DynamicResource PrimaryText}">
@@ -142,8 +142,8 @@
             <!-- Bottom Action Area -->
             <Border Grid.Row="2" Background="{DynamicResource BottomBarBg}" CornerRadius="0,0,8,8">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,15,0">
-                    <Button Content="取消" Style="{StaticResource ActionButtonStyle}" Click="BtnCancel_Click" Width="80"/>
-                    <Button Content="确定" Style="{StaticResource PrimaryButtonStyle}" Click="BtnOk_Click" Width="80"/>
+                    <Button Content="取消" Style="{StaticResource ActionButtonStyle}" Click="BtnCancel_Click" IsCancel="True" Width="80"/>
+                    <Button Content="修改标高" Style="{StaticResource PrimaryButtonStyle}" Click="BtnOk_Click" IsDefault="True" Width="92"/>
                 </StackPanel>
             </Border>
         </Grid>

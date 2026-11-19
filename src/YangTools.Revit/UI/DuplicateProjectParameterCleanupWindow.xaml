@@ -54,8 +54,8 @@
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                 <CheckBox x:Name="AllowDeleteSharedCheckBox" Content="允许删除共享参数（高风险）"
                           Margin="12,0,12,6"/>
-                <CheckBox x:Name="DeleteConflictsCheckBox" Content="冲突时仍删除来源参数（会丢弃来源值）"
-                          Margin="0,0,0,6"/>
+                <TextBlock Text="保留有值冲突的来源参数" Style="{DynamicResource SecondaryLabel}"
+                           VerticalAlignment="Center" Margin="0,0,0,6"/>
             </StackPanel>
         </Grid>
 

@@ -8,7 +8,11 @@ using YangTools.Revit.UI;
 namespace YangTools.Revit.Commands;
 
 [Transaction(TransactionMode.Manual)]
-[RibbonButton("视图修改区", "覆盖清理", "清除视图中手动覆盖的元素图形设置(By Element)", "Icons/override_cleaner_32.png", "Icons/override_cleaner_16.png")]
+[RibbonButton(
+        panelName: "视图修改区", buttonText: "覆盖清理",
+        tooltip: "清理视图中针对单个元素设置的图形覆盖。",
+        largeIcon: "Icons/override_cleaner_32.png", smallIcon: "Icons/override_cleaner_16.png",
+        usage: "使用：点击按钮，在窗口选择视图与清理范围，确认后执行。\n注意：仅清理按元素的覆盖，不等同于重置全部可见性或视图模板。")]
 	public class ViewGraphicCleanerCommand : IExternalCommand
 	{
 		public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)

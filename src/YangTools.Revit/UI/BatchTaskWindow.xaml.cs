@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows;
+using System.Windows.Controls;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using YangTools.Revit.Core;
@@ -12,6 +13,7 @@ using YangTools.Revit.Core.BatchTasks;
 using YangTools.Revit.Models.BatchTask;
 using Button = System.Windows.Controls.Button;
 using MessageBox = System.Windows.MessageBox;
+using TextBox = System.Windows.Controls.TextBox;
 
 namespace YangTools.Revit.UI
 {
@@ -139,19 +141,48 @@ namespace YangTools.Revit.UI
             message.AppendLine($"通过项：{overall.SuccessCount}");
             message.AppendLine($"提示：{overall.WarningCount}");
             message.AppendLine($"失败：{overall.ErrorCount}");
-            if (overall.Errors.Count > 0)
+            AppendSection("失败", overall.Errors);
+            AppendSection("提示", overall.Warnings);
+            AppendSection("检查结果", overall.Successes);
+            AppendSection("计划输出（主文件）", overall.PlannedOutputs);
+
+            TxtProgress.Text = overall.ErrorCount == 0
+                ? $"预检通过，计划输出 {overall.PlannedOutputs.Count} 个主文件"
+                : $"预检：{overall.ErrorCount} 项失败";
+
+            var details = new TextBox
             {
+                Text = message.ToString().TrimEnd(),
+                IsReadOnly = true,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(12, 12, 12, 0)
+            };
+            var close = new Button { Content = "关闭", IsCancel = true, MinWidth = 82, Margin = new Thickness(12) };
+            close.HorizontalAlignment = System.Windows.HorizontalAlignment.Right;
+            var panel = new DockPanel();
+            DockPanel.SetDock(close, Dock.Bottom);
+            panel.Children.Add(close);
+            panel.Children.Add(details);
+            var dialog = new Window
+            {
+                Title = overall.ErrorCount == 0 ? "预检通过" : "预检发现问题",
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Width = 760,
+                Height = 560,
+                Content = panel
+            };
+            ThemeHelper.ApplyToWindow(dialog);
+            dialog.ShowDialog();
+
+            void AppendSection(string title, IReadOnlyList<string> entries)
+            {
+                if (entries.Count == 0) return;
                 message.AppendLine();
-                message.AppendLine("主要问题：");
-                foreach (string error in overall.Errors.Take(12))
-                    message.AppendLine("• " + error);
+                message.AppendLine($"【{title}】");
+                foreach (string entry in entries) message.AppendLine(entry);
             }
-            MessageBox.Show(
-                message.ToString().TrimEnd(),
-                overall.ErrorCount == 0 ? "预检通过" : "预检发现问题",
-                MessageBoxButton.OK,
-                overall.ErrorCount == 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
-            TxtProgress.Text = overall.ErrorCount == 0 ? "预检通过" : $"预检：{overall.ErrorCount} 项失败";
         }
 
         private void SetBusyState(bool busy, string? progressText)
@@ -463,7 +494,7 @@ namespace YangTools.Revit.UI
             try
             {
                 Directory.CreateDirectory(rootFolder);
-                string path = Path.Combine(rootFolder, $"YangTools-批处理报告-{DateTime.Now:yyyyMMdd-HHmmss}.txt");
+                string path = Path.Combine(rootFolder, $"YangTools-批处理报告-{DateTime.Now:yyyyMMdd-HHmmss-fff}.txt");
                 var text = new StringBuilder();
                 text.AppendLine("YangTools 批处理与链接报告");
                 text.AppendLine($"时间：{DateTime.Now:yyyy-MM-dd HH:mm:ss}");
@@ -491,7 +522,9 @@ namespace YangTools.Revit.UI
                 foreach (string value in result.OutputFiles.Distinct(StringComparer.OrdinalIgnoreCase))
                     text.AppendLine("- " + value);
 
-                File.WriteAllText(path, text.ToString(), new UTF8Encoding(true));
+                using (var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write))
+                using (var writer = new StreamWriter(stream, new UTF8Encoding(true)))
+                    writer.Write(text.ToString());
                 DiagnosticLog.WriteInfo("批处理报告", path);
                 return path;
             }

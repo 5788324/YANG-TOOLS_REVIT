@@ -132,7 +132,7 @@
                     <TextBlock Text="项目资产管理器" Foreground="{DynamicResource TitleText}" VerticalAlignment="Center" Margin="15,0,0,0" FontWeight="Bold" FontSize="14"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,10,0">
                         <TextBlock Text="搜索" VerticalAlignment="Center" Foreground="{DynamicResource TitleText}" Margin="0,0,6,0"/>
-                        <TextBox x:Name="SearchBox" Width="150" Margin="0,0,20,0" Padding="2" VerticalAlignment="Center" TextChanged="SearchBox_TextChanged"/>
+                        <TextBox x:Name="SearchBox" Width="150" Margin="0,0,20,0" Padding="2" VerticalAlignment="Center" TextChanged="SearchBox_TextChanged" ToolTip="按名称或图元 ID 搜索当前列表"/>
                         <Button Click="CloseButton_Click" Width="40" Background="Transparent" BorderThickness="0" Foreground="{DynamicResource TitleText}" FontSize="18" Content="×">
                             <Button.Template>
                                 <ControlTemplate TargetType="{x:Type Button}">
@@ -178,7 +178,7 @@
                         <TreeView x:Name="AssetTreeView" Background="Transparent" BorderThickness="0" Margin="5" SelectedItemChanged="AssetTreeView_SelectedItemChanged">
                             <TreeView.ContextMenu>
                                 <ContextMenu>
-                                    <MenuItem Header="删除勾选节点" Click="DeleteCheckedNodes_Click"/>
+                                    <MenuItem Header="删除勾选节点" ToolTip="按左侧勾选的节点删除，不受右侧搜索范围限制" Click="DeleteCheckedNodes_Click"/>
                                 </ContextMenu>
                             </TreeView.ContextMenu>
                             <TreeView.ItemTemplate>
@@ -324,7 +324,7 @@
 
             <!-- Bottom Action Bar -->
             <Border Grid.Row="2" Background="{DynamicResource BottomBarBg}" CornerRadius="0,0,8,8" BorderBrush="{DynamicResource WindowBorder}" BorderThickness="0,1,0,0">
-                <Grid Margin="15,0">
+                <Grid x:Name="AssetActions" Margin="15,0">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
                         <TextBlock x:Name="StatusText" Text="就绪" Foreground="{DynamicResource SecondaryText}" VerticalAlignment="Center"/>
                     </StackPanel>
@@ -344,10 +344,10 @@
                         <Button ToolTip="重置列布局" Style="{StaticResource IconButton}" Click="ResetColumns_Click">
                             <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="18"/>
                         </Button>
-                        <Button x:Name="ExportBtn" ToolTip="导出 Excel" Style="{StaticResource IconButton}" Click="ExportExcel_Click">
+                        <Button x:Name="ExportBtn" ToolTip="导出当前列表中显示的资产到 Excel" Style="{StaticResource IconButton}" Click="ExportExcel_Click">
                             <TextBlock Text="&#xEDE1;" FontFamily="Segoe MDL2 Assets" FontSize="18"/>
                         </Button>
-                        <Button x:Name="ImportBtn" ToolTip="导入 Excel" Style="{StaticResource IconButton}" Click="ImportExcel_Click" Foreground="{DynamicResource AccentColor}">
+                        <Button x:Name="ImportBtn" ToolTip="按 Excel 中的图元 ID 导入参数" Style="{StaticResource IconButton}" Click="ImportExcel_Click" Foreground="{DynamicResource AccentColor}">
                             <TextBlock Text="&#xE8B5;" FontFamily="Segoe MDL2 Assets" FontSize="18"/>
                         </Button>
                     </WrapPanel>

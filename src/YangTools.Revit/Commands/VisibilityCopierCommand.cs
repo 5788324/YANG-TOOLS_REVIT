@@ -11,7 +11,11 @@ using YangTools.Revit.UI;
 namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
-    [RibbonButton("视图修改区", "可见性拷贝", "将视图覆盖设置复制到其他视图", "Icons/visibility_copier_32.png", "Icons/visibility_copier_16.png")]
+    [RibbonButton(
+        panelName: "视图修改区", buttonText: "可见性复制",
+        tooltip: "将源视图的图形可见性设置复制至其他视图。",
+        largeIcon: "Icons/visibility_copier_32.png", smallIcon: "Icons/visibility_copier_16.png",
+        usage: "使用：点击按钮，在窗口选择源视图、目标视图与复制项目，再执行。\n注意：检查视图模板及目标视图覆盖情况。")]
     public class VisibilityCopierCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)

@@ -12,15 +12,12 @@ namespace YangTools.Revit.UI
         public Level SelectedLevel { get; private set; }
         public bool IsOk { get; private set; }
 
-        public LevelModifierWindow(List<Level> levels)
+        public LevelModifierWindow(List<Level> levels, int elementCount)
         {
             ThemeHelper.InitializeWithTheme(this, InitializeComponent);
             ThemeHelper.ApplyToWindow(this);
             LevelComboBox.ItemsSource = levels;
-            if (levels.Count > 0)
-            {
-                LevelComboBox.SelectedIndex = 0;
-            }
+            TargetLevelHint.Text = $"已选 {elementCount} 个图元。选择目标标高，保留原位置。";
         }
 
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)

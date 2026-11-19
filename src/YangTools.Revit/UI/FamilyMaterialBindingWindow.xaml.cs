@@ -19,13 +19,16 @@ namespace YangTools.Revit.UI
 
         internal FamilyMaterialBindingRequest Request { get; private set; }
 
-        public FamilyMaterialBindingWindow(Document document)
+        public FamilyMaterialBindingWindow(Document document, IEnumerable<ElementId> preselectedFamilyIds)
         {
             _document = document ?? throw new ArgumentNullException(nameof(document));
             ThemeHelper.InitializeWithTheme(this, InitializeComponent);
             ThemeHelper.ApplyToWindow(this);
 
             LoadFamilies();
+            var preselected = new HashSet<ElementId>(preselectedFamilyIds);
+            foreach (var row in _rows)
+                row.IsSelected = row.IsEditable && preselected.Contains(row.FamilyId);
             _view = CollectionViewSource.GetDefaultView(_rows);
             _view.Filter = FilterRow;
             FamilyGrid.ItemsSource = _view;

@@ -91,7 +91,12 @@ namespace YangTools.Revit.Core.Rebar
                     result.SourceHandleOrdinal = selectedOrdinal;
                     RebarConstrainedHandle handle = handles[selectedOrdinal];
 
+                    // From Revit 2026, the constraint candidates API requires a target ElementId.
+#if REVIT2026_OR_GREATER
+                    IList<RebarConstraint> raw = manager.GetConstraintCandidatesForHandle(handle, target.Id);
+#else
                     IList<RebarConstraint> raw = manager.GetConstraintCandidatesForHandle(handle);
+#endif
                     var candidates = new List<RebarConstraint>();
                     try
                     {

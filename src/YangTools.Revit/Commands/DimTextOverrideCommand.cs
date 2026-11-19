@@ -1,9 +1,8 @@
 using System;
-using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Interop;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
-using Autodesk.Revit.Exceptions;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Selection;
 using YangTools.Revit.Core;
@@ -12,7 +11,11 @@ using YangTools.Revit.UI;
 namespace YangTools.Revit.Commands;
 
 [Transaction(TransactionMode.Manual)]
-[RibbonButton("标注工具区", "标注替换", "拾取标注并替换显示文本", "Icons/dim_override_32.png", "Icons/dim_override_16.png")]
+[RibbonButton(
+        panelName: "标注工具区", buttonText: "标注替换",
+        tooltip: "替换标注显示文字，不修改测量几何尺寸。",
+        largeIcon: "Icons/dim_override_32.png", smallIcon: "Icons/dim_override_16.png",
+        usage: "使用：点击按钮，拾取目标标注，在窗口输入需要显示的文字并确认。\n注意：这是文字覆盖，不能替代真实尺寸修改。")]
 public class DimTextOverrideCommand : IExternalCommand
 {
 	public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
@@ -26,16 +29,15 @@ public class DimTextOverrideCommand : IExternalCommand
 				return Result.Cancelled;
 			}
 			Document document = activeUIDocument.Document;
-			IList<Reference> list;
-			try
+			var filter = new DimensionSelectionFilter();
+			var list = activeUIDocument.Selection.GetElementIds()
+				.Where(id => filter.AllowElement(document.GetElement(id))).ToList();
+			if (list.Count == 0)
 			{
-				list = activeUIDocument.Selection.PickObjects(ObjectType.Element, new DimensionSelectionFilter(), "请选择要修改的标注");
+				list = activeUIDocument.Selection.PickObjects(ObjectType.Element, filter, "请选择要修改的标注")
+					.Select(reference => reference.ElementId).Distinct().ToList();
 			}
-			catch (Autodesk.Revit.Exceptions.OperationCanceledException)
-			{
-				return Result.Cancelled;
-			}
-			if (list == null || list.Count == 0)
+			if (list.Count == 0)
 			{
 				TaskDialog.Show("YangTools 提示", "未选择任何标注图元！");
 				return Result.Cancelled;
@@ -56,7 +58,7 @@ public class DimTextOverrideCommand : IExternalCommand
 				{
 					if (val2.Start() != TransactionStatus.Started)
 						throw new InvalidOperationException("无法启动标注文本替换事务。");
-					foreach (Reference item in list)
+					foreach (ElementId item in list)
 					{
 						Element element = document.GetElement(item);
 						Dimension val3 = element as Dimension;
@@ -77,8 +79,7 @@ public class DimTextOverrideCommand : IExternalCommand
 					}
 					if (num != list.Count)
 						throw new InvalidOperationException("标注处理数量与选择数量不一致。");
-					string text2 = (dimTextOverrideWindow.IsClear ? "清除覆盖文本" : ("替换为【" + text + "】"));
-					TransactionStatus commitStatus = TransactionHelper.ShowSuccessAndCommit(val2, "成功", $"已成功处理 {num} 个标注！\n\n★ 操作类型：{text2}\n★ 处理数量：{num} 个标注", activeUIDocument);
+					TransactionStatus commitStatus = val2.Commit();
 					if (commitStatus != TransactionStatus.Committed)
 					{
 						message = $"事务未成功提交，状态: {commitStatus}";

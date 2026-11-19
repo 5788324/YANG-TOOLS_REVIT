@@ -16,6 +16,8 @@ namespace YangTools.Revit.Core.Sheets
         public bool Committed { get; internal set; }
         public int CreatedCount { get; internal set; }
         public int UpdatedCount { get; internal set; }
+        public int UnchangedCount { get; internal set; }
+        public bool Cancelled { get; internal set; }
         public int SkippedBlankRows { get; internal set; }
         public bool SheetIdentityReadbackConfirmed { get; internal set; }
     }
@@ -39,7 +41,8 @@ namespace YangTools.Revit.Core.Sheets
             internal IDictionary<string, object> Data { get; set; }
         }
 
-        internal static SheetExcelImportResult Execute(Document doc, SheetExcelImportRequest request)
+        internal static SheetExcelImportResult Execute(Document doc, SheetExcelImportRequest request,
+            Func<IReadOnlyList<string>, bool> confirmNewSheets)
         {
             if (doc == null || !doc.IsValidObject || doc.IsReadOnly || doc.IsModifiable)
                 throw new InvalidOperationException("项目文档无效、只读或存在未完成事务，图纸未导入。");
@@ -71,30 +74,46 @@ namespace YangTools.Revit.Core.Sheets
                 if (matches != null && matches.Count > 1)
                     throw new InvalidOperationException($"项目中有多张同图号“{number}”图纸，无法唯一定位；整个批次未修改模型。");
                 ViewSheet sheet = matches?.FirstOrDefault();
-                if (sheet != null)
+                string name = row.TryGetValue(SheetNameColumn, out object sheetName)
+                    ? sheetName?.ToString()?.Trim() ?? string.Empty : string.Empty;
+                var changes = new Dictionary<string, object>();
+                // Read-only preflight of ALL explicitly populated extra fields.
+                foreach (var field in row)
                 {
-                    // Read-only preflight of ALL explicitly populated extra fields.
-                    foreach (var field in row)
+                    if (IsReservedOrEmpty(field)) continue;
+                    if (sheet != null)
                     {
-                        if (IsReservedOrEmpty(field)) continue;
                         Parameter parameter = ResolveUniqueWritableParameter(sheet, field.Key, i + 2);
+                        if (ParameterValueHelper.GetDisplayValue(parameter) == field.Value.ToString()) continue;
                         if (parameter.IsReadOnly)
                             throw new InvalidOperationException($"Excel 第 {i + 2} 行参数“{field.Key}”只读；已取消整批导入。");
                     }
+                    changes.Add(field.Key, field.Value);
+                }
+                if (sheet != null && changes.Count == 0 && (name.Length == 0 || sheet.Name == name))
+                {
+                    result.UnchangedCount++;
+                    continue;
                 }
                 plans.Add(new RowPlan
                 {
                     ExcelRow = i + 2,
                     SheetNumber = number,
-                    SheetName = row.TryGetValue(SheetNameColumn, out object sheetName) ?
-                        sheetName?.ToString()?.Trim() ?? string.Empty : string.Empty,
+                    SheetName = name,
                     ExistingSheet = sheet,
-                    Data = row
+                    Data = changes
                 });
             }
             if (plans.Count == 0) return result; // No transaction or Undo for blank input.
 
-            ElementId titleblockId = new FilteredElementCollector(doc)
+            var newNumbers = plans.Where(plan => plan.ExistingSheet == null).Select(plan => plan.SheetNumber).ToList();
+            if (newNumbers.Count > 0 && !confirmNewSheets(newNumbers))
+            {
+                result.Cancelled = true;
+                return result;
+            }
+
+            ElementId titleblockId = newNumbers.Count == 0 ? ElementId.InvalidElementId : new FilteredElementCollector(doc)
                 .OfCategory(BuiltInCategory.OST_TitleBlocks)
                 .OfClass(typeof(FamilySymbol)).Cast<FamilySymbol>()
                 .Select(t => t.Id).FirstOrDefault() ?? ElementId.InvalidElementId;
@@ -124,7 +143,6 @@ namespace YangTools.Revit.Core.Sheets
                         }
                         foreach (var field in plan.Data)
                         {
-                            if (IsReservedOrEmpty(field)) continue;
                             Parameter parameter = ResolveUniqueWritableParameter(sheet, field.Key, plan.ExcelRow);
                             if (parameter.IsReadOnly)
                                 throw new InvalidOperationException($"第 {plan.ExcelRow} 行参数“{field.Key}”为只读。");
@@ -197,7 +215,8 @@ namespace YangTools.Revit.Core.Sheets
 
         private static bool IsReservedOrEmpty(KeyValuePair<string, object> field)
         {
-            return field.Key == SheetNumberColumn || field.Key == SheetNameColumn || field.Value == null;
+            return field.Key == SheetNumberColumn || field.Key == SheetNameColumn
+                || string.IsNullOrWhiteSpace(field.Value?.ToString());
         }
     }
 }

@@ -11,6 +11,7 @@ namespace YangTools.Revit.UI
     public enum MergeSortMode
     {
         SelectionOrder,
+        ReadingOrder,
         XDesc,
         XAsc,
         YDesc,
@@ -35,6 +36,7 @@ namespace YangTools.Revit.UI
             UpdateSelectionStatus();
             SelectSortMode(State.SortTag);
             ChkUseNewline.IsChecked = State.UseNewlineSeparator;
+            ChkCleanWhitespace.IsChecked = State.CleanWhitespace;
             TxtSeparator.Text = State.SeparatorText;
             UpdateSeparatorState();
         }
@@ -61,18 +63,19 @@ namespace YangTools.Revit.UI
 
         private void SaveOptions()
         {
-            RadioButton? selected = new[] { RbSelectionOrder, RbXDesc, RbXAsc, RbYDesc, RbYAsc }
+            RadioButton? selected = new[] { RbReadingOrder, RbSelectionOrder, RbXDesc, RbXAsc, RbYDesc, RbYAsc }
                 .FirstOrDefault(button => button.IsChecked == true);
-            State.SortTag = selected?.Tag?.ToString() ?? "SelectionOrder";
+            State.SortTag = selected?.Tag?.ToString() ?? "ReadingOrder";
+            State.CleanWhitespace = ChkCleanWhitespace.IsChecked == true;
             State.UseNewlineSeparator = ChkUseNewline.IsChecked == true;
             State.SeparatorText = TxtSeparator.Text ?? string.Empty;
         }
 
         private void SelectSortMode(string tag)
         {
-            RadioButton selected = new[] { RbSelectionOrder, RbXDesc, RbXAsc, RbYDesc, RbYAsc }
+            RadioButton selected = new[] { RbReadingOrder, RbSelectionOrder, RbXDesc, RbXAsc, RbYDesc, RbYAsc }
                 .FirstOrDefault(button => string.Equals(button.Tag?.ToString(), tag, StringComparison.OrdinalIgnoreCase))
-                ?? RbSelectionOrder;
+                ?? RbReadingOrder;
             selected.IsChecked = true;
         }
 

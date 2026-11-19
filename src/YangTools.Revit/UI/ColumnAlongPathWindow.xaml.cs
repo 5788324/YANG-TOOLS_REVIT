@@ -4,6 +4,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Controls;
+using TextBox = System.Windows.Controls.TextBox;
 using System.Windows.Media;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
@@ -200,6 +201,7 @@ namespace YangTools.Revit.UI
                         Dispatcher.Invoke(() =>
                         {
                             if (_isClosed || requestVersion != _requestVersion) return;
+                            PlacementStatus.Text = string.Empty;
                             _viewModel.ChainedCurves = curves;
                             _viewModel.TotalLengthDisplay = $"总长：{totalLengthMm:F0} mm";
                             _viewModel.PathInfoText = $"已连接 {curves.Count} 段模型线。默认首端依据首条所选模型线确定，可用“反转路线首尾”切换。";
@@ -252,6 +254,7 @@ namespace YangTools.Revit.UI
             _handler.SetAction(app =>
             {
                 if (_isClosed || requestVersion != _requestVersion) return;
+                PlacementStatus.Text = string.Empty;
                 var engine = new ColumnAlongPathEngine(app.ActiveUIDocument);
                 // A committed result is returned before any potentially failing UI operation.
                 ColumnAlongPathPlacementResult result = engine.ExecutePlacement(request);
@@ -263,13 +266,10 @@ namespace YangTools.Revit.UI
                         TaskDialog.Show("沿线布柱已提交", result.ReadbackWarning);
                     else if (!_isClosed)
                     {
-                        TaskDialog.Show("沿线布置柱",
-                            $"已布置 {result.CreatedCount} 根柱。\n" +
-                            $"间距：{result.SpacingMm:F0} mm\n" +
-                            $"旋转偏移：{result.RotationOffsetDegrees:F2}°\n" +
+                        PlacementStatus.Text = $"已布置 {result.CreatedCount} 根柱，可用 Ctrl+Z 撤销。";
+                        PlacementStatus.ToolTip =
                             $"首柱里程：{ColumnAlongPathEngine.FormatStation(result.FirstStationM)}\n" +
-                            $"末柱里程：{ColumnAlongPathEngine.FormatStation(result.LastStationM)}\n" +
-                            "本次操作可通过一次 Ctrl+Z 撤销。");
+                            $"末柱里程：{ColumnAlongPathEngine.FormatStation(result.LastStationM)}";
                     }
                 }
                 catch (Exception uiError)

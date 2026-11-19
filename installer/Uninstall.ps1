@@ -1,46 +1,18 @@
 ﻿[CmdletBinding()]
 param(
     [ValidateSet('2021','2022','2023','2024','2025','2026','2027')]
-    [string[]]$Versions = @('2021','2022','2023','2024','2025','2026','2027')
+    [string[]]$Versions
 )
 
 $ErrorActionPreference = 'Stop'
 $AddinsRoot = Join-Path $env:APPDATA 'Autodesk\Revit\Addins'
+. (Join-Path $PSScriptRoot 'Assert-TargetRevitClosed.ps1')
 
-$YangToolsUserDataRoot = Join-Path $env:APPDATA 'YangTools'
-$LegacyAssistantDirectory = Join-Path $YangToolsUserDataRoot 'Assistant'
-$LegacyAssistantFiles = @(
-    (Join-Path $YangToolsUserDataRoot 'copilot_settings.json'),
-    (Join-Path $YangToolsUserDataRoot 'copilot_history.json'),
-    (Join-Path $YangToolsUserDataRoot 'moyu_settings.json'),
-    (Join-Path $YangToolsUserDataRoot 'moyu_history.json')
-)
-
-function Remove-LegacyAssistantData {
-    $removed = @()
-    if (Test-Path -LiteralPath $LegacyAssistantDirectory) {
-        Remove-Item -LiteralPath $LegacyAssistantDirectory -Recurse -Force -ErrorAction Stop
-        $removed += $LegacyAssistantDirectory
-    }
-    foreach ($path in $LegacyAssistantFiles) {
-        if (Test-Path -LiteralPath $path) {
-            Remove-Item -LiteralPath $path -Force -ErrorAction Stop
-            $removed += $path
-        }
-    }
-    return @($removed)
-}
 
 
 try {
-    if (Get-Process Revit -ErrorAction SilentlyContinue) {
-        throw 'Revit 正在运行。请先关闭全部 Revit 窗口，再重新卸载。'
-    }
-
-    $removedAssistantData = @(Remove-LegacyAssistantData)
-    if ($removedAssistantData.Count -gt 0) {
-        Write-Host "[完成] 已清理旧 AI/摸鱼助手历史、设置和 API Key：$($removedAssistantData.Count) 项。" -ForegroundColor Green
-    }
+    if (-not $Versions -or $Versions.Count -eq 0) { throw '请明确指定 Revit 年份，例如 -Versions 2025；或使用中文图形安装器。' }
+    Assert-TargetRevitClosed -Versions $Versions
 
     $removed = 0
     foreach ($version in $Versions) {
@@ -69,7 +41,7 @@ try {
     if ($removed -eq 0) {
         Write-Host '没有检测到 YangTools，无需卸载。' -ForegroundColor Yellow
     } else {
-        Write-Host 'YangTools 卸载完成；旧 AI/摸鱼助手数据已清理，其他仍在使用的个人设置保留。' -ForegroundColor Cyan
+        Write-Host 'YangTools 卸载完成；个人设置与历史数据均已保留。' -ForegroundColor Cyan
     }
 }
 catch {

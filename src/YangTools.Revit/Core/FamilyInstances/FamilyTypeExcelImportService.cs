@@ -97,7 +97,7 @@ namespace YangTools.Revit.Core.FamilyInstances
                     if (string.IsNullOrWhiteSpace(cell.Key))
                         throw new InvalidOperationException($"第 {line} 行有空白参数列名；整批未修改。");
                     Parameter parameter = StableParameterKey.ResolveByDisplayLabel(type, cell.Key);
-                    if (parameter == null || !parameter.IsValidObject)
+                    if (parameter == null)
                         throw new InvalidOperationException($"第 {line} 行参数“{cell.Key}”不存在或同名不唯一；整批未修改。");
                     if (!ParameterValueHelper.CanEditAsText(parameter))
                         throw new InvalidOperationException($"第 {line} 行参数“{cell.Key}”只读或不支持文本编辑；整批未修改。");
@@ -155,7 +155,7 @@ namespace YangTools.Revit.Core.FamilyInstances
                         var type = doc.GetElement(plan.Id) as FamilySymbol;
                         if (type == null || !type.IsValidObject ||
                             (plan.RequestedName != null && !string.Equals(type.Name, plan.RequestedName, StringComparison.Ordinal)) ||
-                            plan.Parameters.Any(p => p.Parameter == null || !p.Parameter.IsValidObject ||
+                            plan.Parameters.Any(p => p.Parameter == null ||
                                 !InternalEqual(ReadInternalValue(p.Parameter), p.AppliedValue)))
                             throw new InvalidOperationException($"第 {plan.Row} 行写入后核对失败，取消整个批次。");
                     }
@@ -193,7 +193,7 @@ namespace YangTools.Revit.Core.FamilyInstances
                     return plan.Parameters.All(p =>
                     {
                         var actual = StableParameterKey.ResolveByDisplayLabel(type, p.Label);
-                        return actual != null && actual.IsValidObject &&
+                        return actual != null &&
                             InternalEqual(ReadInternalValue(actual), p.AppliedValue);
                     });
                 });

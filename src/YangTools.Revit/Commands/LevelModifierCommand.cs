@@ -10,7 +10,11 @@ using YangTools.Revit.UI;
 namespace YangTools.Revit.Commands;
 
 [Transaction(TransactionMode.Manual)]
-[RibbonButton("模型修改区", "标高修改", "修改图元标高并保持原位置", "Icons/level_modifier_32.png", "Icons/level_modifier_16.png")]
+[RibbonButton(
+        panelName: "模型修改区", buttonText: "标高修改",
+        tooltip: "修改图元关联标高并尽量保持模型世界位置。",
+        largeIcon: "Icons/level_modifier_32.png", smallIcon: "Icons/level_modifier_16.png",
+        usage: "使用：预选目标图元或点击后拾取，再选择新标高。按原世界位置计算偏移。\n注意：宿主、镜像或复杂约束图元可能无法安全修改。")]
 public class LevelModifierCommand : IExternalCommand
 {
     public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
@@ -28,8 +32,10 @@ public class LevelModifierCommand : IExternalCommand
             ElementId[] elementIds = uiDoc.Selection.GetElementIds().ToArray();
             if (elementIds.Length == 0)
             {
-                TaskDialog.Show("提示", "请先选择需要修改标高的图元。");
-                return Result.Cancelled;
+                elementIds = uiDoc.Selection.PickObjects(Autodesk.Revit.UI.Selection.ObjectType.Element,
+                        "选择要修改标高的图元，然后点击完成。")
+                    .Select(reference => reference.ElementId).ToArray();
+                if (elementIds.Length == 0) return Result.Cancelled;
             }
             List<Level> levels = new FilteredElementCollector(doc)
                 .OfClass(typeof(Level)).Cast<Level>()
@@ -39,7 +45,7 @@ public class LevelModifierCommand : IExternalCommand
                 TaskDialog.Show("错误", "项目中没有找到标高。");
                 return Result.Failed;
             }
-            LevelModifierWindow window = new LevelModifierWindow(levels);
+            LevelModifierWindow window = new LevelModifierWindow(levels, elementIds.Length);
             new System.Windows.Interop.WindowInteropHelper(window).Owner = commandData.Application.MainWindowHandle;
             window.ShowDialog();
             if (!window.IsOk || window.SelectedLevel == null) return Result.Cancelled;
@@ -77,8 +83,11 @@ public class LevelModifierCommand : IExternalCommand
                 TaskDialog.Show("已提交，界面刷新异常", "标高修改已提交，模型回读通过。界面刷新失败：" + refreshEx.Message);
                 return Result.Succeeded;
             }
-            TaskDialog.Show("成功", $"标高修改已提交并确认原位置。\n修改: {result.ChangedCount}\n无需修改: {result.UnchangedCount}");
             return Result.Succeeded;
+        }
+        catch (Autodesk.Revit.Exceptions.OperationCanceledException)
+        {
+            return Result.Cancelled;
         }
         catch (Exception ex)
         {

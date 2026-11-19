@@ -85,7 +85,7 @@ for name,token,code in [
 ('engine restricts placement type','FamilyPlacementType.OneLevelBased',engine),
 ('engine direct offset preserved','double newOffset = originalElevation + originalOffset - targetLevel.ProjectElevation',engine),
 ]: c(name,token in code)
-c('no unconditional success before commit',command.find('result.Committed')<command.find('TaskDialog.Show("成功"'))
+c('no unconditional success before commit',command.index('result.Committed') < command.index('uiDoc.RefreshActiveView()'))
 c('preflight precedes transaction',service.index('plans.Add(plan)')<service.index('new Transaction(doc'))
 c('commit precedes final readback',service.index('tx.Commit()')<service.index('事务已提交，但最终模型回读未确认'))
 c('no silent false skip in command','TryChangeLevel(' not in command)

@@ -35,7 +35,7 @@ for name,frag in [
  ('weight_snapshot','source.GetLineWeight(GraphicsStyleType.Projection)'),
  ('pattern_snapshot','source.GetLinePatternId(GraphicsStyleType.Projection)'),
  ('create_in_revit','document.Settings.Categories.NewSubcategory(root, newName)'),
- ('color_copy','created.LineColor = new Color('),
+ ('color_copy','created.LineColor = new Autodesk.Revit.DB.Color('),
  ('weight_copy','created.SetLineWeight('),
  ('pattern_copy','created.SetLinePatternId('),
  ('check_before_commit','if (!Matches(created, newName, originalColor, originalWeight, originalPattern))'),
@@ -74,12 +74,14 @@ ck('micro_doubleclick_container','ItemsControl.ContainerFromElement(ToolsListBox
 ck('micro_doubleclick_selected','!item.IsSelected' in win)
 ck('micro_remove_project_guard','catch (Exception ex)' in section(win,'private void DeleteProjectButton_Click(', 'private void OpenProjectFolderButton_Click('))
 ck('micro_preferences_failure_not_mask_delete','SavePreferencesBestEffort()' in section(win,'private void DeletePluginButton_Click(', 'private static void DeleteToolSidecars('))
-ck('micro_preferences_logged','DiagnosticLog.WriteError("保存临时插件箱上次选择失败"' in win)
+settings=read('src/YangTools.Revit/Core/UserSettings.cs')
+ck('micro_preferences_failure_reported','if (!_settings.Save())' in win and 'DiagnosticLog.WriteError("保存用户输入设置"' in settings)
 ck('micro_run_preserved','SelectedDllPath = selectedTool.FullPath' in win)
 ck('micro_collected_delete_preserved','MicroToolEngine.DeleteCollectedPackage(selectedTool.FullPath)' in win)
 ck('micro_no_catch_swallow', 'catch { }' not in win)
 ck('micro_window_xaml_xml',ET.fromstring(xaml) is not None)
-ck('expected_existing_tests',len(list((root/'tools').glob('Test-*.py'))) >= 66)
+# RC3H: 12 obsolete R00-R10 / rebar Ribbon test suites intentionally retired.
+ck('expected_existing_tests',len(list((root/'tools').glob('Test-*.py'))) >= 60)
 errors=[name for name,ok in checks.items() if not ok]
 result={'name':'RC3A LineStyle Duplicate + MicroTool UI static','total':len(checks),'passed':len(checks)-len(errors),'failed':errors,'limitation':'No C# compile, Revit GUI, model write, rollback, or runtime evidence'}
 print(json.dumps(result,ensure_ascii=False,indent=2))

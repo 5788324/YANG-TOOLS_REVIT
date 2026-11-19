@@ -1,0 +1,8 @@
+{
+  "schema_version": "yangcad-rvt-exchange/1.0", "units": "mm", "origin": [0,0,0],
+  "entities": [
+    {"Handle":"P2_POLY_STRAIGHT","DxfType":"HATCH","ExchangeLayer":"RVT-H SOLID S1 A0 White","Data":{"pattern":"SOLID","boundary_loops":[{"kind":"polyline","is_outer":true,"vertices":[{"point":[0,0],"bulge":0},{"point":[100,0],"bulge":0},{"point":[100,100],"bulge":0},{"point":[0,100],"bulge":0}]}]}},
+    {"Handle":"P2_POLY_CURVED","DxfType":"HATCH","ExchangeLayer":"RVT-H SOLID S1 A0 White","Data":{"pattern":"SOLID","boundary_loops":[{"kind":"polyline","vertices":[{"point":[200,0],"bulge":0.25},{"point":[300,0],"bulge":0},{"point":[300,100],"bulge":0},{"point":[200,100],"bulge":0}]}]}},
+    {"Handle":"P2_POLY_SHORT","DxfType":"HATCH","ExchangeLayer":"RVT-H SOLID S1 A0 White","Data":{"pattern":"SOLID","boundary_loops":[{"kind":"polyline","vertices":[{"point":[400,0],"bulge":0},{"point":[500,0],"bulge":0},{"point":[500,100],"bulge":0},{"point":[499.85,100],"bulge":0},{"point":[400,100],"bulge":0}]}]}}
+  ]
+}

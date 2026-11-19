@@ -8,7 +8,11 @@ using YangTools.Revit.UI;
 namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
-    [RibbonButton("总控中心", "批处理与云链接", tooltip: "批量处理本地/已打开/云模型：导出 NWC、IFC、DWG、PDF，Revit 2021+ 可通过虚拟打印机打印 PDF；支持预检与可控命名", largeIcon: "Icons/batch_task_32.png", smallIcon: "Icons/batch_task_16.png")]
+    [RibbonButton(
+        panelName: "项目管理区", buttonText: "批量任务",
+        tooltip: "批量导出本地/已打开/云模型。",
+        largeIcon: "Icons/batch_task_32.png", smallIcon: "Icons/batch_task_16.png",
+        usage: "使用：点击按钮，在窗口选择文件/视图集、导出类型和输出目录，先预检核对文件名再执行。\n注意：Revit 2021 使用虚拟打印机打印 PDF。")]
     public class BatchTaskCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)

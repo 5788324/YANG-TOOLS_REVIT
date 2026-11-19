@@ -11,11 +11,10 @@ namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
     [RibbonButton(
-        "项目管理区",
-        "族类别修改",
-        "批量修改可编辑载入族的 Revit 族类别，例如 Abutments → Generic Models",
-        "Icons/family_manager_32.png",
-        "Icons/family_manager_16.png")]
+        panelName: "项目管理区", buttonText: "族类别",
+        tooltip: "修改可编辑载入族的族类别。",
+        largeIcon: "Icons/family_category_32.png", smallIcon: "Icons/family_category_16.png",
+        usage: "使用：点击按钮，在窗口选定可编辑载入族及目标类别，核对映射后执行。\n注意：类别更改可能影响可见性、明细表和族参数。")]
     public sealed class FamilyCategoryChangeCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
@@ -53,7 +52,7 @@ namespace YangTools.Revit.Commands
                 TaskDialog confirm = new TaskDialog("确认修改族类别")
                 {
                     MainInstruction = $"将所选族修改为“{request.TargetCategoryName}”？",
-                    MainContent = $"族：{sampleNames}{suffix}\n\n这会改变 Revit Family Category，可能影响可见性、明细表/过滤器、类别专用参数和宿主行为。\n\nYangTools 会在回载后复核族/类型/实例 ElementId 与正 ID 自定义参数内部值；发现异常会回滚整批。",
+                    MainContent = $"待修改 {request.FamilyIds.Count} 个族：{sampleNames}{suffix}\n\n这会改变 Revit Family Category，可能影响可见性、明细表/过滤器、类别专用参数和宿主行为。\n\nYangTools 会在回载后复核族/类型/实例 ElementId 与正 ID 自定义参数内部值；发现异常会回滚整批。",
                     CommonButtons = TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.No,
                     DefaultButton = TaskDialogResult.No
                 };
@@ -61,8 +60,13 @@ namespace YangTools.Revit.Commands
                     return Result.Cancelled;
 
                 FamilyCategoryChangeResult result = FamilyCategoryChangeService.Execute(doc, request);
-                TaskDialog.Show("族类别修改完成", result.BuildSummary());
-                return result.FailedCount == result.RequestedCount ? Result.Failed : Result.Succeeded;
+                string title = result.ChangedCount > 0 ? "族类别修改完成"
+                    : result.FailedCount > 0 ? "族类别未修改（有失败项）" : "无需修改族类别";
+                TaskDialog.Show(title, result.BuildSummary());
+                if (result.ChangedCount > 0) return Result.Succeeded;
+                if (result.FailedCount == 0) return Result.Cancelled;
+                message = result.BuildSummary();
+                return Result.Failed;
             }
             catch (Autodesk.Revit.Exceptions.OperationCanceledException)
             {

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Controls;
+using TextBox = System.Windows.Controls.TextBox;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using YangTools.Revit.Core;
@@ -195,6 +196,7 @@ namespace YangTools.Revit.UI
                         if (_isClosed || version != _pathVersion) return;
                         if (curves != null && curves.Count > 0)
                         {
+                            PlacementStatus.Text = string.Empty;
                             _viewModel.ChainedCurves = curves;
                             double totalLenMm = curves.Sum(c => c.Length) * 304.8;
                             _viewModel.TotalLengthDisplay = $"总长: {totalLenMm:F0} mm";
@@ -247,15 +249,20 @@ namespace YangTools.Revit.UI
                 if (_isClosed || version != _placementVersion) return;
                 try
                 {
+                    PlacementStatus.Text = string.Empty;
                     var engine = new LinearPlacementEngine(app.ActiveUIDocument);
                     LinearPlacementResult result = engine.ExecutePlacement(request);
                     // A committed transaction may not be undone by later UI or readback failure.
                     if (!_isClosed && version == _placementVersion)
                     {
-                        string message = result.ReadbackConfirmed
-                            ? $"已布置 {result.CreatedCount} 个实例，提交及类型回读成功。"
-                            : $"已提交 {result.CreatedCount} 个实例，但回读无法确认：{result.ReadbackWarning}，请检查模型后再执行。";
-                        try { TaskDialog.Show("线性布置结果", message); }
+                        try
+                        {
+                            if (result.ReadbackConfirmed)
+                                PlacementStatus.Text = $"已布置 {result.CreatedCount} 个实例，可用 Ctrl+Z 撤销。";
+                            else
+                                TaskDialog.Show("线性布置结果",
+                                    $"已提交 {result.CreatedCount} 个实例，但回读无法确认：{result.ReadbackWarning}。请检查模型后再执行。");
+                        }
                         catch (Exception uiError)
                         {
                             DiagnosticLog.WriteInfo("线性布置", "模型已提交，但结果界面显示失败：" + uiError.Message);

@@ -71,10 +71,10 @@ checks = {
     'text note edit': 'note.Text = newValue' in cs,
     'parameter edit': 'parameter.Set(newValue)' in cs,
     'parameter clear': 'parameter.Set(string.Empty)' in cs,
-    'delete preview rollback': '中文清理删除预检' in cs and 'sub.RollBack()' in cs,
-    'batch subtransactions': 'new SubTransaction(_doc)' in cs,
+    'shared delete preview': 'ProjectAssetDeleteService.Preview(_doc' in cs,
+    'confirmed deletion inside cleanup transaction': cs.index('new Transaction(_doc, "YangTools - 中文检查批量清理")') < cs.index('ProjectAssetDeleteService.ApplyConfirmedDeletion(_doc'),
     'one undo transaction': '中文检查批量清理' in cs,
-    'command description updated': '双击重命名及安全删除/清空' in cmd,
+    'command description updated': '重命名或按界面确认安全清理' in cmd,
     'old readonly claim removed': '只读检查族实例' not in cmd,
 }
 

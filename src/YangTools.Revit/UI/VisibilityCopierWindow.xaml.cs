@@ -25,6 +25,7 @@ namespace YangTools.Revit.UI
                 case ViewType.ThreeD: return "三维";
                 case ViewType.Section: return "剖面";
                 case ViewType.Detail: return "详图";
+                case ViewType.DraftingView: return "绘图";
                 default: return vt.ToString();
             }
         }
@@ -48,37 +49,23 @@ namespace YangTools.Revit.UI
 
     public partial class VisibilityCopierWindow : Window
     {
-        private Document _doc;
-        public ObservableCollection<ViewItem> AllViews { get; set; }
-        public ObservableCollection<ViewItem> TargetViews { get; set; }
+        private ObservableCollection<ViewItem> AllViews { get; } = new ObservableCollection<ViewItem>();
+        private ObservableCollection<ViewItem> TargetViews { get; } = new ObservableCollection<ViewItem>();
+        private readonly Document _doc;
 
         public VisibilityCopierWindow(Document doc)
         {
+            _doc = doc;
             ThemeHelper.InitializeWithTheme(this, InitializeComponent);
             ThemeHelper.ApplyToWindow(this);
-            _doc = doc;
-            AllViews = new ObservableCollection<ViewItem>();
-            TargetViews = new ObservableCollection<ViewItem>();
-            
             LoadViews();
             
             CmbSourceView.ItemsSource = AllViews;
             LstTargetViews.ItemsSource = TargetViews;
             
-            if (AllViews.Count > 0)
-            {
-                // Set default source to active view if it's in the list
-                var activeViewId = doc.ActiveView.Id;
-                var activeItem = AllViews.FirstOrDefault(v => v.View.Id == activeViewId);
-                if (activeItem != null)
-                {
-                    CmbSourceView.SelectedItem = activeItem;
-                }
-                else
-                {
-                    CmbSourceView.SelectedIndex = 0;
-                }
-            }
+            ChkWorksets.IsEnabled = doc.IsWorkshared;
+            CmbSourceView.SelectedItem = AllViews.FirstOrDefault(item => item.View.Id == doc.ActiveView.Id);
+            RefreshTargets();
         }
 
         private void LoadViews()
@@ -86,10 +73,10 @@ namespace YangTools.Revit.UI
             var views = new FilteredElementCollector(_doc)
                 .OfClass(typeof(View))
                 .Cast<View>()
-                .Where(v => !v.IsTemplate && v.CanUseTemporaryVisibilityModes() && !v.IsAssemblyView)
+                .Where(v => !v.IsTemplate && v.AreGraphicsOverridesAllowed() && !v.IsAssemblyView)
                 .Where(v => v.ViewType == ViewType.FloorPlan || v.ViewType == ViewType.CeilingPlan || 
                             v.ViewType == ViewType.ThreeD || v.ViewType == ViewType.Elevation || 
-                            v.ViewType == ViewType.Section || v.ViewType == ViewType.Detail)
+                            v.ViewType == ViewType.Section || v.ViewType == ViewType.Detail || v.ViewType == ViewType.DraftingView)
                 .OrderBy(v => GetViewTypeOrder(v.ViewType))
                 .ThenBy(v => v.Name)
                 .ToList();
@@ -110,6 +97,7 @@ namespace YangTools.Revit.UI
                 case ViewType.Section: return 4;
                 case ViewType.ThreeD: return 5;
                 case ViewType.Detail: return 6;
+                case ViewType.DraftingView: return 7;
                 default: return 99;
             }
         }
@@ -126,15 +114,24 @@ namespace YangTools.Revit.UI
 
         private void CmbSourceView_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            var selectedItem = CmbSourceView.SelectedItem as ViewItem;
+            RefreshTargets();
+        }
+
+        private void SearchTargets_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+            RefreshTargets();
+        }
+
+        private void RefreshTargets()
+        {
+            if (LstTargetViews == null || SearchTargets == null) return;
+            var source = CmbSourceView?.SelectedItem as ViewItem;
+            if (source != null) source.IsSelected = false;
+            string query = SearchTargets.Text.Trim();
             TargetViews.Clear();
-            foreach (var view in AllViews)
-            {
-                if (selectedItem == null || view.View.Id != selectedItem.View.Id)
-                {
-                    TargetViews.Add(new ViewItem { View = view.View, IsSelected = false });
-                }
-            }
+            foreach (var view in AllViews.Where(item => item != source &&
+                item.Name.IndexOf(query, StringComparison.CurrentCultureIgnoreCase) >= 0))
+                TargetViews.Add(view);
         }
 
         private void SelectAll_Click(object sender, RoutedEventArgs e)
@@ -144,157 +141,184 @@ namespace YangTools.Revit.UI
 
         private void SelectNone_Click(object sender, RoutedEventArgs e)
         {
-            foreach (var item in TargetViews) item.IsSelected = false;
+            foreach (var item in AllViews) item.IsSelected = false;
         }
 
         private void CopyButton_Click(object sender, RoutedEventArgs e)
         {
-            var sourceItem = CmbSourceView.SelectedItem as ViewItem;
-            if (sourceItem == null)
+            if (!(CmbSourceView.SelectedItem is ViewItem source))
             {
-                MessageBox.Show("请选择源视图。", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                StatusText.Text = "请选择源视图。";
                 return;
             }
 
-            var targets = TargetViews.Where(x => x.IsSelected).Select(x => x.View).ToList();
+            var targets = AllViews.Where(item => item.IsSelected && item != source).ToList();
             if (targets.Count == 0)
             {
-                MessageBox.Show("请至少选择一个目标视图。", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                StatusText.Text = "请至少勾选一个目标视图。";
                 return;
             }
 
+            var scopes = new Dictionary<BuiltInParameter, string>();
+            if (ChkModelCategories.IsChecked == true) scopes.Add(BuiltInParameter.VIS_GRAPHICS_MODEL, "模型类别");
+            if (ChkAnnotationCategories.IsChecked == true) scopes.Add(BuiltInParameter.VIS_GRAPHICS_ANNOTATION, "注释类别");
+            if (ChkAnalyticalCategories.IsChecked == true) scopes.Add(BuiltInParameter.VIS_GRAPHICS_ANALYTICAL_MODEL, "分析模型");
+            if (ChkImportCategories.IsChecked == true) scopes.Add(BuiltInParameter.VIS_GRAPHICS_IMPORT, "CAD 导入类别");
+            if (ChkFilters.IsChecked == true) scopes.Add(BuiltInParameter.VIS_GRAPHICS_FILTERS, "过滤器");
+            if (ChkWorksets.IsChecked == true) scopes.Add(BuiltInParameter.VIS_GRAPHICS_WORKSETS, "工作集");
+            if (scopes.Count == 0)
+            {
+                StatusText.Text = "请至少勾选一项复制内容。";
+                return;
+            }
+
+            int hidden = targets.Count(item => !TargetViews.Contains(item));
+            if (hidden > 0 && MessageBox.Show(this, $"搜索结果之外还勾选了 {hidden} 个视图。复制到全部 {targets.Count} 个视图？",
+                    "确认目标视图", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+                return;
+
+            string destination = "";
+            string skipText;
+            var plans = new List<(View Target, BuiltInParameter Scope)>();
             try
             {
-                using (Transaction t = new Transaction(_doc, "可见性拷贝"))
+                var skipped = new List<string>();
+                foreach (var item in targets)
                 {
-                    t.Start();
-                    
-                    var sourceView = sourceItem.View;
-                    
-                    bool copyModel = ChkModelCategories.IsChecked == true;
-                    bool copyAnno = ChkAnnotationCategories.IsChecked == true;
-                    bool copyAnalytic = ChkAnalyticalCategories.IsChecked == true;
-                    bool copyImport = ChkImportCategories.IsChecked == true;
-                    bool copyFilters = ChkFilters.IsChecked == true;
-                    bool copyWorksets = ChkWorksets.IsChecked == true;
-                    bool copyLinks = ChkRvtLinks.IsChecked == true;
-
-                    foreach (var target in targets)
-                    {
-                        CopyVisibility(sourceView, target, copyModel, copyAnno, copyAnalytic, copyImport, copyFilters, copyWorksets, copyLinks);
-                    }
-                    
-                    t.Commit();
+                    var controlledParameters = ControlledByTemplate(item.View);
+                    var locked = scopes.Where(scope => controlledParameters.Contains(new ElementId(scope.Key))).ToList();
+                    if (locked.Count > 0)
+                        skipped.Add($"{item.View.Name}（{string.Join("、", locked.Select(scope => scope.Value))}）");
+                    plans.AddRange(scopes.Keys.Except(locked.Select(scope => scope.Key)).Select(scope => (item.View, scope)));
                 }
-                
-                MessageBox.Show("可见性拷贝完成。", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
-                Close();
+
+                skipText = skipped.Count == 0 ? ""
+                    : $"受模板控制，已跳过 {skipped.Count} 个视图的部分或全部设置。";
+                StatusText.ToolTip = skipped.Count == 0 ? null : string.Join("\n", skipped);
+                if (plans.Count == 0)
+                {
+                    StatusText.Text = skipText;
+                    return;
+                }
+
+                var controlled = ControlledByTemplate(source.View);
+                var sourceTemplate = _doc.GetElement(source.View.ViewTemplateId) as View;
+                var categories = ReadCategories();
+                using var transaction = new Transaction(_doc, "复制视图可见性");
+                if (transaction.Start() != TransactionStatus.Started)
+                    throw new InvalidOperationException("无法开始复制视图可见性。");
+
+                foreach (var plan in plans)
+                {
+                    View from = sourceTemplate != null && controlled.Contains(new ElementId(plan.Scope))
+                        ? sourceTemplate : source.View;
+                    destination = $"「{plan.Target.Name}」的{scopes[plan.Scope]}";
+                    CopyVisibility(from, plan.Target, plan.Scope, categories);
+                }
+                if (transaction.Commit() != TransactionStatus.Committed)
+                    throw new InvalidOperationException("Revit 未提交视图可见性修改。");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"拷贝失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                StatusText.Text = "复制未完成。";
+                MessageBox.Show(this, destination.Length == 0 ? ex.Message : $"{destination}\n{ex.Message}",
+                    "复制失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
             }
+
+            StatusText.Text = $"已复制到 {plans.Select(plan => plan.Target.Id).Distinct().Count()} 个视图。{skipText}";
         }
 
-        private void CopyVisibility(View source, View target, bool copyModel, bool copyAnno, bool copyAnalytic, bool copyImport, bool copyFilters, bool copyWorksets, bool copyLinks)
+        private HashSet<ElementId> ControlledByTemplate(View view)
         {
-            var doc = source.Document;
+            var template = _doc.GetElement(view.ViewTemplateId) as View;
+            return template == null ? new HashSet<ElementId>()
+                : new HashSet<ElementId>(template.GetTemplateParameterIds().Except(template.GetNonControlledTemplateParameterIds()));
+        }
 
-            // 1. Categories
-            var categories = doc.Settings.Categories;
-            Category importCat = null;
-            try { importCat = categories.get_Item(BuiltInCategory.OST_ImportObjectStyles); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine("[YangTools] VisibilityCopierWindow.xaml.cs: {0}", ex.Message); }
+        private ILookup<BuiltInParameter, Category> ReadCategories()
+        {
+            var imported = new FilteredElementCollector(_doc).OfClass(typeof(ImportInstance))
+                .Cast<ImportInstance>().Select(instance => instance.Category).Where(category => category != null)
+                .Select(category => category!).ToList();
 
-            foreach (Category cat in categories)
+            var importIds = new HashSet<ElementId>(imported.Select(category => category.Id))
             {
-                if (cat == null) continue;
+                new ElementId(BuiltInCategory.OST_ImportObjectStyles)
+            };
+            var linkId = new ElementId(BuiltInCategory.OST_RvtLinks);
+            var categories = new List<(BuiltInParameter Scope, Category Category)>();
+            void AddCategory(Category category, BuiltInParameter? inherited)
+            {
+                if (category.Id == linkId) return;
+                BuiltInParameter? scope = importIds.Contains(category.Id) ? BuiltInParameter.VIS_GRAPHICS_IMPORT : inherited;
+                scope ??= category.CategoryType switch
+                {
+                    CategoryType.Model => BuiltInParameter.VIS_GRAPHICS_MODEL,
+                    CategoryType.Annotation => BuiltInParameter.VIS_GRAPHICS_ANNOTATION,
+                    CategoryType.AnalyticalModel => BuiltInParameter.VIS_GRAPHICS_ANALYTICAL_MODEL,
+                    _ => (BuiltInParameter?)null
+                };
 
-                bool isImport = false;
-                if (importCat != null && (cat.Id == importCat.Id || (cat.Parent != null && cat.Parent.Id == importCat.Id)))
-                {
-                    isImport = true;
-                }
+                if (scope.HasValue) categories.Add((scope.Value, category));
+                foreach (Category child in category.SubCategories)
+                    AddCategory(child, scope);
+            }
+            foreach (Category category in _doc.Settings.Categories) AddCategory(category, null);
+            foreach (Category category in imported.GroupBy(category => category.Id).Select(group => group.First()))
+                AddCategory(category, BuiltInParameter.VIS_GRAPHICS_IMPORT);
+            return categories.GroupBy(item => item.Category.Id).Select(group =>
+                group.OrderByDescending(item => item.Scope == BuiltInParameter.VIS_GRAPHICS_IMPORT).First()).ToLookup(item => item.Scope, item => item.Category);
+        }
 
-                bool shouldCopy = false;
-                if (isImport)
+        private void CopyVisibility(View source, View target, BuiltInParameter scope, ILookup<BuiltInParameter, Category> categories)
+        {
+            if (scope == BuiltInParameter.VIS_GRAPHICS_FILTERS)
+            {
+                var existing = new HashSet<ElementId>(target.GetFilters());
+                foreach (var filterId in source.GetOrderedFilters())
                 {
-                    shouldCopy = copyImport;
+                    if (!existing.Contains(filterId)) target.AddFilter(filterId);
+                    target.SetFilterVisibility(filterId, source.GetFilterVisibility(filterId));
+                    using var overrides = source.GetFilterOverrides(filterId);
+                    target.SetFilterOverrides(filterId, overrides);
+                    target.SetIsFilterEnabled(filterId, source.GetIsFilterEnabled(filterId));
                 }
-                else if (cat.Id.GetIdValue() == (int)BuiltInCategory.OST_RvtLinks || (cat.Parent != null && cat.Parent.Id.GetIdValue() == (int)BuiltInCategory.OST_RvtLinks))
-                {
-                    shouldCopy = copyLinks;
-                }
-                else
-                {
-                    switch (cat.CategoryType)
-                    {
-                        case CategoryType.Model:
-                            shouldCopy = copyModel;
-                            break;
-                        case CategoryType.Annotation:
-                            shouldCopy = copyAnno;
-                            break;
-                        case CategoryType.AnalyticalModel:
-                            shouldCopy = copyAnalytic;
-                            break;
-                    }
-                }
-
-                if (shouldCopy)
-                {
-                    try
-                    {
-                        if (cat.get_AllowsVisibilityControl(source) && cat.get_AllowsVisibilityControl(target))
-                        {
-                            bool isHidden = source.GetCategoryHidden(cat.Id);
-                            target.SetCategoryHidden(cat.Id, isHidden);
-                        }
-
-                        if (!source.IsCategoryOverridable(cat.Id) || !target.IsCategoryOverridable(cat.Id)) continue;
-                        
-                        var overrides = source.GetCategoryOverrides(cat.Id);
-                        target.SetCategoryOverrides(cat.Id, overrides);
-                    }
-                    catch (Exception ex) { System.Diagnostics.Debug.WriteLine("[YangTools] VisibilityCopierWindow.xaml.cs: {0}", ex.Message); } // Ignore errors for specific categories that might not support overrides
-                }
+                return;
             }
 
-            // 2. Filters
-            if (copyFilters)
+            if (scope == BuiltInParameter.VIS_GRAPHICS_WORKSETS)
             {
-                try
-                {
-                    var sourceFilters = source.GetFilters();
-                    var targetFilters = target.GetFilters();
-                    
-                    foreach (var filterId in sourceFilters)
-                    {
-                        if (!targetFilters.Contains(filterId))
-                        {
-                            target.AddFilter(filterId);
-                        }
-                        target.SetFilterVisibility(filterId, source.GetFilterVisibility(filterId));
-                        target.SetFilterOverrides(filterId, source.GetFilterOverrides(filterId));
-                    }
-
-                    // Optional: remove filters not in source? We skip that to avoid destructive behavior unless strictly required
-                }
-                catch (Exception ex) { System.Diagnostics.Debug.WriteLine("[YangTools] VisibilityCopierWindow.xaml.cs: {0}", ex.Message); }
+                foreach (var workset in new FilteredWorksetCollector(_doc).OfKind(WorksetKind.UserWorkset))
+                    target.SetWorksetVisibility(workset.Id, source.GetWorksetVisibility(workset.Id));
+                return;
             }
 
-            // 3. Worksets
-            if (copyWorksets && doc.IsWorkshared)
+            switch (scope)
             {
-                try
+                case BuiltInParameter.VIS_GRAPHICS_MODEL:
+                    target.AreModelCategoriesHidden = source.AreModelCategoriesHidden;
+                    break;
+                case BuiltInParameter.VIS_GRAPHICS_ANNOTATION:
+                    target.AreAnnotationCategoriesHidden = source.AreAnnotationCategoriesHidden;
+                    break;
+                case BuiltInParameter.VIS_GRAPHICS_ANALYTICAL_MODEL:
+                    target.AreAnalyticalModelCategoriesHidden = source.AreAnalyticalModelCategoriesHidden;
+                    break;
+                case BuiltInParameter.VIS_GRAPHICS_IMPORT:
+                    target.AreImportCategoriesHidden = source.AreImportCategoriesHidden;
+                    break;
+            }
+
+            foreach (var category in categories[scope])
+            {
+                if (source.CanCategoryBeHidden(category.Id) && target.CanCategoryBeHidden(category.Id))
+                    target.SetCategoryHidden(category.Id, source.GetCategoryHidden(category.Id));
+                if (source.IsCategoryOverridable(category.Id) && target.IsCategoryOverridable(category.Id))
                 {
-                    var worksets = new FilteredWorksetCollector(doc).OfKind(WorksetKind.UserWorkset).ToList();
-                    foreach (var ws in worksets)
-                    {
-                        var visibility = source.GetWorksetVisibility(ws.Id);
-                        target.SetWorksetVisibility(ws.Id, visibility);
-                    }
+                    using var overrides = source.GetCategoryOverrides(category.Id);
+                    target.SetCategoryOverrides(category.Id, overrides);
                 }
-                catch (Exception ex) { System.Diagnostics.Debug.WriteLine("[YangTools] VisibilityCopierWindow.xaml.cs: {0}", ex.Message); }
             }
         }
     }

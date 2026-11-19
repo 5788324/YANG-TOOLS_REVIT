@@ -268,6 +268,5 @@ namespace YangTools.Revit.Models.ParameterCleanup
     internal sealed class MergeOptions
     {
         public bool AllowDeleteSharedParameters { get; set; }
-        public bool DeleteSourcesWithConflicts { get; set; }
     }
 }

@@ -12,11 +12,10 @@ namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
     [RibbonButton(
-        "导入工具区",
-        "CAD转Revit图纸",
-        "读取 YangCAD RVT Exchange，按映射把 CAD 文字、引线、线条、填充和标注重建为当前视图的 Revit 原生详图对象。",
-        "Icons/cad_to_revit_32.png",
-        "Icons/cad_to_revit_16.png")]
+        panelName: "2D修改", buttonText: "CAD转图",
+        tooltip: "按 YangCAD Exchange 映射，将 CAD 图纸内容重建为 Revit 详图对象。",
+        largeIcon: "Icons/cad_to_revit_32.png", smallIcon: "Icons/cad_to_revit_16.png",
+        usage: "使用：先由 YangCAD 生成 RVT Exchange；打开目标详图视图，点击按钮，在窗口选取映射文件并检查转换范围后执行。\n限制：短边不会被静默删除；空白文字和不支持对象会记录原因。转换后检查本地逐源追踪报告。")]
     public sealed class CadToRevitCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
@@ -58,7 +57,7 @@ namespace YangTools.Revit.Commands
                     return Result.Cancelled;
 
                 // ShowDialog 返回后检查原项目与视图：禁止旧窗口请求写入另一个上下文。
-                if (!ReferenceEquals(uiapp.ActiveUIDocument?.Document, document) ||
+                if (!DocumentIdentityGuard.IsSameActiveDocument(uiapp, document) ||
                     document.ActiveView == null || document.ActiveView.Id.GetIdValue() != view.Id.GetIdValue() || document.IsReadOnly)
                 {
                     TaskDialog.Show("CAD 转 Revit 图纸", "当前项目或活动视图已改变，已取消转换，请在目标视图重新执行。");
@@ -66,33 +65,19 @@ namespace YangTools.Revit.Commands
                 }
 
                 CadToRevitRebuildRequest request = window.Request;
-                int mappedTypes = request.TextMappings.Concat(request.LineMappings).Concat(request.FillMappings).Concat(request.DimensionMappings)
-                    .Count(x => x.Action != CadToRevitMappingActions.Skip);
-                int skippedTypes = request.TextMappings.Concat(request.LineMappings).Concat(request.FillMappings).Concat(request.DimensionMappings)
-                    .Count(x => x.Action == CadToRevitMappingActions.Skip);
-
-                var confirm = new TaskDialog("确认 CAD 转 Revit 图纸")
-                {
-                    MainInstruction = $"把 {request.Exchange.TotalCount} 个 CAD 对象重建到“{view.Name}”？",
-                    MainContent =
-                        $"文字：{request.Exchange.Texts.Count}\n" +
-                        $"线条：{request.Exchange.Curves.Count}\n" +
-                        $"填充：{request.Exchange.Fills.Count}\n" +
-                        $"标注：{request.Exchange.Dimensions.Count}\n\n" +
-                        $"启用映射类型：{mappedTypes}\n跳过类型：{skippedTypes}\n" +
-                        $"尺寸界线专用线样式：{request.DimensionReferenceLineStyleName}\n\n" +
-                        "转换会创建 Revit 原生 TextNote / DetailCurve / FilledRegion / Dimension；整次成功项合并为一次 Ctrl+Z。",
-                    CommonButtons = TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.No,
-                    DefaultButton = TaskDialogResult.No
-                };
-                if (confirm.Show() != TaskDialogResult.Yes)
-                    return Result.Cancelled;
-                if (!ReferenceEquals(uiapp.ActiveUIDocument?.Document, document) ||
-                    document.ActiveView == null || document.ActiveView.Id.GetIdValue() != view.Id.GetIdValue() || document.IsReadOnly)
-                    throw new InvalidOperationException("确认期间目标文档或活动视图已改变，禁止执行过期 CAD 转换请求。");
-
                 CadToRevitRebuildResult result = CadToRevitRebuildService.Execute(document, view, request);
-                TaskDialog.Show(result.Failures.Count > 0 ? "CAD 转 Revit 图纸 - 部分完成" : "CAD 转 Revit 图纸", result.BuildSummary());
+                int remaining = result.SourceOutcomes.Count(row => row.Status != "created");
+                if (remaining > 0 || result.Failures.Count > 0 || result.AuditWarnings.Count > 0 ||
+                    string.IsNullOrWhiteSpace(result.ReportPath))
+                {
+                    string report = string.IsNullOrWhiteSpace(result.ReportPath)
+                        ? "转换报告未保存，请查看诊断日志。"
+                        : $"转换报告：{result.ReportPath}";
+                    string title = remaining > 0 || result.Failures.Count > 0
+                        ? "CAD 转 Revit 图纸 · 部分完成"
+                        : "CAD 转 Revit 图纸 · 提醒";
+                    TaskDialog.Show(title, $"已创建 {result.CreatedTotal} 个图元。跳过或未完成的源对象 {remaining} 项，失败 {result.Failures.Count} 项。\n{report}");
+                }
                 return Result.Succeeded;
             }
             catch (Exception ex)

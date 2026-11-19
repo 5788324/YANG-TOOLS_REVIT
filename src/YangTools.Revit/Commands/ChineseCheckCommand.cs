@@ -9,7 +9,11 @@ using YangTools.Revit.UI;
 namespace YangTools.Revit.Commands;
 
 [Transaction(TransactionMode.Manual)]
-[RibbonButton("检查工具区", "中文检查", "分类检查项目中的中文内容；支持筛选、多选、定位、双击重命名及安全删除/清空", "Icons/cn_check_32.png", "Icons/cn_check_16.png")]
+[RibbonButton(
+        panelName: "项目管理区", buttonText: "中文检查",
+        tooltip: "检查项目中含中文的可处理内容，支持定位与批量处理。",
+        largeIcon: "Icons/cn_check_32.png", smallIcon: "Icons/cn_check_16.png",
+        usage: "使用：点击按钮，在列表按类型筛选中文内容；可定位、选择、重命名或按界面确认安全清理。\n注意：删除或清空前确认影响范围。")]
 public class ChineseCheckCommand : IExternalCommand
 {
 	public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)

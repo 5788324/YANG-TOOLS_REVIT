@@ -12,11 +12,10 @@ namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
     [RibbonButton(
-        "导入工具区",
-        "从CAD粘贴",
-        "检测 AutoCAD Ctrl+C 生成的临时 DWG，并按当前设置导入到活动视图。",
-        "Icons/paste_cad_32.png",
-        "Icons/paste_cad_16.png")]
+        panelName: "2D修改", buttonText: "CAD粘贴",
+        tooltip: "将 AutoCAD 复制的数据粘贴到当前 Revit 视图。",
+        largeIcon: "Icons/paste_cad_32.png", smallIcon: "Icons/paste_cad_16.png",
+        usage: "使用：在 AutoCAD 中复制对象（Ctrl+C），切到目标 Revit 视图，点击按钮并在窗口选择导入选项。\n注意：需要有效的 CAD 剪贴数据；导入前确认目标视图和单位。")]
     public class PasteCadCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
@@ -57,7 +56,7 @@ namespace YangTools.Revit.Commands
                 if (window.ShowDialog() != true)
                     return Result.Cancelled;
                 // 模态窗口返回后重新检查文档/视图：禁止粘贴到已切换的目标。
-                if (!ReferenceEquals(commandData.Application.ActiveUIDocument?.Document, document) ||
+                if (!DocumentIdentityGuard.IsSameActiveDocument(commandData.Application, document) ||
                     document.ActiveView == null || document.ActiveView.Id.GetIdValue() != activeView.Id.GetIdValue() || document.IsReadOnly)
                 {
                     TaskDialog.Show("从 CAD 粘贴", "目标文档或活动视图已改变，已取消导入；请在目标视图中重新执行。");
@@ -171,17 +170,8 @@ namespace YangTools.Revit.Commands
                     document,
                     $"ImportInstanceId={importedId.GetIdValue()}; Placement={window.SelectedPlacement}; Source={sourcePath}; ViewId={activeView.Id.GetIdValue()}");
 
-                TaskDialog.Show(
-                    "从 CAD 粘贴",
-                    $"CAD 导入完成。\n\n" +
-                    $"目标视图：{activeView.Name}\n" +
-                    $"导入实例 ID：{importedId}\n" +
-                    $"来源文件：{Path.GetFileName(sourcePath)}\n" +
-                    $"定位：{GetPlacementDisplayName(window.SelectedPlacement)}\n" +
-                    $"范围：{(supportsThisViewOnly && window.SelectedThisViewOnly ? "仅当前视图" : "模型级")}\n\n" +
-                    (selectionRefreshed
-                        ? "已选中新导入实例，可使用一次 Ctrl+Z 撤销。"
-                        : "CAD 已提交，但界面选中/刷新失败；请手动检查结果，可使用一次 Ctrl+Z 撤销。"));
+                if (!selectionRefreshed)
+                    TaskDialog.Show("从 CAD 粘贴", "CAD 已导入，但未能自动选中。请检查视图，可用一次 Ctrl+Z 撤销。");
                 return Result.Succeeded;
             }
             catch (Exception ex)
@@ -204,16 +194,6 @@ namespace YangTools.Revit.Commands
             {
                 CadClipboardFileHelper.CleanupWorkingCopy(workingCopy);
             }
-        }
-
-        private static string GetPlacementDisplayName(ImportPlacement placement)
-        {
-            return placement switch
-            {
-                ImportPlacement.Centered => "中心到中心",
-                ImportPlacement.Shared => "对齐共享坐标",
-                _ => "原点到原点"
-            };
         }
     }
 }

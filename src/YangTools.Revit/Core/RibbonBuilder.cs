@@ -155,7 +155,8 @@ namespace YangTools.Revit.Core
                 type.FullName
             )
             {
-                ToolTip = attr.Tooltip
+                ToolTip = attr.Tooltip,
+                LongDescription = string.IsNullOrWhiteSpace(attr.Usage) ? attr.Tooltip : attr.Usage
             };
 
             if (!string.IsNullOrWhiteSpace(attr.LargeIcon))
