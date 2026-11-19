@@ -25,7 +25,7 @@ add('V104 result strategy visible','SpacingStrategy { get; set; } = "UniformWith
 add('V104 zone mode visible','SpacingMode { get; set; }' in models and 'SpacingMode = spacingMode' in planner)
 add('V104 legacy fields not fingerprint determinants','F(request.SpacingStepMm)' not in service and 'F(request.MinTailRatio)' not in service)
 add('V104 fingerprint strategy marker','GR01.V1.2|UNIFORM_WITHIN_MAX|' in service)
-add('V104 GUI explains uniform policy','自动：均匀分配且实际间距 ≤ 最大间距' in xaml)
+add('V104 GUI explains uniform policy','手动间距留空时，按最大间距自动均分' in xaml)
 add('V104 MCP explains uniform policy','UniformWithinMax' in server and 'ceil(length/max_spacing)' in server)
 
 # Manual spacing remains explicit and may leave tail.

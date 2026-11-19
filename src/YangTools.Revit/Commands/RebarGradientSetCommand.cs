@@ -12,7 +12,7 @@ namespace YangTools.Revit.Commands
         panelName: "钢筋工具区", buttonText: "渐变钢筋",
         tooltip: "按首末控制钢筋生成渐变 Free Form 钢筋集。",
         largeIcon: "Icons/rebar_gradient_set_32.png", smallIcon: "Icons/rebar_gradient_set_16.png",
-        usage: "使用：点击按钮，在窗口选取起始与终止钢筋及路径/分区间距，检查方向与长度后执行。\n注意：Revit 2021 目前有已知 API 限制，不能因编译通过认定可用。",
+        usage: "使用：连续选首尾筋，默认沿全局 Z 轴布置。设置区段间距后先预览，再创建。\n注意：Revit 2021 仅支持符合条件的钢筋预览。",
         groupName: "创建钢筋", order: 100,
         groupLargeIcon: "Icons/rebar_gradient_set_32.png", groupSmallIcon: "Icons/rebar_gradient_set_16.png")]
     public sealed class RebarGradientSetCommand : IExternalCommand

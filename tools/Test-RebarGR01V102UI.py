@@ -29,10 +29,10 @@ add('GR01 V102 visual fallback','VisualTreeHelper.GetChildrenCount' in code)
 
 # Direction semantics: path supplies axis/range, controls supply business direction.
 add('GR01 V102 direction UI','布置方向' in xaml and 'DirectionText' in xaml)
-add('GR01 V102 direction by controls','Rebar {_startControlId.Value} → Rebar {_endControlId.Value}' in code)
-add('GR01 V102 zone zero from start','Zone[0] 从起始侧开始' in code)
+add('GR01 V102 direction by controls','钢筋 {_startControlId.Value} → 钢筋 {_endControlId.Value}' in code)
+add('GR01 zone order matches input', 'CanUserSortColumns="False"' in xaml and 'CanUserAddRows="False"' in xaml)
 add('GR01 V102 no path direction UI','+Z ↑' not in code and '-Z ↓' not in code)
-add('GR01 V102 path semantics help','ModelLine / Edge 只提供分布轴线和可用范围' in xaml)
+add('GR01 V102 path semantics help','区段按起始筋到结束筋依次布置' in xaml)
 add('GR01 V102 core path reversed retained','PathReversed = endProjection < startProjection' in service)
 
 # Path basis total vs effective distribution length.
@@ -52,7 +52,7 @@ add('GR01 V102 units visible','长度(mm)' in xaml and '最大间距(mm)' in xam
 # Immediate validation and safer action buttons.
 add('GR01 V102 validation text','InputValidationText' in xaml and 'InputValidationText' in vm)
 add('GR01 V102 validate zones','ValidateZoneInputs' in code)
-add('GR01 V102 over allocation immediate','固定区段合计' in code and '已超过有效长度' in code)
+add('GR01 last preview length only warns', '固定区段已超过上次预览长度' in code and '_lastKnownDistributionLengthMm' not in code.split('private bool ValidateZoneInputs', 1)[1].split('private bool IsPreviewInputReady', 1)[0])
 add('GR01 V102 preview readiness','IsPreviewInputReady' in code)
 add('GR01 V102 preview disabled until ready','PreviewButton.IsEnabled = previewReady' in code)
 add('GR01 V102 preview tooltip reason','PreviewButton.ToolTip' in code)
@@ -63,8 +63,10 @@ add('GR01 V102 swap ids and refresh', '_startControlId = _endControlId;' in code
 # Small usability cleanup.
 add('GR01 V102 insert after selected','InsertZoneAfterSelection' in code and 'selectedIndex + 1' in code)
 add('GR01 V102 title no internal stage','GR01 V1 · Explicit ManagedFreeForm · Revit 2025' not in xaml)
-add('GR01 V102 user subtitle','根据首末控制钢筋生成渐变钢筋集' in xaml)
-add('GR01 V102 managed disclosure kept','ManagedGeometry' in xaml and 'Native ToCover' in xaml)
+add('GR01 continuous control picking','Click="PickBothControls_Click"' in xaml and 'PickOneControl(uidoc, false);' in code)
+add('GR01 blocked grid edits prevent preview and creation', code.count('!EnsureBoundDocumentActive() || !CommitGridEdits()') >= 2)
+add('GR01 rejected external event can recover', 'CancelPendingAction(id)' in code and 'onSkipped:' in code and 'SetBusy(false, status)' in code)
+add('GR01 Revit 2021 creation gate', '#if REVIT2021' in code and 'SupportsCreation && previewReady' in code)
 
 # Core geometry stays untouched by this polish.
 add('GR01 V102 no GUI CreateFreeForm','CreateFreeForm' not in code)

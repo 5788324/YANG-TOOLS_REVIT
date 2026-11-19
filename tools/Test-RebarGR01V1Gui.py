@@ -42,7 +42,7 @@ add('GR01 GUI stable edge reference','ConvertToStableRepresentation' in code)
 
 # Scope and UI controls.
 add('GR01 GUI control pick labels','起始控制筋' in xaml and '结束控制筋' in xaml)
-add('GR01 GUI path kind choices','模型线' in xaml and '模型 Edge' in xaml)
+add('GR01 GUI path kind choices','Tag="ModelLine"' in xaml and 'Tag="Edge"' in xaml)
 add('GR01 GUI zone grid','x:Name="ZoneGrid"' in xaml and 'ItemsSource="{Binding Zones}"' in xaml)
 add('GR01 GUI normal quick add','+ 普通区' in xaml and 'AddNormalZone_Click' in xaml)
 add('GR01 GUI dense quick add','+ 加密区' in xaml and 'AddDenseZone_Click' in xaml)
@@ -50,7 +50,7 @@ add('GR01 GUI reorder zones','MoveZoneUp_Click' in xaml and 'MoveZoneDown_Click'
 add('GR01 GUI editable max spacing','MaxSpacingMm' in xaml)
 add('GR01 GUI optional manual spacing','ManualActualSpacingMm' in xaml)
 add('GR01 GUI preview columns','PreviewMainSpacingMm' in xaml and 'PreviewTailSpacingMm' in xaml and 'PreviewIntervalCount' in xaml)
-add('GR01 GUI managed geometry disclosure','ManagedGeometry' in xaml and 'Native ToCover' in xaml)
+add('GR01 GUI keeps service-based creation','RebarGradientSetService.Execute(app, request)' in code and 'CreateFreeForm' not in code)
 
 # Shared Request/Service/Result: no duplicate geometry engine in UI.
 add('GR01 GUI preview uses service','RebarGradientSetService.Execute(app, request)' in code)
@@ -70,9 +70,9 @@ add('GR01 GUI no 2027 expansion','REVIT2027' not in code and 'Morphed' not in co
 add('GR01 GUI input invalidates preview','InvalidatePreview' in code and 'InputChanged' in vm)
 add('GR01 GUI create requires preview','请先执行“计算预览”' in code)
 add('GR01 GUI service stale guard preserved','PLAN_FINGERPRINT_MISMATCH' in service and 'ExpectedPlanFingerprint' in code)
-add('GR01 GUI create disables after commit','若要再次创建，请重新计算预览' in code)
-add('GR01 GUI one set wording','1 个完整 Free Form Rebar Set' in code)
-add('GR01 GUI undo wording','一次 Revit Undo' in code)
+add('GR01 GUI create disables after commit','_lastPlanFingerprint = string.Empty;' in code[code.index('private void ApplyCreateResult'):] and '_viewModel.CanCreate = false;' in code[code.index('private void ApplyCreateResult'):])
+add('GR01 GUI shows actual created bar count','result.PhysicalBarCount ?? result.BarCount' in code)
+add('GR01 GUI undo wording','Ctrl+Z' in code)
 
 failed=[c for c in checks if not c['ok']]
 report={'checks':checks,'summary':{'passed':len(checks)-len(failed),'failed':len(failed),'total':len(checks)}}

@@ -140,7 +140,7 @@ namespace YangTools.Revit.Models
         private string _pathKind = "ZAxis";
         private string _statusText = "请先拾取起始控制筋和结束控制筋；默认沿全局 Z 轴布置。";
         private string _previewSummary = "尚未计算预览";
-        private string _hostAndTypeText = "Host / 钢筋类型将在预览后显示";
+        private string _hostAndTypeText = string.Empty;
         private string _directionText = "请先选择起始控制筋和结束控制筋";
         private string _effectiveLengthText = "待计算";
         private string _inputValidationText = string.Empty;

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -45,6 +44,12 @@ namespace YangTools.Revit.UI
         private double? _lastKnownDistributionLengthMm;
         private bool _updatingZones;
         private bool _initialized;
+        private string? _pendingOperationId;
+#if REVIT2021
+        private const bool SupportsCreation = false;
+#else
+        private const bool SupportsCreation = true;
+#endif
 
         public RebarGradientSetWindow(UIApplication uiapp)
         {
@@ -86,6 +91,9 @@ namespace YangTools.Revit.UI
 
         protected override void OnClosed(EventArgs e)
         {
+            if (_pendingOperationId != null)
+                _handler.CancelPendingAction(_pendingOperationId);
+            _pendingOperationId = null;
             try { _externalEvent.Dispose(); } catch { }
             base.OnClosed(e);
         }
@@ -95,6 +103,9 @@ namespace YangTools.Revit.UI
 
         private void PickEndControl_Click(object sender, RoutedEventArgs e)
             => PickControl(isStart: false);
+
+        private void PickBothControls_Click(object sender, RoutedEventArgs e)
+            => PickControl(isStart: true, pickBoth: true);
 
         private void SwapControls_Click(object sender, RoutedEventArgs e)
         {
@@ -115,57 +126,56 @@ namespace YangTools.Revit.UI
             _viewModel.EndControlText = startText;
 
             RefreshPathDisplay();
-            InvalidatePreview("已交换首末控制筋；布置方向已反转，Zone[0] 仍从新的起始控制筋一侧开始。", clearDistributionLength: false);
+            InvalidatePreview("已交换首尾筋。区段顺序仍从新的起始控制筋一侧开始。");
         }
 
-        private void PickControl(bool isStart)
+        private void PickControl(bool isStart, bool pickBoth = false)
         {
             if (!EnsureBoundDocumentActive()) return;
             HideForPick();
-            _handler.SetAction(app =>
+            QueueAction(app =>
             {
                 try
                 {
                     UIDocument uidoc = app.ActiveUIDocument;
-                    Reference picked = uidoc.Selection.PickObject(
-                        ObjectType.Element,
-                        new RebarSelectionFilter(),
-                        isStart ? "选择起始控制钢筋" : "选择结束控制钢筋");
-
-                    RevitRebar rebar = uidoc.Document.GetElement(picked.ElementId) as RevitRebar
-                        ?? throw new InvalidOperationException("选择的对象不是 Rebar。");
-                    string display = DescribeRebar(uidoc.Document, rebar);
-                    long id = rebar.Id.GetIdValue();
-                    string uid = rebar.UniqueId ?? string.Empty;
-
-                    Dispatcher.Invoke(() =>
-                    {
-                        if (isStart)
-                        {
-                            _startControlId = id;
-                            _startControlUniqueId = uid;
-                            _viewModel.StartControlText = display;
-                        }
-                        else
-                        {
-                            _endControlId = id;
-                            _endControlUniqueId = uid;
-                            _viewModel.EndControlText = display;
-                        }
-                        RefreshPathDisplay();
-                        InvalidatePreview("控制钢筋已更新，请重新计算预览。", clearDistributionLength: true);
-                    });
+                    PickOneControl(uidoc, isStart);
+                    if (pickBoth)
+                        PickOneControl(uidoc, false);
                 }
                 catch (Autodesk.Revit.Exceptions.OperationCanceledException)
                 {
-                    Dispatcher.Invoke(() => _viewModel.StatusText = "已取消拾取，当前选择未改变。");
+                    Dispatcher.Invoke(() => _viewModel.StatusText = "已取消本次拾取，已选的钢筋仍保留。");
                 }
-                finally
+            }, "拾取控制筋", picking: true);
+        }
+
+        private void PickOneControl(UIDocument uidoc, bool isStart)
+        {
+            Reference picked = uidoc.Selection.PickObject(
+                ObjectType.Element, new RebarSelectionFilter(), isStart ? "选择起始控制筋" : "选择结束控制筋");
+            var rebar = (RevitRebar)uidoc.Document.GetElement(picked.ElementId);
+            string display = DescribeRebar(uidoc.Document, rebar);
+            long id = rebar.Id.GetIdValue();
+            string uid = rebar.UniqueId;
+
+            Dispatcher.Invoke(() =>
+            {
+                if (isStart)
                 {
-                    Dispatcher.Invoke(ShowAfterPick);
+                    _startControlId = id;
+                    _startControlUniqueId = uid;
+                    _viewModel.StartControlText = display;
                 }
-            }, isStart ? "GR01 拾取起始控制筋" : "GR01 拾取结束控制筋", showSuccess: false);
-            _externalEvent.Raise();
+                else
+                {
+                    _endControlId = id;
+                    _endControlUniqueId = uid;
+                    _viewModel.EndControlText = display;
+                }
+                InvalidatePreview(_startControlId == _endControlId
+                    ? "起始筋和结束筋必须是两根不同的钢筋。" : "控制筋已更新，请计算预览。",
+                    clearDistributionLength: true);
+            });
         }
 
         private void PathKindCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -203,7 +213,7 @@ namespace YangTools.Revit.UI
                 return;
             }
             HideForPick();
-            _handler.SetAction(app =>
+            QueueAction(app =>
             {
                 try
                 {
@@ -231,7 +241,6 @@ namespace YangTools.Revit.UI
                             _pathOwnerId = owner.Id.GetIdValue();
                             _pathReferenceLengthMm = lengthMm;
                             _viewModel.PathKind = "Edge";
-                            _viewModel.PathText = $"模型 Edge · Owner {owner.Id.GetIdValue()} · 基准总长 {lengthMm:0.###} mm";
                             RefreshPathDisplay();
                             InvalidatePreview("分布基准已更新；业务方向仍由起始控制筋 → 结束控制筋决定。", clearDistributionLength: true);
                         });
@@ -256,7 +265,6 @@ namespace YangTools.Revit.UI
                             _pathOwnerId = modelCurve.Id.GetIdValue();
                             _pathReferenceLengthMm = lengthMm;
                             _viewModel.PathKind = "ModelLine";
-                            _viewModel.PathText = $"模型线 {modelCurve.Id.GetIdValue()} · 基准总长 {lengthMm:0.###} mm";
                             RefreshPathDisplay();
                             InvalidatePreview("分布基准已更新；业务方向仍由起始控制筋 → 结束控制筋决定。", clearDistributionLength: true);
                         });
@@ -266,16 +274,12 @@ namespace YangTools.Revit.UI
                 {
                     Dispatcher.Invoke(() => _viewModel.StatusText = "已取消拾取，当前选择未改变。");
                 }
-                finally
-                {
-                    Dispatcher.Invoke(ShowAfterPick);
-                }
-            }, "GR01 拾取分布路径", showSuccess: false);
-            _externalEvent.Raise();
+            }, "拾取分布路径", picking: true);
         }
 
         private void AddNormalZone_Click(object sender, RoutedEventArgs e)
         {
+            if (!CommitGridEdits()) return;
             InsertZoneAfterSelection(new RebarGradientZoneRowViewModel
             {
                 Label = "普通",
@@ -288,6 +292,7 @@ namespace YangTools.Revit.UI
 
         private void AddDenseZone_Click(object sender, RoutedEventArgs e)
         {
+            if (!CommitGridEdits()) return;
             InsertZoneAfterSelection(new RebarGradientZoneRowViewModel
             {
                 Label = "加密",
@@ -300,7 +305,7 @@ namespace YangTools.Revit.UI
 
         private void RemoveZone_Click(object sender, RoutedEventArgs e)
         {
-            CommitGridEdits();
+            if (!CommitGridEdits()) return;
             if (ZoneGrid.SelectedItem is not RebarGradientZoneRowViewModel row)
                 return;
             row.InputChanged -= Zone_InputChanged;
@@ -315,7 +320,7 @@ namespace YangTools.Revit.UI
 
         private void MoveSelectedZone(int delta)
         {
-            CommitGridEdits();
+            if (!CommitGridEdits()) return;
             if (ZoneGrid.SelectedItem is not RebarGradientZoneRowViewModel row) return;
             int oldIndex = _viewModel.Zones.IndexOf(row);
             int newIndex = oldIndex + delta;
@@ -336,45 +341,27 @@ namespace YangTools.Revit.UI
                 e.Cancel = true;
         }
 
-        private void ZoneGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
-        {
-            Dispatcher.BeginInvoke(new Action(() =>
-            {
-                UpdateZoneTotal();
-                InvalidatePreview("区段参数已修改，请重新计算预览。");
-            }));
-        }
-
         private void Zone_InputChanged(object? sender, EventArgs e)
         {
-            Dispatcher.BeginInvoke(new Action(() =>
+            if (_updatingZones) return;
+            if (sender is RebarGradientZoneRowViewModel changed && changed.IsAutoLength)
             {
-                if (_updatingZones) return;
-                if (sender is RebarGradientZoneRowViewModel changed && changed.IsAutoLength)
+                _updatingZones = true;
+                try
                 {
-                    _updatingZones = true;
-                    try
-                    {
-                        foreach (RebarGradientZoneRowViewModel row in _viewModel.Zones)
-                        {
-                            if (!ReferenceEquals(row, changed) && row.IsAutoLength)
-                                row.IsAutoLength = false;
-                        }
-                    }
-                    finally
-                    {
-                        _updatingZones = false;
-                    }
+                    foreach (RebarGradientZoneRowViewModel row in _viewModel.Zones)
+                        if (!ReferenceEquals(row, changed) && row.IsAutoLength)
+                            row.IsAutoLength = false;
                 }
-                RecalculateAutoZoneLength();
-                UpdateZoneTotal();
-                InvalidatePreview("区段参数已修改，请重新计算预览。");
-            }));
+                finally { _updatingZones = false; }
+            }
+            RecalculateAutoZoneLength();
+            InvalidatePreview("区段参数已修改，请重新预览。");
         }
 
         private void Preview_Click(object sender, RoutedEventArgs e)
         {
-            CommitGridEdits();
+            if (!EnsureBoundDocumentActive() || !CommitGridEdits()) return;
             if (!TryBuildRequest(dryRun: true, expectedFingerprint: string.Empty, out RebarGradientSetRequest request, out string validation))
             {
                 ShowInformation(validation);
@@ -382,17 +369,16 @@ namespace YangTools.Revit.UI
             }
 
             SetBusy(true, "正在计算预览…");
-            _handler.SetAction(app =>
+            QueueAction(app =>
             {
                 RebarGradientSetResult result = RebarGradientSetService.Execute(app, request);
                 Dispatcher.Invoke(() => ApplyPreviewResult(result));
-            }, "GR01 计算预览", showSuccess: false, operationId: request.OperationId);
-            _externalEvent.Raise();
+            }, "计算渐变钢筋预览", operationId: request.OperationId);
         }
 
         private void Create_Click(object sender, RoutedEventArgs e)
         {
-            CommitGridEdits();
+            if (!SupportsCreation || !EnsureBoundDocumentActive() || !CommitGridEdits()) return;
             if (string.IsNullOrWhiteSpace(_lastPlanFingerprint))
             {
                 ShowInformation("请先执行“计算预览”，确认区段、数量和实际间距后再创建。");
@@ -405,17 +391,15 @@ namespace YangTools.Revit.UI
             }
 
             SetBusy(true, "正在创建渐变钢筋集…");
-            _handler.SetAction(app =>
+            QueueAction(app =>
             {
                 RebarGradientSetResult result = RebarGradientSetService.Execute(app, request);
                 Dispatcher.Invoke(() => ApplyCreateResult(result));
-            }, "GR01 创建渐变钢筋集", showSuccess: false, operationId: request.OperationId);
-            _externalEvent.Raise();
+            }, "创建渐变钢筋集", operationId: request.OperationId);
         }
 
         private void ApplyPreviewResult(RebarGradientSetResult result)
         {
-            SetBusy(false);
             ClearZonePreview();
 
             if (!result.Success)
@@ -424,6 +408,7 @@ namespace YangTools.Revit.UI
                 _viewModel.CanCreate = false;
                 RefreshActionButtons();
                 _viewModel.PreviewSummary = "预览失败";
+                _viewModel.HostAndTypeText = string.Empty;
                 _viewModel.StatusText = BuildFailureText(result);
                 UpdateInputValidation();
                 return;
@@ -435,9 +420,10 @@ namespace YangTools.Revit.UI
             RefreshActionButtons();
             _viewModel.PreviewSummary =
                 $"有效路径 {result.DistributionLengthMm:0.###} mm · {result.IntervalCount} 个间隔 · {result.BarCount} 根钢筋";
-            _viewModel.HostAndTypeText =
-                $"Host {result.HostId} · {result.BarTypeName} (TypeId {result.BarTypeId}) · {result.RebarStyle} · {result.DistributionPathKind}";
-            _viewModel.StatusText = "预览通过。确认下面各区段实际间距后，可创建 1 个完整 Free Form Rebar Set。";
+            _viewModel.HostAndTypeText = $"宿主 {result.HostId} · {result.BarTypeName}";
+            _viewModel.StatusText = SupportsCreation
+                ? $"预计 {result.BarCount} 根钢筋 · 有效长度 {result.DistributionLengthMm:0.###} mm"
+                : $"预计 {result.BarCount} 根钢筋。Revit 2021 仅支持预览。";
 
             if (result.SpacingPlan?.Zones != null)
             {
@@ -461,7 +447,6 @@ namespace YangTools.Revit.UI
 
         private void ApplyCreateResult(RebarGradientSetResult result)
         {
-            SetBusy(false);
             _lastPlanFingerprint = string.Empty;
             _viewModel.CanCreate = false;
             RefreshActionButtons();
@@ -469,66 +454,18 @@ namespace YangTools.Revit.UI
             if (!result.Success)
             {
                 _viewModel.StatusText = BuildFailureText(result);
-                MessageBox.Show(this, BuildFailureText(result), "渐变钢筋集", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             _viewModel.PreviewSummary =
-                $"已创建 Rebar {result.CreatedRebarId} · {result.PhysicalBarCount ?? result.BarCount} 根 physical bars";
-            _viewModel.StatusText = "创建成功。若要再次创建，请重新计算预览；一次 Revit Undo 可撤销本次结果集。";
-            MessageBox.Show(
-                this,
-                result.Message +
-                $"\n\nRebarId：{result.CreatedRebarId}" +
-                $"\nPhysical bars：{result.PhysicalBarCount}" +
-                $"\nValidation：{result.FreeFormValidationResult}" +
-                $"\nReadback deviation：{result.MaxReadbackDeviationMm?.ToString("0.######", CultureInfo.InvariantCulture) ?? "-"} mm",
-                "渐变钢筋集",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
+                $"已创建 {result.PhysicalBarCount ?? result.BarCount} 根钢筋（图元 {result.CreatedRebarId}）";
+            _viewModel.StatusText = _viewModel.PreviewSummary + "。可在 Revit 中按 Ctrl+Z 撤销。";
         }
 
         private bool TryBuildRequest(bool dryRun, string expectedFingerprint, out RebarGradientSetRequest request, out string error)
         {
             request = new RebarGradientSetRequest();
-            error = string.Empty;
-
-            if (!_startControlId.HasValue)
-            {
-                error = "请先拾取起始控制筋。";
-                return false;
-            }
-            if (!_endControlId.HasValue)
-            {
-                error = "请先拾取结束控制筋。";
-                return false;
-            }
-            if (string.Equals(_pathKind, "ZAxis", StringComparison.OrdinalIgnoreCase))
-            {
-                // 不需要额外路径几何；Core 会使用两根控制筋的 transformed centerline 几何中心自动计算 Z 向有效长度。
-            }
-            else if (string.Equals(_pathKind, "Edge", StringComparison.OrdinalIgnoreCase))
-            {
-                if (string.IsNullOrWhiteSpace(_pathStableReference))
-                {
-                    error = "请先拾取模型 Edge 分布路径。";
-                    return false;
-                }
-            }
-            else if (string.Equals(_pathKind, "ModelLine", StringComparison.OrdinalIgnoreCase))
-            {
-                if (!_pathElementId.HasValue)
-                {
-                    error = "请先拾取直线 ModelLine 分布路径。";
-                    return false;
-                }
-            }
-            else
-            {
-                error = "不支持的分布方式。";
-                return false;
-            }
-            if (!ValidateZoneInputs(out error))
+            if (!IsPreviewInputReady(out error))
                 return false;
 
             var zones = new List<RebarGradientSpacingZoneInput>();
@@ -548,9 +485,9 @@ namespace YangTools.Revit.UI
             request = new RebarGradientSetRequest
             {
                 OperationId = Guid.NewGuid().ToString("N"),
-                StartControlRebarId = _startControlId.Value,
+                StartControlRebarId = _startControlId.GetValueOrDefault(),
                 ExpectedStartControlUniqueId = _startControlUniqueId,
-                EndControlRebarId = _endControlId.Value,
+                EndControlRebarId = _endControlId.GetValueOrDefault(),
                 ExpectedEndControlUniqueId = _endControlUniqueId,
                 DistributionPath = new RebarGradientDistributionPathInput
                 {
@@ -608,7 +545,7 @@ namespace YangTools.Revit.UI
             RefreshActionButtons();
             ClearZonePreview();
             _viewModel.PreviewSummary = "尚未计算有效预览";
-            _viewModel.HostAndTypeText = "Host / 钢筋类型将在预览后显示";
+            _viewModel.HostAndTypeText = string.Empty;
             _viewModel.StatusText = reason;
             RefreshPathDisplay();
             UpdateZoneTotal();
@@ -635,7 +572,7 @@ namespace YangTools.Revit.UI
                 if (autoCount == 1)
                 {
                     double remaining = length - fixedTotal;
-                    string suffix = remaining < 0.0 ? " · ⚠ 固定区段已超出路径" : string.Empty;
+                    string suffix = remaining < 0.0 ? " · 固定区段已超过上次预览长度" : string.Empty;
                     ZoneTotalText.Text = $"路径：{length:0.###} mm · 固定：{fixedTotal:0.###} mm · 自动剩余：{remaining:0.###} mm · {_viewModel.Zones.Count} 段{suffix}";
                 }
                 else
@@ -679,7 +616,6 @@ namespace YangTools.Revit.UI
                 return false;
             }
 
-            double fixedTotal = 0.0;
             for (int i = 0; i < _viewModel.Zones.Count; i++)
             {
                 RebarGradientZoneRowViewModel row = _viewModel.Zones[i];
@@ -690,7 +626,6 @@ namespace YangTools.Revit.UI
                         error = $"第 {i + 1} 个区段长度必须大于 0。";
                         return false;
                     }
-                    fixedTotal += row.LengthMm;
                 }
                 if (!IsFinitePositive(row.MaxSpacingMm))
                 {
@@ -705,30 +640,6 @@ namespace YangTools.Revit.UI
                 }
             }
 
-            if (_lastKnownDistributionLengthMm.HasValue && autoCount == 1)
-            {
-                double remaining = _lastKnownDistributionLengthMm.Value - fixedTotal;
-                if (remaining < 0.0)
-                {
-                    error = $"固定区段合计 {fixedTotal:0.###} mm 已超过有效长度 {_lastKnownDistributionLengthMm.Value:0.###} mm。";
-                    return false;
-                }
-                if (remaining > 0.0 && remaining < 1.0)
-                {
-                    error = $"自动剩余仅 {remaining:0.###} mm，小于 1 mm。";
-                    return false;
-                }
-            }
-
-            if (_lastKnownDistributionLengthMm.HasValue && autoCount == 0)
-            {
-                double total = _viewModel.Zones.Where(x => IsFinite(x.LengthMm)).Sum(x => x.LengthMm);
-                if (Math.Abs(total - _lastKnownDistributionLengthMm.Value) > 0.5)
-                {
-                    error = $"固定区段合计 {total:0.###} mm 与有效长度 {_lastKnownDistributionLengthMm.Value:0.###} mm 不一致。";
-                    return false;
-                }
-            }
             return true;
         }
 
@@ -742,6 +653,11 @@ namespace YangTools.Revit.UI
             if (!_endControlId.HasValue)
             {
                 reason = "请先拾取结束控制筋。";
+                return false;
+            }
+            if (_startControlId == _endControlId)
+            {
+                reason = "起始筋和结束筋必须是两根不同的钢筋。";
                 return false;
             }
             if (string.Equals(_pathKind, "Edge", StringComparison.OrdinalIgnoreCase) && string.IsNullOrWhiteSpace(_pathStableReference))
@@ -761,7 +677,8 @@ namespace YangTools.Revit.UI
 
         private void UpdateInputValidation()
         {
-            _viewModel.InputValidationText = ValidateZoneInputs(out string error) ? string.Empty : "⚠ " + error;
+            _viewModel.InputValidationText = ValidateZoneInputs(out string error)
+                ? string.Empty : error;
             RefreshActionButtons();
         }
 
@@ -793,19 +710,47 @@ namespace YangTools.Revit.UI
             return null;
         }
 
-        private void CommitGridEdits()
+        private bool CommitGridEdits()
         {
-            try
+            if (ZoneGrid.CommitEdit(DataGridEditingUnit.Cell, true) &&
+                ZoneGrid.CommitEdit(DataGridEditingUnit.Row, true))
+                return true;
+
+            _viewModel.StatusText = "请修正区段表中的输入，或按 Esc 取消本次编辑。";
+            return false;
+        }
+
+        private void QueueAction(Action<UIApplication> action, string name, bool picking = false, string? operationId = null)
+        {
+            string id = operationId ?? Guid.NewGuid().ToString("N");
+            _pendingOperationId = id;
+            _handler.SetAction(app =>
             {
-                ZoneGrid.CommitEdit(DataGridEditingUnit.Cell, true);
-                ZoneGrid.CommitEdit(DataGridEditingUnit.Row, true);
+                try { action(app); }
+                finally { Dispatcher.Invoke(() => FinishOperation(id, picking)); }
+            }, name, showSuccess: false, operationId: id,
+                onSkipped: reason => Dispatcher.Invoke(() => FinishOperation(id, picking, reason)));
+
+            ExternalEventRequest request = _externalEvent.Raise();
+            if (request != ExternalEventRequest.Accepted && request != ExternalEventRequest.Pending)
+            {
+                _handler.CancelPendingAction(id);
+                FinishOperation(id, picking, "Revit 当前无法执行此操作，请退出正在使用的命令后重试。");
             }
-            catch { }
+        }
+
+        private void FinishOperation(string id, bool picking, string? status = null)
+        {
+            if (_pendingOperationId != id) return;
+            _pendingOperationId = null;
+            if (picking) ShowAfterPick();
+            SetBusy(false, status);
         }
 
         private void SetBusy(bool busy, string? status = null)
         {
             _viewModel.IsBusy = busy;
+            ControlInputs.IsEnabled = PathInputs.IsEnabled = ZoneInputs.IsEnabled = !busy;
             RefreshActionButtons();
             if (!string.IsNullOrWhiteSpace(status))
                 _viewModel.StatusText = status;
@@ -821,7 +766,11 @@ namespace YangTools.Revit.UI
                 PreviewButton.IsEnabled = previewReady;
                 PreviewButton.ToolTip = previewReady ? "计算有效长度、区段实际间距和总根数" : reason;
             }
-            if (CreateButton != null) CreateButton.IsEnabled = !_viewModel.IsBusy && _viewModel.CanCreate;
+            if (CreateButton != null)
+            {
+                CreateButton.IsEnabled = SupportsCreation && previewReady && _viewModel.CanCreate;
+                CreateButton.ToolTip = SupportsCreation ? "使用当前预览创建钢筋集" : "Revit 2021 仅支持预览";
+            }
             RefreshPathControls();
         }
 
@@ -834,7 +783,7 @@ namespace YangTools.Revit.UI
         private void RefreshPathDisplay()
         {
             _viewModel.DirectionText = _startControlId.HasValue && _endControlId.HasValue
-                ? $"Rebar {_startControlId.Value} → Rebar {_endControlId.Value}（Zone[0] 从起始侧开始）"
+                ? $"钢筋 {_startControlId.Value} → 钢筋 {_endControlId.Value}"
                 : "请先选择起始控制筋和结束控制筋";
 
             _viewModel.EffectiveLengthText = _lastKnownDistributionLengthMm.HasValue
@@ -858,8 +807,8 @@ namespace YangTools.Revit.UI
             if (string.Equals(_pathKind, "Edge", StringComparison.OrdinalIgnoreCase))
             {
                 _viewModel.PathText = !string.IsNullOrWhiteSpace(_pathStableReference)
-                    ? $"模型 Edge · Owner {_pathOwnerId?.ToString() ?? "?"} · 基准总长 {FormatLength(_pathReferenceLengthMm)}"
-                    : "未选择模型 Edge";
+                    ? $"模型边线（图元 {_pathOwnerId}） · 基准总长 {FormatLength(_pathReferenceLengthMm)}"
+                    : "未选择模型边线";
             }
         }
 
@@ -871,7 +820,9 @@ namespace YangTools.Revit.UI
         {
             Document? active = _uiapp.ActiveUIDocument?.Document;
             if (active != null && active.Equals(_document)) return true;
-            ShowInformation($"此窗口绑定到“{_document.Title}”。请先切回该文档再拾取，或关闭窗口后在当前文档重新打开。");
+            _viewModel.StatusText = _document.IsValidObject
+                ? $"请切回「{_document.Title}」后再操作。"
+                : "原项目已关闭，请在当前项目重新打开渐变钢筋。";
             return false;
         }
 
@@ -885,7 +836,6 @@ namespace YangTools.Revit.UI
         {
             Show();
             Activate();
-            SetBusy(false);
         }
 
         private string GetSelectedPathKind()
@@ -899,8 +849,8 @@ namespace YangTools.Revit.UI
         {
             string typeName = doc.GetElement(rebar.GetTypeId())?.Name ?? "?";
             Element? host = doc.GetElement(rebar.GetHostId());
-            string hostText = host == null ? "Host ?" : $"Host {host.Id.GetIdValue()} {host.Name}";
-            return $"Rebar {rebar.Id.GetIdValue()} · {typeName} · {hostText} · Positions {rebar.NumberOfBarPositions}";
+            string hostText = host == null ? "无宿主" : $"宿主 {host.Id.GetIdValue()} {host.Name}";
+            return $"钢筋 {rebar.Id.GetIdValue()} · {typeName} · {hostText}";
         }
 
         private static string FormatZonePlan(RebarGradientSpacingZonePlan plan)
@@ -913,9 +863,7 @@ namespace YangTools.Revit.UI
 
         private static string BuildFailureText(RebarGradientSetResult result)
         {
-            string code = string.IsNullOrWhiteSpace(result.ErrorCode) ? "ERROR" : result.ErrorCode;
-            string detail = string.IsNullOrWhiteSpace(result.Error) ? result.Message : result.Error;
-            return $"{code}：{detail}";
+            return string.IsNullOrWhiteSpace(result.Error) ? result.Message : result.Error;
         }
 
         private void ShowInformation(string text)
