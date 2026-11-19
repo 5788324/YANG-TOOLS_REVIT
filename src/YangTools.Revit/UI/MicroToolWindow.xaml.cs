@@ -65,7 +65,7 @@ namespace YangTools.Revit.UI
             _tools = Array.Empty<MicroToolItem>();
             ToolsListBox.ItemsSource = _tools;
             ToolsListBox.SelectedItem = null;
-            ToolCountText.Text = "0 个可运行入口";
+            ToolCountText.Text = "0 个插件";
             BtnRun.IsEnabled = false;
             BtnCollect.IsEnabled = false;
             BtnDeleteTool.IsEnabled = false;
@@ -86,11 +86,14 @@ namespace YangTools.Revit.UI
                 return;
             }
 
-            ProjectPathText.Text = $"{selectedProject.RoleText}\n{selectedProject.FullPath}";
+            ProjectPathText.Text = selectedProject.FullPath;
             BtnRemoveProject.IsEnabled = !selectedProject.IsDefault;
             BtnCollect.IsEnabled = false;
-            _settings.MicroToolLastProjectPath = selectedProject.FullPath;
-            SavePreferencesBestEffort();
+            if (!string.Equals(_settings.MicroToolLastProjectPath, selectedProject.FullPath, StringComparison.OrdinalIgnoreCase))
+            {
+                _settings.MicroToolLastProjectPath = selectedProject.FullPath;
+                SavePreferencesBestEffort();
+            }
 
             if (!selectedProject.Exists || !Directory.Exists(selectedProject.FullPath))
             {
@@ -103,19 +106,7 @@ namespace YangTools.Revit.UI
             {
                 Mouse.OverrideCursor = Cursors.Wait;
                 _tools = MicroToolEngine.GetTools(selectedProject.FullPath);
-                ToolsListBox.ItemsSource = _tools;
-                ToolCountText.Text = $"{_tools.Count} 个可运行入口";
-                StatusText.Text = _tools.Count == 0
-                    ? "当前位置没有可运行的临时插件。"
-                    : selectedProject.IsDefault
-                        ? "这里是收藏/候选转正仓库；真正转正仍需源码审查。"
-                        : "这是临时项目仓库，可运行、调试或收藏到默认仓库。";
-
-                MicroToolItem? preferred = _tools.FirstOrDefault(tool =>
-                    string.Equals(tool.FullPath, _settings.MicroToolLastToolPath, StringComparison.OrdinalIgnoreCase));
-                ToolsListBox.SelectedItem = preferred;
-                UpdateToolActionState();
-                UpdateToolDocumentation(ToolsListBox.SelectedItem as MicroToolItem);
+                ApplyToolSearch(_settings.MicroToolLastToolPath);
             }
             catch (Exception ex)
             {
@@ -133,15 +124,41 @@ namespace YangTools.Revit.UI
             RefreshTools();
         }
 
+        private void ToolSearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (IsLoaded && ProjectsListBox.SelectedItem is MicroProjectItem { Exists: true })
+                ApplyToolSearch((ToolsListBox.SelectedItem as MicroToolItem)?.FullPath);
+        }
+
+        private void ApplyToolSearch(string? selectedPath)
+        {
+            string query = ToolSearchBox.Text.Trim();
+            var matching = query.Length == 0 ? _tools : _tools.Where(tool =>
+                tool.DisplayName.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                tool.RelativePath.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0).ToList();
+            ToolsListBox.ItemsSource = matching;
+            ToolsListBox.SelectedItem = matching.FirstOrDefault(tool =>
+                string.Equals(tool.FullPath, selectedPath, StringComparison.OrdinalIgnoreCase));
+            ToolCountText.Text = query.Length == 0 ? $"{_tools.Count} 个插件" : $"{matching.Count} / {_tools.Count} 个插件";
+            if (ToolsListBox.SelectedItem == null)
+                StatusText.Text = _tools.Count == 0 ? "这个项目没有插件。" : matching.Count == 0 ? "没有匹配的插件。" : "请选择插件。";
+        }
+
         private void UpdateToolActionState()
         {
             var tool = ToolsListBox.SelectedItem as MicroToolItem;
             var project = ProjectsListBox.SelectedItem as MicroProjectItem;
             bool valid = tool != null && project != null &&
                 project.Exists && File.Exists(tool.FullPath);
-            BtnRun.IsEnabled = valid;
-            BtnCollect.IsEnabled = valid && !project.IsDefault;
+            bool documented = valid && tool?.HasDocumentation == true;
+            BtnRun.IsEnabled = documented;
+            BtnCollect.IsEnabled = documented && project?.IsDefault == false;
             BtnDeleteTool.IsEnabled = valid;
+            BtnToolHelp.IsEnabled = valid;
+            BtnOpenToolFolder.IsEnabled = valid;
+            BtnEditDocumentation.IsEnabled = valid && tool?.IsCollectedPackage == false;
+            BtnEditDocumentation.Content = valid && !string.IsNullOrEmpty(tool?.DocumentationPath)
+                ? "编辑说明" : "创建说明";
         }
 
         private void ToolsListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -151,9 +168,12 @@ namespace YangTools.Revit.UI
             {
                 StatusText.Text = tool.HasDocumentation
                     ? tool.FullPath
-                    : "该插件缺少完整的功能/使用说明；请先创建并填写说明模板。";
-                _settings.MicroToolLastToolPath = tool.FullPath;
-                SavePreferencesBestEffort();
+                    : "请填写功能说明和使用步骤，再刷新列表。";
+                if (!string.Equals(_settings.MicroToolLastToolPath, tool.FullPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    _settings.MicroToolLastToolPath = tool.FullPath;
+                    SavePreferencesBestEffort();
+                }
                 UpdateToolDocumentation(tool);
             }
             else
@@ -167,7 +187,7 @@ namespace YangTools.Revit.UI
             if (tool == null)
             {
                 DocumentationStatusText.Text = "未选择插件";
-                FunctionDescriptionText.Text = "选择一个 DLL 后显示功能说明。";
+                FunctionDescriptionText.Text = "选择插件后查看说明。";
                 UsageInstructionsText.Text = string.Empty;
                 CompatibilityText.Text = string.Empty;
                 return;
@@ -197,7 +217,7 @@ namespace YangTools.Revit.UI
             "3. 阅读“插件说明”，确认选择条件、模型影响和适用 Revit 版本。\r\n" +
             "4. 点击运行；如果一个 DLL 有多个命令，会继续选择入口。\r\n\r\n" +
             "说明文件\r\n" +
-            "每个主 DLL 应提供 <DLL名>.microtool.json，至少包含功能说明和使用步骤。缺少时点击“创建说明模板”。\r\n\r\n" +
+            "每个主 DLL 应提供 <DLL名>.microtool.json，至少包含功能说明和使用步骤。点击“创建说明”或“编辑说明”，保存后点“刷新”。\r\n\r\n" +
             "重要限制\r\n" +
             "临时 DLL 必须针对当前 Revit 年份独立编译。宿主不会自动开启事务，也不会保证不同年份 DLL 可以混用。\r\n" +
             "运行临时 DLL 等同在当前 Revit 进程执行其代码，没有沙箱；只运行自己编译或已核验来源的 DLL。\r\n" +
@@ -249,41 +269,22 @@ namespace YangTools.Revit.UI
 
         private void CreateDocumentationButton_Click(object sender, RoutedEventArgs e)
         {
-            if (ToolsListBox.SelectedItem is not MicroToolItem tool)
-            {
-                MessageBox.Show("请先选择一个临时插件。", "临时插件箱",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            CreateDocumentationForTool(tool);
+            if (ToolsListBox.SelectedItem is MicroToolItem tool && !tool.IsCollectedPackage)
+                EditDocumentationForTool(tool);
         }
 
-        private void CreateDocumentationForTool(MicroToolItem tool)
+        private void EditDocumentationForTool(MicroToolItem tool)
         {
             try
             {
-                bool overwrite = false;
-                if (!string.IsNullOrWhiteSpace(tool.DocumentationPath) && File.Exists(tool.DocumentationPath))
-                {
-                    MessageBoxResult result = MessageBox.Show(
-                        "该插件已有说明文件。是否用标准模板覆盖？\n\n原说明内容会被替换。",
-                        "覆盖说明模板",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Warning);
-                    if (result != MessageBoxResult.Yes)
-                        return;
-                    overwrite = true;
-                }
-
-                string path = MicroToolEngine.CreateDocumentationTemplate(tool.FullPath, overwrite);
-                Process.Start("notepad.exe", path);
-                StatusText.Text = "已创建说明模板；填写功能说明和使用步骤，保存后点击刷新。";
-                RefreshTools();
+                string path = File.Exists(tool.DocumentationPath) ? tool.DocumentationPath
+                    : MicroToolEngine.CreateDocumentationTemplate(tool.FullPath, false);
+                Process.Start("notepad.exe", $"\"{path}\"");
+                StatusText.Text = "说明已打开。保存后点击「刷新」。";
             }
             catch (Exception ex)
             {
-                ShowError("创建临时插件说明模板失败", ex);
+                ShowError("打开插件说明失败", ex);
             }
         }
 
@@ -304,7 +305,7 @@ namespace YangTools.Revit.UI
             var source = e.OriginalSource as DependencyObject;
             if (source == null ||
                 ItemsControl.ContainerFromElement(ToolsListBox, source) is not ListBoxItem item ||
-                !item.IsSelected)
+                !item.IsSelected || !BtnRun.IsEnabled)
                 return;
             ExecuteSelectedTool();
         }
@@ -327,18 +328,7 @@ namespace YangTools.Revit.UI
             }
 
             if (!selectedTool.HasDocumentation)
-            {
-                MessageBoxResult create = MessageBox.Show(
-                    "该临时插件缺少完整的功能说明或使用步骤。\n\n" +
-                    "临时插件箱要求每个工具先补充说明，避免以后不知道怎么使用或误操作模型。\n\n" +
-                    "是否现在创建说明模板？",
-                    "缺少插件说明",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Information);
-                if (create == MessageBoxResult.Yes)
-                    CreateDocumentationForTool(selectedTool);
                 return;
-            }
 
             SelectedDllPath = selectedTool.FullPath;
             _settings.MicroToolLastToolPath = selectedTool.FullPath;
@@ -443,7 +433,6 @@ namespace YangTools.Revit.UI
             {
                 MessageBox.Show("收藏前必须填写完整的功能说明和使用步骤。", "临时插件箱",
                     MessageBoxButton.OK, MessageBoxImage.Information);
-                CreateDocumentationForTool(selectedTool);
                 return;
             }
 

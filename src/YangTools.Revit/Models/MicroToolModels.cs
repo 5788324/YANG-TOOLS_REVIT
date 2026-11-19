@@ -56,7 +56,10 @@ namespace YangTools.Revit.Models
         }
 
         public bool HasRequiredDocumentation =>
-            !string.IsNullOrWhiteSpace(FunctionDescription) && UsageInstructions.Count > 0;
+            IsFilledIn(FunctionDescription) && UsageInstructions.Any(IsFilledIn);
+
+        private static bool IsFilledIn(string value) =>
+            !string.IsNullOrWhiteSpace(value) && !value.TrimStart().StartsWith("请填写：", StringComparison.Ordinal);
     }
 
     public sealed class MicroToolItem
@@ -78,7 +81,7 @@ namespace YangTools.Revit.Models
         public string DocumentationBadge => HasDocumentation ? "有说明" : "缺少说明";
         public string FunctionDescription => HasDocumentation
             ? Documentation.FunctionDescription
-            : "该插件尚未提供功能说明。点击“创建说明模板”补充后，列表会自动读取。";
+            : "请填写功能说明和使用步骤，保存后刷新。";
         public string UsageSummary => HasDocumentation
             ? string.Join("\n", Documentation.UsageInstructions.Select((item, index) => $"{index + 1}. {item}"))
             : "未提供使用步骤。";
