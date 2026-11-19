@@ -5,6 +5,8 @@ import json, re, sys
 r=Path(__file__).resolve().parents[1]
 read=lambda s:(r/s).read_text(encoding='utf-8-sig')
 files={
+ 'visibility':read('src/YangTools.Revit/UI/VisibilityCopierWindow.xaml.cs'),
+ 'section':read('src/YangTools.Revit/Commands/SectionByLineCommand.cs'),
  'cleaner':read('src/YangTools.Revit/UI/ViewGraphicCleanerWindow.xaml.cs'),
  'cleanerxaml':read('src/YangTools.Revit/UI/ViewGraphicCleanerWindow.xaml'),
  'merge':read('src/YangTools.Revit/Commands/MergeTextCommand.cs'),
@@ -48,7 +50,7 @@ for key,s in {
  'logs_count_failure':'DiagnosticLog.WriteError("视图图形覆盖统计", ex)',
  'logs_clean_failure':'DiagnosticLog.WriteError("视图图形覆盖清理", ex)',
  'committed_ui_failure_separated':'视图图形覆盖清理已提交，界面状态更新失败',
- 'committed_alert_failure_separated':'视图图形覆盖清理已提交，完成提示失败',
+ 'success_in_status_bar':'StatusText.Text = $"已清理',
 }.items():has('cleaner',key,s)
 order('cleaner','preflight_then_group','// 所有视图先完成只读扫描','new TransactionGroup(_doc')
 order('cleaner','commit_then_ui','tg.Assimilate()','// 事务组已确认提交，界面更新失败只能作为单独的警告。')
@@ -63,6 +65,16 @@ for key,s in {
  'calculate':'Click="CalculateSelected_Click"',
  'execute':'Click="ExecuteClean_Click"',
 }.items():has('cleanerxaml',key,s)
+for key,s in {
+ 'skip_template_controlled':'scopes.Keys.Except(locked.Select(scope => scope.Key))',
+ 'uses_source_template':'? sourceTemplate : source.View',
+ 'copies_filter_enabled':'target.SetIsFilterEnabled(filterId, source.GetIsFilterEnabled(filterId))',
+ 'copies_import_subcategories':'AddCategory(child, scope)',
+ 'checks_commit':'transaction.Commit() != TransactionStatus.Committed',
+}.items():has('visibility',key,s)
+order('visibility','commit_then_status','transaction.Commit()', 'StatusText.Text = $"已复制到')
+has('cleaner','preselect_active_view','IsSelected = view.Id == _doc.ActiveView.Id')
+has('section','reuse_single_preselection','preselected.Count == 1 ? preselected[0]')
 for key,s in {
  'start_checked':'transaction.Start() != TransactionStatus.Started',
  'delete_confirm':'!deleted.Contains(removeId)',

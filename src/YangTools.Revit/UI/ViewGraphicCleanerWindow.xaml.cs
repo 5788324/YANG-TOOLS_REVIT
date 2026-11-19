@@ -2,7 +2,6 @@ using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -38,7 +37,7 @@ namespace YangTools.Revit.UI
             var views = new FilteredElementCollector(_doc)
                 .OfClass(typeof(View))
                 .Cast<View>()
-                .Where(v => !v.IsTemplate && 
+                .Where(v => !v.IsTemplate && v.AreGraphicsOverridesAllowed() &&
                            (v.ViewType == ViewType.FloorPlan ||
                             v.ViewType == ViewType.Section ||
                             v.ViewType == ViewType.ThreeD ||
@@ -46,17 +45,18 @@ namespace YangTools.Revit.UI
                             v.ViewType == ViewType.CeilingPlan ||
                             v.ViewType == ViewType.Detail ||
                             v.ViewType == ViewType.DraftingView))
-                .OrderBy(v => v.Name)
+                .OrderByDescending(v => v.Id == _doc.ActiveView.Id)
+                .ThenBy(v => v.Name)
                 .ToList();
 
             foreach (var view in views)
             {
-                var item = new CleanerViewItem(view);
+                var item = new CleanerViewItem(view) { IsSelected = view.Id == _doc.ActiveView.Id };
                 _allViews.Add(item);
                 _filteredViews.Add(item);
             }
 
-            StatusText.Text = $"共加载 {_allViews.Count} 个图形视图";
+            StatusText.Text = _allViews.Any(item => item.IsSelected) ? "已勾选当前视图。" : "请勾选要清理的视图。";
         }
 
         private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -100,7 +100,7 @@ namespace YangTools.Revit.UI
 
         private void CalculateSelected_Click(object sender, RoutedEventArgs e)
         {
-            var selected = _filteredViews.Where(x => x.IsSelected && !x.IsCalculated).ToList();
+            var selected = _allViews.Where(x => x.IsSelected && !x.IsCalculated).ToList();
             if (selected.Count == 0)
             {
                 MessageBox.Show("没有选中未计算的视图。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -211,9 +211,10 @@ namespace YangTools.Revit.UI
                             {
                                 if (tx.Start() != TransactionStatus.Started)
                                     throw new InvalidOperationException($"无法开始清理视图：{plan.Item.ViewName}");
+                                using var emptyOverrides = new OverrideGraphicSettings();
                                 foreach (var id in plan.ElementIds)
                                 {
-                                    plan.Item.View.SetElementOverrides(id, new OverrideGraphicSettings());
+                                    plan.Item.View.SetElementOverrides(id, emptyOverrides);
                                     if (plan.Item.View.GetElementOverrides(id).HasOverrides())
                                         throw new InvalidOperationException($"视图 {plan.Item.ViewName} 中元素 {id} 的覆盖未清除。");
                                 }
@@ -244,7 +245,6 @@ namespace YangTools.Revit.UI
                 }
 
                 // 事务组已确认提交，界面更新失败只能作为单独的警告。
-                string displayWarning = string.Empty;
                 try
                 {
                     foreach (var plan in plans)
@@ -254,21 +254,11 @@ namespace YangTools.Revit.UI
                         plan.Item.IsCalculated = true;
                         plan.Item.IsSelected = false;
                     }
+                    StatusText.Text = $"已清理 {clearedViews} 个视图，共 {plannedElements} 个元素覆盖。";
                 }
                 catch (Exception uiEx)
                 {
                     DiagnosticLog.WriteError("视图图形覆盖清理已提交，界面状态更新失败", uiEx);
-                    displayWarning = "\n提示：清理已提交，但部分界面状态刷新失败；请重新打开窗口检查。";
-                }
-                try
-                {
-                    StatusText.Text = $"清理已提交：{clearedViews} 个视图，共 {plannedElements} 个元素覆盖。";
-                    MessageBox.Show($"已清理 {clearedViews} 个视图中的 {plannedElements} 个元素图形覆盖。{displayWarning}",
-                        "清理完成", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                catch (Exception uiEx)
-                {
-                    DiagnosticLog.WriteError("视图图形覆盖清理已提交，完成提示失败", uiEx);
                 }
             }
             catch (Exception ex)

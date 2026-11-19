@@ -12,9 +12,9 @@ namespace YangTools.Revit.Commands
     {
         public bool AllowElement(Element elem)
         {
-            if (elem is CurveElement curveElem)
+            if (elem is ModelCurve || elem is DetailCurve)
             {
-                return curveElem.GeometryCurve is Line;
+                return ((CurveElement)elem).GeometryCurve is Line line && line.IsBound;
             }
             return false;
         }
@@ -30,7 +30,7 @@ namespace YangTools.Revit.Commands
         panelName: "视图修改区", buttonText: "沿线剖面",
         tooltip: "根据选中的模型线或详图线创建剖面视图。",
         largeIcon: "Icons/section_line_32.png", smallIcon: "Icons/section_line_16.png",
-        usage: "使用：点击按钮并按提示拾取可用直线，按要求确认剖面方向与生成选项。\n注意：线段太短或方向不合法时无法创建。")]
+        usage: "使用：先选一根模型直线或详图直线，再点击按钮创建剖面。未预选时可按提示拾取。\n注意：线段太短或方向不合法时无法创建。")]
     public class SectionByLineCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
@@ -51,18 +51,12 @@ namespace YangTools.Revit.Commands
 
             try
             {
-                Reference selRef = uidoc.Selection.PickObject(ObjectType.Element, new LineSelectionFilter(), "请选择一根模型线或详图线");
-                if (selRef == null) return Result.Cancelled;
-
-                CurveElement curveElement = doc.GetElement(selRef) as CurveElement;
-                if (curveElement == null) return Result.Cancelled;
-
-                Line line = curveElement.GeometryCurve as Line;
-                if (line == null)
-                {
-                    TaskDialog.Show("错误", "所选图元不是直线。");
-                    return Result.Failed;
-                }
+                var filter = new LineSelectionFilter();
+                var preselected = uidoc.Selection.GetElementIds().Select(doc.GetElement)
+                    .Where(filter.AllowElement).Cast<CurveElement>().ToList();
+                var curveElement = preselected.Count == 1 ? preselected[0]
+                    : (CurveElement)doc.GetElement(uidoc.Selection.PickObject(ObjectType.Element, filter, "请选择一根模型直线或详图直线"));
+                var line = (Line)curveElement.GeometryCurve;
 
                 XYZ p0 = line.GetEndPoint(0);
                 XYZ p1 = line.GetEndPoint(1);
