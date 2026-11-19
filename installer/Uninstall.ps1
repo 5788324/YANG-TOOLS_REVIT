@@ -18,23 +18,29 @@ try {
     foreach ($version in $Versions) {
         $removedForVersion = $false
         $versionRoot = Join-Path $AddinsRoot $version
-        foreach ($folderName in @('YangTools', 'YangTools.installing', 'YangTools.backup')) {
-            $folder = Join-Path $versionRoot $folderName
-            if (Test-Path -LiteralPath $folder) {
-                Remove-Item -LiteralPath $folder -Recurse -Force
-                $removed++
-                $removedForVersion = $true
+        if (-not (Test-Path -LiteralPath $versionRoot -PathType Container)) { continue }
+        $addinsLock = Open-YangToolsAddinsOperation -VersionRoot $versionRoot
+        try {
+            Assert-NoPendingYangToolsRollback -VersionRoot $versionRoot
+            foreach ($folderName in @('YangTools', 'YangTools.installing', 'YangTools.backup')) {
+                $folder = Join-Path $versionRoot $folderName
+                if (Test-Path -LiteralPath $folder) {
+                    Remove-Item -LiteralPath $folder -Recurse -Force
+                    $removed++
+                    $removedForVersion = $true
+                }
+            }
+            $manifest = Join-Path $versionRoot 'YangTools.Revit.addin'
+            $manifestBackup = Join-Path $versionRoot 'YangTools.Revit.addin.backup'
+            foreach ($manifestFile in @($manifest, $manifestBackup)) {
+                if (Test-Path -LiteralPath $manifestFile) {
+                    Remove-Item -LiteralPath $manifestFile -Force
+                    $removed++
+                    $removedForVersion = $true
+                }
             }
         }
-        $manifest = Join-Path $versionRoot 'YangTools.Revit.addin'
-        $manifestBackup = Join-Path $versionRoot 'YangTools.Revit.addin.backup'
-        foreach ($manifestFile in @($manifest, $manifestBackup)) {
-            if (Test-Path -LiteralPath $manifestFile) {
-                Remove-Item -LiteralPath $manifestFile -Force
-                $removed++
-                $removedForVersion = $true
-            }
-        }
+        finally { $addinsLock.Dispose() }
         if ($removedForVersion) { Write-Host "[完成] Revit $version" -ForegroundColor Green }
     }
 
