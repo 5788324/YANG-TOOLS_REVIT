@@ -44,6 +44,14 @@ namespace YangTools.Revit.Core.Sheets
                     !titleblock.Category.Id.Equals(new ElementId(BuiltInCategory.OST_TitleBlocks)))
                     throw new InvalidOperationException($"Excel 第 {index + 2} 行图元 {id} 不是当前项目中的图框实例，整批未写入。");
 
+                if (row.TryGetValue("图纸号", out object rawSheetNumber) &&
+                    !string.IsNullOrWhiteSpace(rawSheetNumber?.ToString()))
+                {
+                    var sheet = doc.GetElement(titleblock.OwnerViewId) as ViewSheet;
+                    if (!string.Equals(sheet?.SheetNumber, rawSheetNumber.ToString().Trim(), StringComparison.OrdinalIgnoreCase))
+                        throw new InvalidOperationException($"Excel 第 {index + 2} 行图框的图纸号与当前项目不符，整批未写入。");
+                }
+
                 // Explicitly preserve the ID, but do not reinterpret descriptive
                 // sheet/type columns as same-named writable instance parameters.
                 projected.Add(row.Where(x => !Metadata.Contains(x.Key))

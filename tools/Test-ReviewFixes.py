@@ -105,7 +105,7 @@ def main() -> int:
         (family_manager, 'FamilyTypeExcelImportService.Execute(', "族类型 Excel UI 使用整批原子服务"),
         (asset_import, 'new TransactionGroup(document, "导入资产 Excel")', "项目资产 Excel 按行原子导入"),
         (sheet_import, 'new Transaction(doc, "批量导入图纸（整批）")', "图纸 Excel 整批单事务原子导入"),
-        (sheet, 'SheetExcelImportService.Execute(_doc, request)', "图纸 Excel UI 调用原子服务"),
+        (sheet, 'SheetExcelImportService.Execute(_doc, request, ConfirmNewSheets)', "图纸 Excel UI 调用原子服务"),
         (sheet, '_pendingTitleblockTypeChanges', "图框快速换型并发守卫"),
         (family_instance, 'new TaskDialog(extraIds.Count > 0 ? "警告" : "确认删除")', "族实例普通删除也确认"),
         (asset, 'new TaskDialog(extraIds.Count > 0 ? "警告" : "确认删除")', "资产普通删除也确认"),

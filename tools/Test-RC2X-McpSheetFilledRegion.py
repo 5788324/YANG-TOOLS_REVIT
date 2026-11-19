@@ -8,6 +8,7 @@ sources={
  'broker':read('src/YangTools.Revit/Mcp/RevitExecutionBroker.cs'),
  'gateway':read('src/YangTools.Revit/Mcp/McpGateway.cs'),
  'sheetUI':read('src/YangTools.Revit/UI/SheetManagerWindow.xaml.cs'),
+ 'titleblockSvc':read('src/YangTools.Revit/Core/Sheets/TitleblockExcelImportService.cs'),
  'sheetSvc':read('src/YangTools.Revit/Core/Sheets/SheetExcelImportService.cs'),
  'filledUI':read('src/YangTools.Revit/UI/ProjectAssetManagerWindow.xaml.cs'),
  'filledSvc':read('src/YangTools.Revit/Core/ProjectAssets/ProjectAssetFilledRegionEditService.cs'),
@@ -69,10 +70,13 @@ for name,needle in {
  'post-commit-warning':'result.SheetIdentityReadbackConfirmed = false',
  'no-unsafe-partial-commit':'throw new InvalidOperationException($"第 {plan.ExcelRow} 行参数',
 }.items():has('sheetSvc',name,needle)
+ordered('sheetSvc','confirm-new-before-write','!confirmNewSheets(newNumbers)','new Transaction(doc')
+has('sheetSvc','skip-unchanged', 'result.UnchangedCount++')
+has('titleblockSvc','verify-sheet-number','titleblock.OwnerViewId')
 nothas('sheetSvc','no-Continue-on-missing-param','if (parameter == null || parameter.IsReadOnly)\n                            continue;')
 nothas('sheetUI','no-row-tx','new Transaction rowTransaction')
 for name,needle in {
- 'service-called':'SheetExcelImportService.Execute(_doc, request)',
+ 'service-called':'SheetExcelImportService.Execute(_doc, request, ConfirmNewSheets)',
  'captures-input':'new Dictionary<string, object>(row)',
  'closed-guard':'if (!_isInitialized || !_doc.IsValidObject',
  'active-doc-guard':'app.ActiveUIDocument.Document.Equals(_doc)',
@@ -81,7 +85,7 @@ for name,needle in {
  'readback-warning':'!result.SheetIdentityReadbackConfirmed',
  'before-event-read':'ExcelService.ReadExcel(filePath)',
 }.items():has('sheetUI',name,needle)
-ordered('sheetUI','read-before-service','ExcelService.ReadExcel(filePath)','SheetExcelImportService.Execute(_doc, request)')
+ordered('sheetUI','read-before-service','ExcelService.ReadExcel(filePath)','SheetExcelImportService.Execute(_doc, request, ConfirmNewSheets)')
 for name,needle in {
  'typed-request':'ProjectAssetFilledRegionEditRequest',
  'validate-document':'!doc.IsValidObject || doc.IsReadOnly || doc.IsModifiable',

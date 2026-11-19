@@ -72,6 +72,13 @@ namespace YangTools.Revit.UI
             _readExternalEvent = ExternalEvent.Create(_readHandler);
             
             SheetsDataGrid.ItemsSource = Sheets;
+            CollectionViewSource.GetDefaultView(Sheets).Filter = item =>
+            {
+                var sheet = (SheetItemViewModel)item;
+                string query = SheetSearchBox.Text.Trim();
+                return sheet.SheetNumber.IndexOf(query, StringComparison.CurrentCultureIgnoreCase) >= 0
+                    || sheet.SheetName.IndexOf(query, StringComparison.CurrentCultureIgnoreCase) >= 0;
+            };
             TitleblocksDataGrid.ItemsSource = Titleblocks;
 
             _isInitialized = true;
@@ -242,7 +249,20 @@ namespace YangTools.Revit.UI
 
                 Sheets.Add(vm);
             }
-            SheetStatusBarText.Text = $"共计 {Sheets.Count} 张图纸";
+            UpdateSheetListStatus();
+        }
+
+        private void SheetSearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (!_isInitialized) return;
+            if (!SheetsDataGrid.CommitEdit(DataGridEditingUnit.Row, true)) return;
+            CollectionViewSource.GetDefaultView(Sheets).Refresh();
+            UpdateSheetListStatus();
+        }
+
+        private void UpdateSheetListStatus()
+        {
+            SheetStatusBarText.Text = $"显示 {SheetsDataGrid.Items.Count} / {Sheets.Count} 张图纸";
         }
 
         private void AddParameterColumn_Click(object sender, RoutedEventArgs e)
@@ -556,7 +576,7 @@ namespace YangTools.Revit.UI
                 SheetExcelImportResult result;
                 try
                 {
-                    result = SheetExcelImportService.Execute(_doc, request);
+                    result = SheetExcelImportService.Execute(_doc, request, ConfirmNewSheets);
                 }
                 catch (Exception ex)
                 {
@@ -568,15 +588,19 @@ namespace YangTools.Revit.UI
 
                 // WPF refresh failure does not invalidate a completed Revit commit.
                 if (!_isInitialized) return;
+                if (!result.Committed)
+                {
+                    SheetStatusBarText.Text = result.Cancelled ? "已取消导入。"
+                        : $"没有图纸需要更新（未变更 {result.UnchangedCount} 张，空行 {result.SkippedBlankRows} 行）。";
+                    return;
+                }
+
                 try
                 {
                     LoadSheets();
-                    string summary = result.Committed
-                        ? $"图纸已提交：新建 {result.CreatedCount}，更新 {result.UpdatedCount}，跳过空行 {result.SkippedBlankRows}。\n整批写入可使用一次 Ctrl+Z 撤销。"
-                        : "Excel 不包含需要导入的图纸行；模型没有修改。";
-                    if (result.Committed && !result.SheetIdentityReadbackConfirmed)
-                        summary += "\n警告：提交后图纸身份回读不完整，请检查实际图纸，不要重复导入。";
-                    TaskDialog.Show(result.Committed ? "图纸导入完成" : "没有可导入的图纸", summary);
+                    SheetStatusBarText.Text = $"已新建 {result.CreatedCount} 张，更新 {result.UpdatedCount} 张，未变更 {result.UnchangedCount} 张。整批写入可使用一次 Ctrl+Z 撤销。";
+                    if (!result.SheetIdentityReadbackConfirmed)
+                        TaskDialog.Show("图纸已提交", "提交后图纸身份回读不完整，请检查实际图纸。");
                 }
                 catch (Exception refreshError)
                 {
@@ -586,6 +610,20 @@ namespace YangTools.Revit.UI
                 }
             }, operationName: "批量导入图纸", showSuccess: false);
             _externalEvent.Raise();
+        }
+
+        private static bool ConfirmNewSheets(IReadOnlyList<string> numbers)
+        {
+            string preview = string.Join("、", numbers.Take(8));
+            if (numbers.Count > 8) preview += " 等";
+            var dialog = new TaskDialog("确认新建图纸")
+            {
+                MainInstruction = $"Excel 中有 {numbers.Count} 个图号在本项目中不存在",
+                MainContent = preview + "\n\n选「是」将新建这些图纸并更新匹配项。选「否」取消整批导入。若本次只想更新，请先核对这些图号。",
+                CommonButtons = TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.No,
+                DefaultButton = TaskDialogResult.No
+            };
+            return dialog.Show() == TaskDialogResult.Yes;
         }
 
         #endregion
