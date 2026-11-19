@@ -253,8 +253,8 @@
                         <StackPanel Orientation="Horizontal">
                             <Button ToolTip="在视图中选择并定位" Style="{DynamicResource IconButton}" Click="SelectInView_Click" Foreground="{DynamicResource InfoColor}"><TextBlock Text="&#xE71C;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
                             <Button ToolTip="重置参数列" Style="{DynamicResource IconButton}" Click="ResetColumns_Click"><TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
-                            <Button ToolTip="导出 Excel" Style="{DynamicResource IconButton}" Click="ExportExcel_Click"><TextBlock Text="&#xEDE1;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
-                            <Button ToolTip="导入 Excel" Style="{DynamicResource IconButton}" Click="ImportExcel_Click" Foreground="{DynamicResource AccentColor}"><TextBlock Text="&#xE8B5;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
+                            <Button ToolTip="导出当前筛选结果到 Excel" Style="{DynamicResource IconButton}" Click="ExportExcel_Click"><TextBlock Text="&#xEDE1;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
+                            <Button ToolTip="按图元 ID 导入当前筛选范围内的实例参数" Style="{DynamicResource IconButton}" Click="ImportExcel_Click" Foreground="{DynamicResource AccentColor}"><TextBlock Text="&#xE8B5;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
                             <Button ToolTip="删除选中实例" Style="{DynamicResource IconButton}" Click="Delete_Click" Foreground="{DynamicResource DangerBg}"><TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
                         </StackPanel>
                     </ScrollViewer>

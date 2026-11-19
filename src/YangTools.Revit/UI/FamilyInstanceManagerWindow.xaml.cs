@@ -883,9 +883,8 @@ namespace YangTools.Revit.UI
         private void QuickFilterChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_suppressQuickFilterEvents) return;
-            _collectionView?.Refresh();
-            _systemCollectionView?.Refresh();
-            UpdateStatusText();
+            RefreshFilteredRows(InstanceDataGrid, _collectionView);
+            RefreshFilteredRows(SystemDataGrid, _systemCollectionView);
         }
 
         private void Refresh_Click(object sender, RoutedEventArgs e)
@@ -955,7 +954,7 @@ namespace YangTools.Revit.UI
         {
             DataGrid grid = MainTabControl.SelectedIndex == 1 ? SystemDataGrid : InstanceDataGrid;
             return grid.SelectedItems.Cast<InstanceItemViewModel>()
-                .Where(x => x.InstanceId != null && x.InstanceId != ElementId.InvalidElementId)
+                .Where(x => grid.Items.Contains(x) && x.InstanceId != null && x.InstanceId != ElementId.InvalidElementId)
                 .ToList();
         }
 
@@ -1114,8 +1113,7 @@ namespace YangTools.Revit.UI
 
         private void SystemSearchChanged(object sender, TextChangedEventArgs e)
         {
-            if (_systemCollectionView != null) _systemCollectionView.Refresh();
-            UpdateStatusText();
+            RefreshFilteredRows(SystemDataGrid, _systemCollectionView);
         }
 
         private void SelectElements_Click(object sender, RoutedEventArgs e)
@@ -1167,11 +1165,12 @@ namespace YangTools.Revit.UI
 
         private void ExportExcel_Click(object sender, RoutedEventArgs e)
         {
-            bool isSystem = MainTabControl.SelectedIndex == 1;
-            var activeView = isSystem ? _systemCollectionView : _collectionView;
-            var activeItems = activeView?.Cast<InstanceItemViewModel>().ToList() ?? new List<InstanceItemViewModel>();
-
-            if (activeItems.Count == 0) return;
+            var activeItems = GetVisibleRows().ToList();
+            if (activeItems.Count == 0)
+            {
+                TaskDialog.Show("导出 Excel", "当前筛选结果没有可导出的实例。");
+                return;
+            }
             var dialog = new Microsoft.Win32.SaveFileDialog { Filter = "Excel File (*.xlsx)|*.xlsx", FileName = "Instances.xlsx" };
             if (dialog.ShowDialog() == true)
             {
@@ -1196,7 +1195,7 @@ namespace YangTools.Revit.UI
                         data.Add(row);
                     }
                     MiniExcelLibs.MiniExcel.SaveAs(dialog.FileName, data);
-                    TaskDialog.Show("提示", "导出成功 (Export Successful)");
+                    InstanceStatusText.Text = $"已导出 {data.Count} 个实例。";
                 }
                 catch (Exception ex)
                 {
@@ -1205,23 +1204,50 @@ namespace YangTools.Revit.UI
             }
         }
 
+        private IEnumerable<InstanceItemViewModel> GetVisibleRows()
+        {
+            var grid = MainTabControl.SelectedIndex == 1 ? SystemDataGrid : InstanceDataGrid;
+            return grid.Items.OfType<InstanceItemViewModel>();
+        }
+
         private void ImportExcel_Click(object sender, RoutedEventArgs e)
         {
             if (_isWindowClosed) return;
+            var visibleIds = new HashSet<long>(GetVisibleRows().Select(row => row.InstanceId.GetIdValue()));
+            if (visibleIds.Count == 0)
+            {
+                TaskDialog.Show("导入 Excel", "请先筛选要导入参数的实例。");
+                return;
+            }
+            long viewVersion = _readRequestVersion;
             var dialog = new Microsoft.Win32.OpenFileDialog { Filter = "Excel File (*.xlsx)|*.xlsx" };
             if (dialog.ShowDialog() != true) return;
             string importPath = dialog.FileName;
+            List<IDictionary<string, object>> rows;
+            try
+            {
+                rows = ExcelService.ReadExcel(importPath).ToList();
+            }
+            catch (Exception ex)
+            {
+                TaskDialog.Show("读取 Excel 失败", ex.Message);
+                return;
+            }
+
             _handler.SetAction(app =>
             {
                 if (_isWindowClosed) return;
                 var doc = app.ActiveUIDocument?.Document;
                 if (doc == null || !doc.Equals(_doc))
                     throw new InvalidOperationException("当前项目已切换，实例参数导入已取消。");
-                var rows = MiniExcelLibs.MiniExcel.Query(importPath, useHeaderRow: true)
-                    .Cast<IDictionary<string, object>>()
-                    .ToList();
+                if (_readRequestVersion != viewVersion ||
+                    !visibleIds.SetEquals(GetVisibleRows().Select(row => row.InstanceId.GetIdValue())))
+                {
+                    TaskDialog.Show("导入已取消", "实例筛选范围已变化，请按当前范围重新导入。");
+                    return;
+                }
                 var result = FamilyInstanceExcelImportService.Execute(doc,
-                    new FamilyInstanceExcelImportRequest { Rows = rows });
+                    new FamilyInstanceExcelImportRequest { Rows = rows, VisibleInstanceIds = visibleIds });
                 if (_isWindowClosed) return;
                 // A GUI refresh error must not turn a committed model edit into a false failure.
                 try
@@ -1249,11 +1275,16 @@ namespace YangTools.Revit.UI
 
         private void SearchChanged(object sender, TextChangedEventArgs e)
         {
-            if (_collectionView != null) _collectionView.Refresh();
-            UpdateStatusText();
+            RefreshFilteredRows(InstanceDataGrid, _collectionView);
         }
 
-
+        private void RefreshFilteredRows(DataGrid grid, ICollectionView view)
+        {
+            if (view == null || !grid.CommitEdit(DataGridEditingUnit.Row, true)) return;
+            grid.UnselectAll();
+            view.Refresh();
+            UpdateStatusText();
+        }
 
         private void InstanceDataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
         {

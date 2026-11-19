@@ -52,6 +52,12 @@ def main():
     ck('Excel not partial per row','new TransactionGroup(' not in svc and 'new Transaction(' not in imported)
     ck('Excel no dialogs inside service','TaskDialog' not in svc and 'Dispatcher' not in svc)
     ck('Excel UI uses new service','FamilyInstanceExcelImportService.Execute(doc' in imported)
+    ck('Excel UI snapshots filtered instance IDs','VisibleInstanceIds = visibleIds' in imported)
+    ck('Excel UI rejects changed scope before queued write','visibleIds.SetEquals(GetVisibleRows()' in imported)
+    ck('Excel service rejects out-of-scope rows before transaction',
+       svc.index('!request.VisibleInstanceIds.Contains(idValue)') < svc.index('new Transaction('))
+    ck('Unchanged read-only values are skipped',
+       svc.index('ParameterValueHelper.GetDisplayValue(parameter)') < svc.index('!ParameterValueHelper.CanEditAsText(parameter)'))
     ck('Excel UI binds doc','!doc.Equals(_doc)' in imported)
     ck('Excel UI guard closure','_isWindowClosed' in imported)
     ck('Excel UI source path snapshot','string importPath = dialog.FileName' in imported)
