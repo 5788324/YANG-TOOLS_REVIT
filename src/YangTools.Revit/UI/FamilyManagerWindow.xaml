@@ -212,7 +212,7 @@
 
                             <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                                 <Button x:Name="ManageInstancesBtn" Content="管理实例" Width="92" Height="32" Margin="6,0" Style="{DynamicResource PrimaryButton}" Click="ManageInstances_Click" IsEnabled="False"/>
-                                <Button Content="批量导出 RFA" Width="112" Height="32" Margin="6,0" Click="ExportSelectedRfa_Click" ToolTip="导出左侧选中的一个或多个族；未多选时导出当前族"/>
+                                <Button Content="批量导出 RFA" Width="112" Height="32" Margin="6,0" Click="ExportSelectedRfa_Click" ToolTip="导出左侧选中的族，已有同名文件时先确认"/>
                                 <Button Content="清理未使用类型" Width="120" Height="32" Margin="6,0" Style="{DynamicResource DangerButton}" Click="CleanupUnusedTypes_Click" ToolTip="仅删除 Usage=0 的类型；先 Trial Delete 并显示连带影响"/>
                             </StackPanel>
                         </Grid>
@@ -242,7 +242,7 @@
                                 <Button ToolTip="更改类别" Style="{DynamicResource IconButton}" Click="ChangeCategory_Click"><TextBlock Text="&#xE8B9;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
                                 <Button ToolTip="批量重命名" Style="{DynamicResource IconButton}" Click="BatchRename_Click"><TextBlock Text="&#xE8AC;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
                                 <Button ToolTip="导出当前族 RFA" Style="{DynamicResource IconButton}" Click="ExportRfa_Click" Foreground="{DynamicResource SuccessColor}"><TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
-                                <Button ToolTip="导出 Excel" Style="{DynamicResource IconButton}" Click="ExportExcel_Click"><TextBlock Text="&#xEDE1;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
+                                <Button ToolTip="导出当前列表显示的族类型到 Excel" Style="{DynamicResource IconButton}" Click="ExportExcel_Click"><TextBlock Text="&#xEDE1;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
                                 <Button ToolTip="导入 Excel" Style="{DynamicResource IconButton}" Click="ImportExcel_Click" Foreground="{DynamicResource AccentColor}"><TextBlock Text="&#xE8B5;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
                                 <Button ToolTip="删除选中类型/族" Style="{DynamicResource IconButton}" Click="Delete_Click" Foreground="{DynamicResource DangerBg}"><TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
                             </StackPanel>

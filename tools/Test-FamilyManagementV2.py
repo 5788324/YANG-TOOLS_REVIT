@@ -87,6 +87,9 @@ def main() -> int:
         ('ExportSelectedRfa_Click','多族批量 RFA'),('CleanupUnusedTypes_Click','安全清理未使用类型'),
         ('Trial Delete Unused Family Types','未使用类型 Trial Delete'),('extraIds.Count > 0','级联删除保护')
     ]: req(fam_c,needle,label)
+    req(fam_c,'targets.TryGetValue(path, out Family other)','RFA 写入前阻止文件名冲突')
+    req(fam_c,'OverwriteExistingFile = approvedOverwrites.Contains(target.Key)','RFA 只允许覆盖已确认路径')
+    req(fam_c,'TypeDataGrid.Items.OfType<TypeItemViewModel>().ToList()','类型 Excel 仅导出可见行')
     req(reg_c,'Action<TWindow> configureExisting','已打开实例管理窗口可重定位族')
     # Instance actions
     for needle,label in [
