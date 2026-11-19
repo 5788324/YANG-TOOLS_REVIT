@@ -62,6 +62,8 @@ namespace YangTools.Revit.UI
 
             _assetCollectionView = CollectionViewSource.GetDefaultView(AssetList);
             _assetCollectionView.Filter = FilterAssetItem;
+            CollectionViewSource.GetDefaultView(FilledRegionList).Filter = FilterAssetItem;
+            CollectionViewSource.GetDefaultView(LineStyleList).Filter = FilterAssetItem;
 
             LoadTab("Views");
         }
@@ -106,11 +108,19 @@ namespace YangTools.Revit.UI
                     _currentTabName = newTab;
                     var requestedTab = newTab;
                     var requestVersion = ++_tabLoadVersion;
+                    _selectedNode = null;
+                    AssetTreeView.ItemsSource = null;
+                    AssetList.Clear();
+                    FilledRegionList.Clear();
+                    LineStyleList.Clear();
+                    AssetActions.IsEnabled = false;
+                    StatusText.Text = "正在加载资产…";
                     RequestRead(() =>
                     {
                         // 用户快速切换标签时，忽略已过期的队列项。
                         if (requestVersion != _tabLoadVersion || _currentTabName != requestedTab) return;
                         LoadTab(requestedTab);
+                        AssetActions.IsEnabled = true;
                     }, "加载项目资产");
                 }
             }
@@ -347,7 +357,8 @@ namespace YangTools.Revit.UI
                 }
             }
             LineStyleDataGrid.ItemsSource = LineStyleList;
-            StatusText.Text = $"加载了 {LineStyleList.Count} 个线型";
+            LineStyleDataGrid.Items.Refresh();
+            UpdateAssetCount();
         }
 
         private void LoadFilledRegions()
@@ -381,7 +392,8 @@ namespace YangTools.Revit.UI
                 FilledRegionList.Add(vm);
             }
             FilledRegionDataGrid.ItemsSource = FilledRegionList;
-            StatusText.Text = $"加载了 {FilledRegionList.Count} 个填充图案";
+            FilledRegionDataGrid.Items.Refresh();
+            UpdateAssetCount();
         }
 
         private void AssetTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
@@ -390,7 +402,10 @@ namespace YangTools.Revit.UI
             if (e.NewValue is AssetTreeNode node)
             {
                 _selectedNode = node;
-                
+                AssetList.Clear();
+                AssetActions.IsEnabled = false;
+                StatusText.Text = "正在加载资产…";
+
                 string safeName = string.Join("_", node.Name.Split(System.IO.Path.GetInvalidFileNameChars()));
                 _configPath = System.IO.Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -405,6 +420,7 @@ namespace YangTools.Revit.UI
                     if (_selectedNode != requestedNode || _currentTabName != requestedTab) return;
                     CreateDynamicColumns();
                     LoadData();
+                    AssetActions.IsEnabled = true;
                 }, "加载资产数据");
             }
         }
@@ -651,6 +667,7 @@ namespace YangTools.Revit.UI
             
             if (ids.Count == 0 && (_selectedNode == null || !_selectedNode.Name.Contains("Project Info")))
             {
+                AssetList.Clear();
                 AssetDataGrid.ItemsSource = null;
                 StatusText.Text = "当前节点无数据";
                 return;
@@ -691,7 +708,7 @@ namespace YangTools.Revit.UI
                     _assetCollectionView = CollectionViewSource.GetDefaultView(AssetList);
                     _assetCollectionView.Filter = FilterAssetItem;
                     _assetCollectionView.Refresh();
-                    StatusText.Text = $"加载了 {AssetList.Count} 个项目参数";
+                    UpdateAssetCount();
                     return;
                 }
             }
@@ -774,33 +791,51 @@ namespace YangTools.Revit.UI
             _assetCollectionView = CollectionViewSource.GetDefaultView(AssetList);
             _assetCollectionView.Filter = FilterAssetItem;
             _assetCollectionView.Refresh();
-            StatusText.Text = $"加载了 {AssetList.Count} 个对象";
+            UpdateAssetCount();
         }
 
         private string GetParameterValueSafely(Parameter param) => ParameterValueHelper.GetDisplayValue(param);
         
+        private DataGrid CurrentAssetGrid => _currentTabName switch
+        {
+            "FilledRegions" => FilledRegionDataGrid,
+            "LineStyles" => LineStyleDataGrid,
+            _ => AssetDataGrid
+        };
+
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (_assetCollectionView != null) _assetCollectionView.Refresh();
+            if (_assetCollectionView == null || !AssetActions.IsEnabled) return;
+            var grid = CurrentAssetGrid;
+            if (!grid.CommitEdit(DataGridEditingUnit.Row, true)) return;
+
+            // Clear selections so a newly filtered list cannot retain a previous batch target.
+            grid.UnselectAll();
+            grid.Items.Refresh();
+            UpdateAssetCount();
+        }
+
+        private void UpdateAssetCount()
+        {
+            int total = _currentTabName == "FilledRegions" ? FilledRegionList.Count
+                : _currentTabName == "LineStyles" ? LineStyleList.Count : AssetList.Count;
+            StatusText.Text = $"显示 {CurrentAssetGrid.Items.Count} / {total} 项";
         }
 
         private bool FilterAssetItem(object obj)
         {
-            if (obj is AssetItemViewModel item)
-            {
-                if (!item.IsRowVisible) return false;
+            string query = SearchBox.Text.Trim();
+            bool Matches(string name, ElementId id) =>
+                query.Length == 0 || (name?.IndexOf(query, StringComparison.CurrentCultureIgnoreCase) ?? -1) >= 0
+                || (id?.GetIdValue().ToString().Contains(query) ?? false);
 
-                string searchText = SearchBox.Text?.Trim().ToLower() ?? "";
-                if (!string.IsNullOrEmpty(searchText))
-                {
-                    bool matchName = item.AssetName != null && item.AssetName.ToLower().Contains(searchText);
-                    bool matchId = item.AssetId != null && item.AssetId.GetIdValue().ToString().Contains(searchText);
-                    if (!matchName && !matchId)
-                        return false;
-                }
-                return true;
-            }
-            return false;
+            return obj switch
+            {
+                AssetItemViewModel item => item.IsRowVisible && Matches(item.AssetName, item.AssetId),
+                FilledRegionViewModel item => Matches(item.Name, item.Id),
+                LineStyleViewModel item => Matches(item.Name, item.Id),
+                _ => false
+            };
         }
 
         private void LineStyleDataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
@@ -1428,12 +1463,18 @@ namespace YangTools.Revit.UI
 
         private void ExportExcel_Click(object sender, RoutedEventArgs e)
         {
-            if (AssetList.Count == 0) return;
+            var visibleRows = AssetDataGrid.Items.OfType<AssetItemViewModel>().ToList();
+            if (visibleRows.Count == 0)
+            {
+                TaskDialog.Show("导出 Excel", "当前列表没有可导出的资产。");
+                return;
+            }
+
             var filePath = ExcelService.ShowSaveDialog("ProjectAssets.xlsx");
             if (filePath == null) return;
 
             var data = new List<Dictionary<string, object>>();
-            foreach (var item in AssetList)
+            foreach (var item in visibleRows)
             {
                 var row = new Dictionary<string, object>();
                 foreach (var column in AssetDataGrid.Columns)
@@ -1751,6 +1792,8 @@ namespace YangTools.Revit.UI
                         confirmDialog.MainInstruction = $"确定删除选中的 {preview.SelectedIds.Count} 个{sourceDesc}吗？";
                         confirmDialog.MainContent = "删除操作会生成一条 Revit 撤销记录，可使用 Ctrl+Z 撤销。";
                     }
+                    if (sourceDesc == "勾选的节点" && !string.IsNullOrWhiteSpace(SearchBox.Text))
+                        confirmDialog.MainContent += "\n\n左侧节点按勾选范围删除，包含被右侧搜索隐藏的资产。";
                     confirmDialog.CommonButtons = TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.No;
                     confirmDialog.DefaultButton = TaskDialogResult.No;
                     if (confirmDialog.Show() != TaskDialogResult.Yes) return;
@@ -1857,29 +1900,37 @@ namespace YangTools.Revit.UI
             _handler.SetAction(app =>
             {
                 if (_isClosed) return;
+                ProjectAssetBatchRenameResult result;
                 try
                 {
-                    // _handler is bound to the originating document; never use another active document.
-                    var result = ProjectAssetBatchRenameService.Execute(_doc, request);
-                    if (_isClosed) return;
-                    // Revit's ExternalEvent executes on the UI thread. Avoid Dispatcher.Invoke and
-                    // never refresh a different tab or selection if the user navigated meanwhile.
-                    if (tabVersionAtRequest == _tabLoadVersion
-                        && _currentTabName == tabAtRequest
-                        && ReferenceEquals(_selectedNode, nodeAtRequest))
-                    {
-                        if (AssetDataGrid.Visibility == System.Windows.Visibility.Visible) LoadData();
-                        else if (FilledRegionDataGrid.Visibility == System.Windows.Visibility.Visible) LoadFilledRegions();
-                        else if (LineStyleDataGrid.Visibility == System.Windows.Visibility.Visible) LoadLineStyles();
-                    }
-                    var undoHint = result.RenamedCount > 0 ? "可以在 Revit 中使用一次 Ctrl+Z 撤销整批修改。" : "没有需要修改的资产，未创建撤销记录。";
-                    TaskDialog.Show("提示", $"批量重命名完成：修改 {result.RenamedCount} 个，未变化 {result.UnchangedCount} 个。{undoHint}");
+                    result = ProjectAssetBatchRenameService.Execute(_doc, request);
                 }
                 catch (Exception ex)
                 {
                     if (!_isClosed)
                         TaskDialog.Show("批量重命名失败", ex.Message + "\n未成功提交本批修改，请检查资产名称后重试。");
+                    return;
                 }
+
+                if (_isClosed) return;
+                if (tabVersionAtRequest == _tabLoadVersion
+                    && _currentTabName == tabAtRequest
+                    && ReferenceEquals(_selectedNode, nodeAtRequest))
+                {
+                    try
+                    {
+                        if (AssetDataGrid.Visibility == System.Windows.Visibility.Visible) LoadData();
+                        else if (FilledRegionDataGrid.Visibility == System.Windows.Visibility.Visible) LoadFilledRegions();
+                        else if (LineStyleDataGrid.Visibility == System.Windows.Visibility.Visible) LoadLineStyles();
+                    }
+                    catch (Exception refreshError)
+                    {
+                        TaskDialog.Show("批量重命名结果", $"已修改 {result.RenamedCount} 个，列表刷新失败。\n{refreshError.Message}");
+                        return;
+                    }
+                }
+                var undoHint = result.RenamedCount > 0 ? "可在 Revit 中按一次 Ctrl+Z 撤销。" : "未创建撤销记录。";
+                StatusText.Text = $"批量重命名：修改 {result.RenamedCount} 个，未变化 {result.UnchangedCount} 个。{undoHint}";
             }, operationName: "批量重命名", showSuccess: false);
             _externalEvent.Raise();
         }
