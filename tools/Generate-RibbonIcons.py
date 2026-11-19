@@ -297,6 +297,12 @@ def text_modifier(g):
     line(g,6,8,19,8); line(g,6,13,19,13); line(g,6,18,15,18)
     path(g,'M14 25l8-8 3 3-8 8-4 1z',accent=True); line(g,21,18,24,21,accent=True)
 
+def dwg_view_link(g):
+    rect(g,4,5,17,17,2)
+    line(g,7,10,15,10); line(g,7,14,13,14)
+    rect(g,17,16,11,10,1,accent=True)
+    poly(g,[(15,21),(20,21),(18,19),(20,21),(18,23)],accent=True)
+
 def visibility_copier(g):
     path(g,'M3 15s5-7 13-7 13 7 13 7-5 7-13 7S3 15 3 15z')
     circle(g,16,15,3,accent=True)
@@ -367,7 +373,7 @@ icons={
 'family_manager':family_manager,'level_modifier':level_modifier,'linear_placement':linear_placement,'merge_text':merge_text,
 'micro_tool':micro_tool,'override_cleaner':override_cleaner,'paste_cad':paste_cad,'project_info':project_info,
 'project_inspector':project_inspector,'parameter_cleanup':parameter_cleanup,'sample_window':settings,'section_line':section_line,'sheet_manager':sheet_manager,
-'text_modifier':text_modifier,'visibility_copier':visibility_copier,'cad_to_revit':cad_to_revit,
+'text_modifier':text_modifier,'visibility_copier':visibility_copier,'dwg_view_link':dwg_view_link,'cad_to_revit':cad_to_revit,
 'rebar_gradient_set':rebar_gradient_set,
 'merge_lines':merge_lines,'merge_columns':merge_columns,'overlap_lines':overlap_lines,
 'filledregion_invisible':filledregion_invisible,

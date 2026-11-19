@@ -8,7 +8,13 @@ core=(root/'src/YangTools.Revit/Core/DetailLineCleanup.cs').read_text(encoding='
 merge=(cmd/'MergeCollinearDetailLinesCommand.cs').read_text(encoding='utf8')
 overlap=(cmd/'RemoveOverlappingDetailLinesCommand.cs').read_text(encoding='utf8')
 region=(cmd/'SetSelectedFilledRegionInvisibleBoundaryCommand.cs').read_text(encoding='utf8')
+dwg=(root/'src/YangTools.Revit/Core/DwgViewLinkMigration.cs').read_text(encoding='utf8')
 checks={
+ 'DWG replace only after correct scope and placement': dwg.index('replacement.OwnerViewId != view.Id') < dwg.index('MatchPlacement(doc, view, replacement, original)') < dwg.index('doc.Delete(source.Id)'),
+ 'DWG rollback if deletion would affect other elements': 'deleted.Count != 1 || !deleted.Contains(source.Id)' in dwg,
+ 'DWG preserve per-view layer category': 'replacement.Category?.Id != source.Category.Id' in dwg,
+ 'DWG exclude shared annotation views': 'view.GetPrimaryViewId()' in dwg and 'view.GetDependentViewIds()' in dwg,
+
  'shared conservative geometry core': 'internal static class DetailLineCleanup' in core,
  'tolerance 0.1mm': '0.1 / 304.8' in core,
  'cross-checked perpendicular entire endpoints': all(s in core for s in ('DistanceToAxis(b.A, a)', 'DistanceToAxis(b.B, a)', 'DistanceToAxis(a.A, b)', 'DistanceToAxis(a.B, b)')),
@@ -33,7 +39,7 @@ checks={
  'filled existing object mutation': 'filled.SetLineStyleId(possible[0])' in region,
  'filled transaction rollback': 'tx.RollBack()' in region,
  'UI names retained': all('buttonText: "'+name+'"' in v for name,v in [('直线合并',merge),('重叠清理',overlap),('隐藏边界',region)]),
- '37 ribbon count': sum(x.read_text(encoding='utf8').count('[RibbonButton') for x in cmd.glob('*.cs'))==37,
+ '38 ribbon count': sum(x.read_text(encoding='utf8').count('[RibbonButton') for x in cmd.glob('*.cs'))==38,
 }
 failed=[n for n,ok in checks.items() if not ok]
 print(json.dumps({'suite':'RC3J geometry fix SOURCE ONLY','total':len(checks),'passed':len(checks)-len(failed),'failed':failed,'build':'NOT_TESTED','runtime':'NOT_TESTED'},ensure_ascii=False,indent=2))

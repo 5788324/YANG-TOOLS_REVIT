@@ -5,6 +5,7 @@
 | 面板 | 按钮短名 | 原命令类 | 功能介绍 |
 |---|---|---|---|
 | 2D修改 | CAD粘贴 | `PasteCadCommand` | 将 AutoCAD 复制的数据粘贴到当前 Revit 视图。 |
+| 2D修改 | DWG转视图 | `DwgViewLinkMigrationCommand` | 预览并按现有可见视图重建 DWG 视图专用链接。 |
 | 2D修改 | CAD转图 | `CadToRevitCommand` | 按 YangCAD Exchange 映射，将 CAD 图纸内容重建为 Revit 详图对象。 |
 | 2D修改 | 直线合并 | `MergeCollinearDetailLinesCommand` | 合并当前视图内同线型、无重叠且无分支的首尾连续详图直线。 |
 | 2D修改 | 重叠清理 | `RemoveOverlappingDetailLinesCommand` | 整理当前视图内同线型、共线且正长度重叠的详图直线。 |
