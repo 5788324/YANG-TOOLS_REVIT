@@ -53,7 +53,9 @@ namespace YangTools.Revit.Core
                         continue;
                     }
 
-                    if (!File.Exists(plan.Path))
+                    if (reference?.GetLinkedFileStatus() == LinkedFileStatus.Unloaded)
+                        plan.Blockers.Add("DWG 已卸载。");
+                    else if (!File.Exists(plan.Path))
                         plan.Blockers.Add("无法读取源 DWG 路径或文件不存在。");
                     else if (plan.Source.Category == null)
                         plan.Blockers.Add("无法读取 CAD 图层类别。");
@@ -86,8 +88,20 @@ namespace YangTools.Revit.Core
                     .OrderBy(view => view.Name).ToList();
             foreach (View view in views)
             {
-                if (view.IsTemporaryHideIsolateActive() || view.IsInTemporaryViewMode(TemporaryViewMode.TemporaryViewProperties))
-                    throw new InvalidOperationException($"请先退出「{view.Name}」的临时隐藏、隔离或临时视图属性，再扫描常规可见性。");
+                if (view.IsInTemporaryViewMode(TemporaryViewMode.TemporaryViewProperties))
+                {
+                    foreach (Plan plan in visibleById.Values)
+                        plan.Blockers.Add($"「{view.Name}」启用了临时视图属性，请退出该模式后重新扫描。");
+                    continue;
+                }
+
+                if (view.IsTemporaryHideIsolateActive())
+                {
+                    foreach (Plan plan in visibleById.Values)
+                        if (!IsExplicitlyHidden(doc, view, plan.Source))
+                            plan.Blockers.Add($"「{view.Name}」启用了临时隐藏或隔离，请退出该模式后重新扫描。");
+                    continue;
+                }
 
                 foreach (ElementId id in new FilteredElementCollector(doc, view.Id).OfClass(typeof(ImportInstance)).ToElementIds())
                 {
