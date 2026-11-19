@@ -54,9 +54,9 @@ namespace YangTools.Revit.Core.ParameterCleanup
             sb.AppendLine("理论清理结果（所有选中组均成功合并并删除来源参数）：");
             sb.AppendLine($"  项目参数预计剩余 {idealRemainingParameters} 个；重复组预计剩余 {idealRemainingDuplicateGroups} 组；不重复参数预计 {idealNonDuplicateParameters} 个。");
             sb.AppendLine();
-            sb.AppendLine("保守预估（仅按扫描阶段已知保护项计算）：");
+            sb.AppendLine("删除候选（仅排除扫描阶段已知的保护项）：");
             sb.AppendLine($"  已知受引用来源 {selectedReferencedSources} 个；共享来源 {selectedSharedSources} 个；已知受保护来源 {knownProtected} 个。");
-            sb.AppendLine($"  预计至少可删除 {conservativeDeletable} 个；项目参数保守预计剩余约 {conservativeRemainingParameters} 个。");
+            sb.AppendLine($"  至多有 {conservativeDeletable} 个删除候选；项目参数至少还会保留 {conservativeRemainingParameters} 个。");
             sb.AppendLine($"  已知至少仍会有 {conservativeRemainingDuplicateGroups} 组重复参数；预计最多形成 {conservativeNonDuplicateParameters} 个不重复参数。");
             sb.AppendLine();
             sb.AppendLine("说明：参数值冲突、全局参数关联和 Revit 级联删除只能在执行阶段确认，实际剩余重复组可能更多。完成后程序会自动重新扫描并输出实际复核结果。");

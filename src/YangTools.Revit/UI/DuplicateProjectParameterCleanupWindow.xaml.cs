@@ -38,8 +38,7 @@ namespace YangTools.Revit.UI
 
         private MergeOptions CurrentOptions => new MergeOptions
         {
-            AllowDeleteSharedParameters = AllowDeleteSharedCheckBox.IsChecked == true,
-            DeleteSourcesWithConflicts = DeleteConflictsCheckBox.IsChecked == true
+            AllowDeleteSharedParameters = AllowDeleteSharedCheckBox.IsChecked == true
         };
 
         private void ScanButton_Click(object sender, RoutedEventArgs e) => RunSafely(Scan);
@@ -80,7 +79,7 @@ namespace YangTools.Revit.UI
                 "扫描：只读分析并生成预览报告。\n" +
                 "仅合并：合并绑定和值，但不删除来源参数。\n" +
                 "快速处理：合并、复制值、删除可删除来源参数，并自动重新扫描复核。\n" +
-                "仅删除：用于已经完成合并后的来源参数。\n\n" +
+                "仅删除：用于已经完成合并后的来源参数。有不同非空值冲突的来源会保留。\n\n" +
                 "建议先另存 RVT 副本。完成后可使用 Revit 撤销。";
 
             System.Windows.MessageBox.Show(
@@ -160,11 +159,12 @@ namespace YangTools.Revit.UI
                 return;
             }
 
+            MergeOptions options = CurrentOptions;
             MessageBoxResult confirmation = System.Windows.MessageBox.Show(
                 this,
                 "将一次完成：合并绑定、复制参数值、删除符合当前选项的来源参数。\n\n" +
                 "提交前会复核：清理前所有不同非空内部值仍然存在，且已完整删除的参数组只剩一个项目参数。\n\n" +
-                $"选中参数组：{selected}；来源参数：{selectedSources}。继续吗？",
+                $"选中参数组：{selected}；来源参数：{selectedSources}。共享参数：{(options.AllowDeleteSharedParameters ? "允许删除" : "保留")}。继续吗？",
                 "快速处理",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning,
@@ -191,19 +191,16 @@ namespace YangTools.Revit.UI
                 try
                 {
                     phaseTimer.Restart();
-                    _mergeService.MergeSelected(before, CurrentOptions, AppendLog, snapshot.ValueIndex);
+                    _mergeService.MergeSelected(before, options, AppendLog, snapshot.ValueIndex);
                     AppendPerformance("合并绑定与参数值", phaseTimer);
 
-                    int candidates = before.Groups
-                        .Where(x => x.Selected && x.ValuesMerged)
-                        .SelectMany(x => x.Sources)
-                        .Count(x => string.IsNullOrEmpty(x.DeleteBlockReason) && !x.Deleted);
+                    int candidates = ParameterDeleteService.GetCandidates(before, options).Count;
 
                     phaseTimer.Restart();
                     if (candidates > 0)
                     {
                         AppendLog($"准备快速删除 {candidates} 个候选参数……");
-                        deletedCount = _deleteService.DeleteSafeSources(before, AppendLog);
+                        deletedCount = _deleteService.DeleteSafeSources(before, options, AppendLog);
                     }
                     else
                     {
@@ -285,20 +282,20 @@ namespace YangTools.Revit.UI
             if (_scanResult == null) return;
             CommitGridEdits();
 
-            int candidates = _scanResult.Groups
-                .Where(x => x.Selected && x.ValuesMerged)
-                .SelectMany(x => x.Sources)
-                .Count(x => string.IsNullOrEmpty(x.DeleteBlockReason) && !x.Deleted);
-
-            if (candidates == 0)
+            MergeOptions options = CurrentOptions;
+            var candidates = ParameterDeleteService.GetCandidates(_scanResult, options);
+            if (candidates.Count == 0)
             {
                 ShowInfo("当前没有可删除的重复参数。受保护原因已写入 CSV 报告。");
                 return;
             }
 
+            string examples = string.Join("\n", candidates.Take(8)
+                .Select(parameter => $"{parameter.Name}（ID {parameter.Id}{(parameter.IsShared ? "，共享" : "")}）"));
+            if (candidates.Count > 8) examples += $"\n另有 {candidates.Count - 8} 个";
             MessageBoxResult confirmation = System.Windows.MessageBox.Show(
                 this,
-                $"即将删除 {candidates} 个项目参数。\n\n" +
+                $"候选删除 {candidates.Count} 个项目参数。\n{examples}\n\n" +
                 "删除后会自动复核元素参数值和参数唯一性；失败则回滚整个删除事务组。\n" +
                 "完成后仍可使用 Revit 撤销。确认继续吗？",
                 "确认删除",
@@ -325,7 +322,7 @@ namespace YangTools.Revit.UI
                 try
                 {
                     phaseTimer.Restart();
-                    deletedCount = _deleteService.DeleteSafeSources(before, AppendLog);
+                    deletedCount = _deleteService.DeleteSafeSources(before, options, AppendLog);
                     AppendPerformance("删除来源参数", phaseTimer);
 
                     AppendLog("提交前正在复核参数唯一性和元素参数值完整性……");
@@ -612,7 +609,6 @@ namespace YangTools.Revit.UI
             InvertSelectionButton.IsEnabled = !busy && _scanResult != null;
             SelectFirstTenButton.IsEnabled = !busy && _scanResult != null;
             AllowDeleteSharedCheckBox.IsEnabled = !busy;
-            DeleteConflictsCheckBox.IsEnabled = !busy;
             PumpUi(force: true);
         }
 

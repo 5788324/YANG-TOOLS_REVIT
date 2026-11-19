@@ -626,13 +626,13 @@ namespace YangTools.Revit.Core.ParameterCleanup
             });
         }
 
-        private static void EvaluateDeletionSafety(
+        internal static void EvaluateDeletionSafety(
             IEnumerable<DuplicateGroupPlan> plans,
             MergeOptions options)
         {
             foreach (DuplicateGroupPlan plan in plans)
             {
-                foreach (ParameterRecord source in plan.Sources)
+                foreach (ParameterRecord source in plan.Sources.Where(source => !source.Deleted))
                 {
                     if (source.IsReferenced)
                     {
@@ -658,7 +658,7 @@ namespace YangTools.Revit.Core.ParameterCleanup
                         continue;
                     }
 
-                    if (source.HasBlockingConflict && !options.DeleteSourcesWithConflicts)
+                    if (source.HasBlockingConflict)
                     {
                         source.DeleteBlockReason = "存在不同的非空参数值冲突";
                         continue;

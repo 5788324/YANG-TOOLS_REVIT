@@ -109,6 +109,7 @@ def source_contract_checks() -> List[str]:
     files = {
         "window_xaml": ROOT / "src/YangTools.Revit/UI/DuplicateProjectParameterCleanupWindow.xaml",
         "window_code": ROOT / "src/YangTools.Revit/UI/DuplicateProjectParameterCleanupWindow.xaml.cs",
+        "preview": ROOT / "src/YangTools.Revit/Core/ParameterCleanup/ParameterCleanupPreviewBuilder.cs",
         "merge": ROOT / "src/YangTools.Revit/Core/ParameterCleanup/ParameterMergeService.cs",
         "value_index": ROOT / "src/YangTools.Revit/Core/ParameterCleanup/ParameterValueIndexService.cs",
         "delete": ROOT / "src/YangTools.Revit/Core/ParameterCleanup/ParameterDeleteService.cs",
@@ -134,6 +135,12 @@ def source_contract_checks() -> List[str]:
             if token not in text[name]:
                 failures.append(f"{name}: missing {token}")
 
+    if "DeleteSourcesWithConflicts" in text["merge"] or "DeleteConflictsCheckBox" in text["window_xaml"]:
+        failures.append("conflicting values cannot be discarded")
+    if "EvaluateDeletionSafety(result.Groups.Where(x => x.Selected && x.ValuesMerged), options)" not in text["delete"]:
+        failures.append("delete candidates must use current shared-parameter settings")
+    if "至多有 {conservativeDeletable} 个删除候选" not in text["preview"]:
+        failures.append("preview must label scan-stage deletion count as an upper bound")
     if "LookupParameter(" in text["merge"]:
         failures.append("merge: must not use LookupParameter(name)")
     if "Task.Run(" in text["window_code"]:
