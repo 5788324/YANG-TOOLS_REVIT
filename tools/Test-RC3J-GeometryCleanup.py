@@ -39,7 +39,7 @@ checks={
  'filled existing object mutation': 'filled.SetLineStyleId(possible[0])' in region,
  'filled transaction rollback': 'tx.RollBack()' in region,
  'UI names retained': all('buttonText: "'+name+'"' in v for name,v in [('直线合并',merge),('重叠清理',overlap),('隐藏边界',region)]),
- '39 ribbon count': sum(x.read_text(encoding='utf8').count('[RibbonButton') for x in cmd.glob('*.cs'))==39,
+ '41 ribbon count': sum(x.read_text(encoding='utf8').count('[RibbonButton') for x in cmd.glob('*.cs'))==41,
 }
 failed=[n for n,ok in checks.items() if not ok]
 print(json.dumps({'suite':'RC3J geometry fix SOURCE ONLY','total':len(checks),'passed':len(checks)-len(failed),'failed':failed,'build':'NOT_TESTED','runtime':'NOT_TESTED'},ensure_ascii=False,indent=2))
