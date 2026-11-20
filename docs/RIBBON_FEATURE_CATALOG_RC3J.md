@@ -24,7 +24,7 @@
 | 模型修改区 | 批量绑材 | `FamilyMaterialBindingCommand` | 批量给载入族的几何绑定材质族参数。 |
 | 模型修改区 | 材质绑定 | `SimpleFamilyMaterialBindingCommand` | 给选中族实例或相应族类型绑定材质参数并赋予材质。 |
 | 模型修改区 | 标高修改 | `LevelModifierCommand` | 修改图元关联标高并尽量保持模型世界位置。 |
-| 模型修改区 | 梁板贴面 | `AlignBeamFloorToFaceCommand` | 平移梁或板，让所选平面与平行目标面齐平。 |
+| 模型修改区 | 梁板贴面 | `AlignBeamFloorToFaceCommand` | 沿竖直方向对齐直梁定位线两端或板的现有形状点，保留平面位置。 |
 | 模型修改区 | 族坐标 | `FamilyInstanceCoordinatesCommand` | 查看并设置点定位族的测量、项目基点及内部原点坐标。 |
 | 模型修改区 | 沿线布柱 | `ColumnAlongPathCommand` | 沿连续模型线按固定间距放置柱。 |
 | 模型修改区 | 沿线布置 | `LinearPlacementCommand` | 沿选定路径重复布置指定族实例。 |
