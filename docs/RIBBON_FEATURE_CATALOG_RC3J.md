@@ -29,6 +29,7 @@
 | 模型修改区 | 面基转换 | `FaceBasedConverterCommand` | 将可处理的基于面族实例转换为非面基族。 |
 | 系统管理区 | 系统设置 | `SampleWindowCommand` | 打开主题、Ribbon 布局与插件选项。 |
 | 视图修改区 | 可见性复制 | `VisibilityCopierCommand` | 将源视图的图形可见性设置复制至其他视图。 |
+| 视图修改区 | 改比例保排版 | `ViewScaleLayoutCommand` | 修改视图比例或补偿已改比例的选区，保留图例的纸面字高、行距、列距及详图线长。 |
 | 视图修改区 | 沿线剖面 | `SectionByLineCommand` | 根据选中的模型线或详图线创建剖面视图。 |
 | 视图修改区 | 覆盖清理 | `ViewGraphicCleanerCommand` | 清理视图中针对单个元素设置的图形覆盖。 |
 | 钢筋工具区 | 渐变钢筋 | `RebarGradientSetCommand` | 按首末控制钢筋生成渐变 Free Form 钢筋集。 |

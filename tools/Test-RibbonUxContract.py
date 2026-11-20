@@ -40,7 +40,7 @@ for path in sorted(COMMAND_ROOT.glob('*.cs')):
         ensure(params['largeIcon'].startswith('Icons/') and params['smallIcon'].startswith('Icons/'),f'{klass}: icon path not relative')
         ensure(params['largeIcon'].replace('_32.png','') == params['smallIcon'].replace('_16.png',''), f'{klass}: icon 16/32 family mismatch')
         records.append((klass,panel,label,params))
-ensure(len(records)==38, f'expected 38 buttons; got {len(records)}')
+ensure(len(records)==39, f'expected 39 buttons; got {len(records)}')
 ensure(len({r[0] for r in records})==len(records), 'duplicate command class')
 ensure(len({r[2] for r in records})==len(records), 'duplicate short label')
 ensure(len({r[3]['largeIcon'] for r in records})==len(records), 'large icon path reused')

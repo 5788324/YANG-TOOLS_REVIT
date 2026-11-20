@@ -303,6 +303,15 @@ def dwg_view_link(g):
     rect(g,17,16,11,10,1,accent=True)
     poly(g,[(15,21),(20,21),(18,19),(20,21),(18,23)],accent=True)
 
+def view_scale_layout(g):
+    rect(g,5,5,22,22,2)
+    line(g,8,9,15,9)
+    line(g,8,13,13,13)
+    line(g,9,23,22,23,accent=True)
+    line(g,9,20,9,25,accent=True)
+    line(g,22,20,22,25,accent=True)
+    poly(g,[(14,17),(19,17),(16,14),(19,17),(16,20)])
+
 def visibility_copier(g):
     path(g,'M3 15s5-7 13-7 13 7 13 7-5 7-13 7S3 15 3 15z')
     circle(g,16,15,3,accent=True)
@@ -374,6 +383,7 @@ icons={
 'micro_tool':micro_tool,'override_cleaner':override_cleaner,'paste_cad':paste_cad,'project_info':project_info,
 'project_inspector':project_inspector,'parameter_cleanup':parameter_cleanup,'sample_window':settings,'section_line':section_line,'sheet_manager':sheet_manager,
 'text_modifier':text_modifier,'visibility_copier':visibility_copier,'dwg_view_link':dwg_view_link,'cad_to_revit':cad_to_revit,
+'view_scale_layout':view_scale_layout,
 'rebar_gradient_set':rebar_gradient_set,
 'merge_lines':merge_lines,'merge_columns':merge_columns,'overlap_lines':overlap_lines,
 'filledregion_invisible':filledregion_invisible,
