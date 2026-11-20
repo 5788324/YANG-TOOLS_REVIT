@@ -14,6 +14,7 @@
 | 文本工具区 | 基准对齐 | `AlignTextToTextCommand` | 按参考文字对齐目标文字的位置、角度或宽度。 |
 | 文本工具区 | 文本合并 | `MergeTextCommand` | 将多个 TextNote 按指定分隔符合并。 |
 | 文本工具区 | 文本编辑 | `TextModifierCommand` | 查找、替换及格式化项目中的文本。 |
+| 文本工具区 | 文字宽度 | `TextParagraphWidthCommand` | 读取或批量设置文字段落的纸面宽度。 |
 | 文本工具区 | 沿线对齐 | `AlignTextToLineCommand` | 将 TextNote 旋转并按需要移动至指定基准线。 |
 | 文本工具区 | 等距分布 | `DistributeTextCommand` | 沿水平或垂直方向等距分布、对齐选中的文字。 |
 | 标注工具区 | 标注替换 | `DimTextOverrideCommand` | 替换标注显示文字，不修改测量几何尺寸。 |
@@ -23,6 +24,7 @@
 | 模型修改区 | 批量绑材 | `FamilyMaterialBindingCommand` | 批量给载入族的几何绑定材质族参数。 |
 | 模型修改区 | 材质绑定 | `SimpleFamilyMaterialBindingCommand` | 给选中族实例或相应族类型绑定材质参数并赋予材质。 |
 | 模型修改区 | 标高修改 | `LevelModifierCommand` | 修改图元关联标高并尽量保持模型世界位置。 |
+| 模型修改区 | 梁板贴面 | `AlignBeamFloorToFaceCommand` | 平移梁或板，让所选平面与平行目标面齐平。 |
 | 模型修改区 | 族坐标 | `FamilyInstanceCoordinatesCommand` | 查看并设置点定位族的测量、项目基点及内部原点坐标。 |
 | 模型修改区 | 沿线布柱 | `ColumnAlongPathCommand` | 沿连续模型线按固定间距放置柱。 |
 | 模型修改区 | 沿线布置 | `LinearPlacementCommand` | 沿选定路径重复布置指定族实例。 |
