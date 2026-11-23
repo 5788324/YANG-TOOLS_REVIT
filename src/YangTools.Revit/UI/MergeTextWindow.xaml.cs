@@ -1,9 +1,10 @@
 using System;
 using System.Linq;
+using System.Collections.Generic;
+using Autodesk.Revit.DB;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using Autodesk.Revit.UI;
 using YangTools.Revit.Models;
 
 namespace YangTools.Revit.UI
@@ -20,14 +21,18 @@ namespace YangTools.Revit.UI
 
     public partial class MergeTextWindow : Window
     {
+        private readonly Func<(List<TextNote> Notes, string Text)> _prepareMerge;
+        internal (List<TextNote> Notes, string Text) PreparedMerge { get; private set; }
+
         public MergeTextState State { get; }
         public TextToolDialogAction Action { get; private set; } = TextToolDialogAction.Cancel;
 
-        public MergeTextWindow(MergeTextState state)
+        internal MergeTextWindow(MergeTextState state, Func<(List<TextNote> Notes, string Text)> prepareMerge)
         {
             ThemeHelper.InitializeWithTheme(this, InitializeComponent);
             ThemeHelper.ApplyToWindow(this);
             State = state ?? throw new ArgumentNullException(nameof(state));
+            _prepareMerge = prepareMerge;
             Loaded += Window_Loaded;
         }
 
@@ -39,6 +44,14 @@ namespace YangTools.Revit.UI
             ChkCleanWhitespace.IsChecked = State.CleanWhitespace;
             TxtSeparator.Text = State.SeparatorText;
             UpdateSeparatorState();
+            foreach (RadioButton option in new[] { RbReadingOrder, RbSelectionOrder, RbXDesc, RbXAsc, RbYDesc, RbYAsc })
+                option.Checked += (_, _) => UpdatePreview();
+            ChkUseNewline.Checked += (_, _) => UpdatePreview();
+            ChkUseNewline.Unchecked += (_, _) => UpdatePreview();
+            ChkCleanWhitespace.Checked += (_, _) => UpdatePreview();
+            ChkCleanWhitespace.Unchecked += (_, _) => UpdatePreview();
+            TxtSeparator.TextChanged += (_, _) => UpdatePreview();
+            UpdatePreview();
         }
 
         private void BtnSelectTexts_Click(object sender, RoutedEventArgs e)
@@ -50,15 +63,29 @@ namespace YangTools.Revit.UI
 
         private void BtnExecute_Click(object sender, RoutedEventArgs e)
         {
-            if (State.SelectedTexts.Count < 2)
-            {
-                TaskDialog.Show("提示", "请至少选择两个文本进行合并。 ");
-                return;
-            }
-
-            SaveOptions();
+            if (!UpdatePreview()) return;
             Action = TextToolDialogAction.Execute;
             DialogResult = true;
+        }
+
+        private bool UpdatePreview()
+        {
+            SaveOptions();
+            try
+            {
+                PreparedMerge = _prepareMerge();
+                TxtPreview.Text = PreparedMerge.Text;
+                TxtPreviewStatus.Text = $"{PreparedMerge.Notes.Count} 个文本合并为 1 个，其余文本将删除。可用 Ctrl+Z 撤销。";
+                BtnExecute.IsEnabled = true;
+                return true;
+            }
+            catch (InvalidOperationException ex)
+            {
+                TxtPreview.Text = string.Empty;
+                TxtPreviewStatus.Text = ex.Message;
+                BtnExecute.IsEnabled = false;
+                return false;
+            }
         }
 
         private void SaveOptions()

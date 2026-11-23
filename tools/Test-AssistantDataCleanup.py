@@ -31,10 +31,9 @@ for rel in (
     "tools/Build-Deploy-2024-2025.ps1",
 ):
     path=ROOT/rel
-    has(path, "Remove-LegacyAssistantData", f"script-func:{rel}")
-    has(path, "copilot_settings.json", f"script-copilot:{rel}")
-    has(path, "moyu_history.json", f"script-moyu:{rel}")
     script_text = path.read_text(encoding="utf-8-sig")
+    for token in ("Remove-LegacyAssistantData", "copilot_settings.json", "moyu_history.json"):
+        checks.append((f"script-keeps-user-data:{rel}:{token}", token not in script_text, rel, "must not clean retired assistant data"))
     checks.append((f"script-no-root-delete:{rel}", "Remove-Item -LiteralPath $YangToolsUserDataRoot" not in script_text, str(path.relative_to(ROOT)), "must not delete YangTools root"))
     checks.append((f"script-no-mcp-delete:{rel}", "Join-Path $YangToolsUserDataRoot 'MCP'" not in script_text and r'YangTools\MCP' not in script_text, str(path.relative_to(ROOT)), "must not delete MCP"))
 

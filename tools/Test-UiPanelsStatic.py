@@ -325,7 +325,7 @@ def main() -> int:
 
     required_parameter_tokens = {
         "command": ("项目管理区", "参数去重", "parameter_cleanup_32.png"),
-        "window_xaml": ("功能说明", "运行输出与预览报告", "快速处理：合并并清理", "全选可处理项", "全不选", "反选", "测试：最多 10 个来源参数"),
+        "window_xaml": ("功能说明", "运行输出与预览报告", "合并并清理", "全选可处理项", "全不选", "反选", "试选前 10 个来源参数"),
         "window_cs": ("BuildScanPreview", "BuildPostCleanupReport", "WriteVerification", "ApplySelection", "FirstTenSources", "UpdateSelectionSummary", "snapshot.ValueIndex", "DispatcherPriority.Render"),
         "merge": ("MergeValuesIndexed", "operationsByElementId", "TryGetParameterByIdentity", "ParameterApiCompatibility.ReInsert", "IdentityFailureAbortThreshold", "值引擎提前停止"),
         "value_index": ("WhereElementIsNotElementType", "WhereElementIsElementType", "GetElementIds", "HasGlobalParameterAssociation"),
@@ -343,11 +343,10 @@ def main() -> int:
 
     installer_text = read_utf8(PROJECT_ROOT / "installer" / "YangTools安装器.ps1")
     build_all_text = read_utf8(PROJECT_ROOT / "tools" / "Build-All.ps1")
-    for name, text in (("installer", installer_text), ("build-all", build_all_text)):
-        if "RevitParameterDeduplicator.addin" not in text:
-            errors.append({"type": "parameter-cleanup-legacy-entry", "file": name, "detail": "未自动清理历史独立重复参数插件入口"})
-    if "[switch]$Deploy" not in build_all_text or "Deploy-Version" not in build_all_text:
-        errors.append({"type": "build-all-deploy", "file": "tools/Build-All.ps1", "detail": "缺少单年份编译部署入口"})
+    if "RevitParameterDeduplicator.addin" not in installer_text:
+        errors.append({"type": "parameter-cleanup-legacy-entry", "file": "installer", "detail": "缺少历史独立插件检测"})
+    if "if ($Deploy) {\n    throw" not in build_all_text or "-p:DeployAfterBuild=false" not in build_all_text:
+        errors.append({"type": "build-all-deploy", "file": "tools/Build-All.ps1", "detail": "编译不得写入生产 Addins"})
 
     # Ribbon 分组门禁：删除12个钢筋测试入口，仅保留“创建钢筋”下的 GR01。
     # 生产入口“创建钢筋”只允许 GR01 渐变钢筋集；测试入口必须不存在。
@@ -384,8 +383,8 @@ def main() -> int:
     ribbon_count = 0
     for path in (SOURCE_ROOT / "Commands").glob("*.cs"):
         ribbon_count += read_utf8(path).count("[RibbonButton")
-    if ribbon_count != 36:
-        errors.append({"type": "ribbon-count", "file": "Commands", "detail": f"实际 {ribbon_count}，预期 36（RC3I 34 + 填充隐形边界 + 重叠线清理；保留GR01）"})
+    if ribbon_count != 41:
+        errors.append({"type": "ribbon-count", "file": "Commands", "detail": f"实际 {ribbon_count}，预期 41（当前 Ribbon 合同）"})
 
     report = {
         "summary": {

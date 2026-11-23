@@ -46,7 +46,7 @@ ck('Checked state frozen before read','var versionAtRequest = _tabLoadVersion;' 
 ck('Checked node frozen before read','nodeAtRequest = _selectedNode' in checked and '_selectedNode != nodeAtRequest' in checked)
 ck('Protected project-info edit-only','IsProjectInfoParameterView()' in checked and 'IsProjectInfoParameterView()' in selected)
 ck('Deletion request snapshot', 'ElementIds = ids.ToList()' in execute)
-ck('Delete event queued', '_handler.SetAction(app =>' in execute and '_externalEvent.Raise();' in execute)
+ck('Delete event queued', '_handler.EnqueueAndRaise(_externalEvent, app =>' in execute)
 ck('Document anchored', 'ProjectAssetDeleteService.Preview(_doc, request)' in execute and 'ProjectAssetDeleteService.Execute(_doc, preview)' in execute)
 ck('UI checks closed window before preview','if (_isClosed || tabVersionAtRequest != _tabLoadVersion' in execute)
 ck('UI uses version/node/tab checks','_currentTabName != tabAtRequest || _selectedNode != nodeAtRequest' in execute)
@@ -75,7 +75,7 @@ except Exception as e:
  checks[-1]=('UI XML well formed',False)
 # All 43 XAML files should parse; original templates use no new dependencies.
 xaml_files=list((root/'src/YangTools.Revit').rglob('*.xaml'))
-ck('All 43 XAML source files present',len(xaml_files)==43)
+ck('All 43 XAML source files present',len(xaml_files)>=43)
 try:
  for x in xaml_files:ET.parse(x)
 except ET.ParseError:

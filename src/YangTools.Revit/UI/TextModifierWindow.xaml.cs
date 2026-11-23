@@ -130,19 +130,19 @@ namespace YangTools.Revit.UI
         {
             if (RbModeFindReplace.IsChecked == true && string.IsNullOrEmpty(TxtFind.Text))
             {
-                TaskDialog.Show("提示", "查找内容不能为空。 ");
+                TxtStatus.Text = "请输入要查找的文字。";
                 return;
             }
             if (RbModeFormat.IsChecked == true && Operations.Count == 0)
             {
-                TaskDialog.Show("提示", "请至少添加一个格式化操作。 ");
+                TxtStatus.Text = "请至少添加一个格式化操作。";
                 return;
             }
 
             List<TextNote> textNotes = GetTargetTextNotes();
             if (textNotes.Count == 0)
             {
-                TaskDialog.Show("提示", "未找到目标文本注释。 ");
+                TxtStatus.Text = "所选范围没有文本。";
                 return;
             }
 
@@ -175,8 +175,7 @@ namespace YangTools.Revit.UI
 
             TextNoteHelper.RefreshAfterCommit(_uiDoc, "文本修改后刷新");
             TxtStatus.Text = count == 0 ? "没有文本需要修改。" : $"成功修改 {count} 个文本。";
-            TaskDialog.Show("完成", count == 0 ? "没有文本符合修改条件。" : $"成功修改 {count} 个文本。 ");
-            Close();
+
         }
 
         private List<TextNote> GetTargetTextNotes()

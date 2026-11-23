@@ -65,7 +65,7 @@ add('F03 family type parameter readback', 'readBackValue = ParameterValueHelper.
 add('F03 family instance parameter readback', 'DisplayValue = ParameterValueHelper.GetDisplayValue(actual)' in inst_cell and 'ReadbackConfirmed = false' in inst_cell)
 add('F03 family manager remaining commits checked', 't.Commit();' not in family)
 add('F03 level command propagates commit status', 'LevelModifierService.Execute(doc, request)' in level and 'if (!result.Committed)' in level and 'tx.Commit()' in level_service and 'status != TransactionStatus.Committed' in level_service)
-add('F03 dimension command propagates commit status', 'TransactionStatus commitStatus = TransactionHelper.ShowSuccessAndCommit' in dim and 'commitStatus != TransactionStatus.Committed' in dim)
+add('F03 dimension command propagates commit status', 'TransactionStatus commitStatus = val2.Commit()' in dim and 'commitStatus != TransactionStatus.Committed' in dim and 'return Result.Failed;' in dim[dim.index('if (commitStatus != TransactionStatus.Committed)'):])
 
 # F05 provenance
 add('F05 structured product log API', 'WriteProductOperation(' in diag and 'LoadedAssemblySha256' in diag)

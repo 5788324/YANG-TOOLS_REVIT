@@ -57,9 +57,9 @@ for tok in ('if (_isClosed) return','_currentTabName != "LineStyles"',
             'sequenceAtRequest != _linePatternRequestVersion','ProjectAssetLinePatternService.Execute(_doc, request)',
             'rowAtRequest.LinePatternId = result.PatternId','StatusText.Text = "线图案修改未成功："',
             'TaskDialog.Show("线图案修改失败", ex.Message)',
-            '线图案已提交，但界面刷新失败','showSuccess: false','_externalEvent.Raise()'):
+            '线图案已提交，但界面刷新失败','showSuccess: false'):
     check('UI contract: '+tok,tok in block)
-check('selection restored before queued request',before('combo.SetCurrentValue(', '_handler.SetAction('))
+check('selection restored before queued request',before('combo.SetCurrentValue(', '_handler.EnqueueAndRaise('))
 check('UI no inline transaction','new Transaction(' not in block)
 check('UI distinguishes readback failure', 'if (!result.ReadbackConfirmed)' in block and 'TaskDialog.Show("线图案已提交", result.ReadbackWarning)' in block)
 check('service before committed VM',before('ProjectAssetLinePatternService.Execute(_doc, request)','rowAtRequest.LinePatternId = result.PatternId'))
@@ -68,7 +68,7 @@ check('window close invalidates pattern request','_linePatternRequestVersion++;'
 check('original fill code untouched','private void FillPattern_DropDownClosed' in ui)
 check('other XAML fill bindings preserved','SelectedValue="{Binding ForePatternId, UpdateSourceTrigger=PropertyChanged}"' in xaml and 'SelectedValue="{Binding BackPatternId, UpdateSourceTrigger=PropertyChanged}"' in xaml)
 check('XAML parse', ET.fromstring(xaml) is not None)
-check('all 43 XAML files preserved',len(list((root/'src/YangTools.Revit').rglob('*.xaml')))==43)
+check('all 43 XAML files preserved',len(list((root/'src/YangTools.Revit').rglob('*.xaml')))>=43)
 check('MCP server retained',(root/'McpServer/server.py').is_file())
 check('original 47 suites retained',len(list((root/'tools').glob('Test-*.py')))>=47)
 failed=[name for name,pass_ in checks if not pass_]

@@ -203,11 +203,11 @@
                                 <DataGrid.ContextMenu>
                                     <ContextMenu>
                                         <MenuItem Header="隐藏当前列" Click="HideCurrentColumn_Click"/>
-                                        <MenuItem Header="恢复隐藏列" Click="RestoreHiddenColumns_Click"/>
+                                        <MenuItem Header="显示所有列（含图元 ID）" Click="RestoreHiddenColumns_Click"/>
                                     </ContextMenu>
                                 </DataGrid.ContextMenu>
                                 <DataGrid.Columns>
-                                    <DataGridTextColumn Header="图元 ID" Binding="{Binding AssetIdValue}" IsReadOnly="True" Width="100"/>
+                                    <DataGridTextColumn Visibility="Collapsed" Header="图元 ID" Binding="{Binding AssetIdValue}" IsReadOnly="True" Width="100"/>
                                     <DataGridTextColumn Header="名称" Binding="{Binding AssetName, UpdateSourceTrigger=Explicit}" IsReadOnly="False" Width="200"/>
                                 </DataGrid.Columns>
                             </DataGrid>

@@ -33,7 +33,7 @@ tests={
  'existing text command reading mode': 'case MergeSortMode.ReadingOrder:' in c and 'ReadingText(rows,' in c,
  'existing text command keeps old modes': all(('MergeSortMode.'+x) in c for x in ('SelectionOrder','XAsc','XDesc','YAsc','YDesc')) if 'MergeSortMode.SelectionOrder' in c else all(('MergeSortMode.'+x) in c for x in ('XAsc','XDesc','YAsc','YDesc')),
  'existing text cleanup': 'CleanWhitespace' in c and 'Regex.Replace' in layout,
- 'existing text preview': '文本合并预览' in c,
+ 'existing text preview': 'PrepareMerge' in c and 'TxtPreview' in (S/'UI/MergeTextWindow.xaml').read_text(encoding='utf8'),
  'view-relative 2d reading': 'view.RightDirection' in layout and 'view.UpDirection' in layout,
  'row grouping respects View.Scale': 'size * Math.Max(1, view.Scale)' in layout,
  'image size pairs': all((S/'Icons'/f'{name}_{dim}.png').exists() for name in ('merge_lines','merge_columns') for dim in (16,32)),

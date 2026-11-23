@@ -36,7 +36,7 @@ namespace YangTools.Revit.Commands
             {
                 while (true)
                 {
-                    var window = new MergeTextWindow(state);
+                    var window = new MergeTextWindow(state, () => PrepareMerge(doc, state));
                     new System.Windows.Interop.WindowInteropHelper(window).Owner = uiApp.MainWindowHandle;
                     bool? dialogResult = window.ShowDialog();
 
@@ -65,43 +65,30 @@ namespace YangTools.Revit.Commands
                     if (window.Action != TextToolDialogAction.Execute || dialogResult != true)
                         return Result.Cancelled;
 
-                    return ExecuteMerge(uiDoc, state, ref message);
+                    return ExecuteMerge(uiDoc, window.PreparedMerge.Notes, window.PreparedMerge.Text);
                 }
             }
             catch (Exception ex)
             {
-                string logPath = DiagnosticLog.WriteError("文本合并", ex);
-                TaskDialog.Show("文本合并失败",
-                    $"操作失败。\n\n错误信息：{ex.Message}\n\n诊断日志：{logPath}");
-                message = ex.ToString();
+                DiagnosticLog.WriteError("文本合并", ex);
+                message = ex.Message;
                 return Result.Failed;
             }
         }
 
-        private static Result ExecuteMerge(UIDocument uiDoc, MergeTextState state, ref string message)
+        private static (List<TextNote> Notes, string Text) PrepareMerge(Document doc, MergeTextState state)
         {
-            Document doc = uiDoc.Document;
             List<TextNote> textNotes = state.SelectedTexts
-                .Where(note => note != null && note.Document.Equals(doc) && doc.GetElement(note.Id) != null)
+                .Where(note => note.IsValidObject && note.Document.Equals(doc) && doc.GetElement(note.Id) != null)
                 .ToList();
             // Keep source selection in the active view and avoid altering pinned/group-bound objects.
             if (textNotes.Any(note => note.OwnerViewId.GetIdValue() != doc.ActiveView.Id.GetIdValue()
                 || note.Pinned || note.GroupId.GetIdValue() != ElementId.InvalidElementId.GetIdValue()))
-            {
-                TaskDialog.Show("文本合并", "所选文本包含其他视图或被固定/编组的元素，已取消。");
-                return Result.Cancelled;
-            }
+                throw new InvalidOperationException("请选择当前视图内未固定、未编组的文本。");
             if (textNotes.Count < 2)
-            {
-                TaskDialog.Show("提示", "选择的文本已失效，请重新选择。 ");
-                return Result.Cancelled;
-            }
-
+                throw new InvalidOperationException("请至少选择两个文本。");
             if (!TextLayoutMerger.CanMerge(textNotes, out string formatError))
-            {
-                TaskDialog.Show("文本合并", formatError);
-                return Result.Cancelled;
-            }
+                throw new InvalidOperationException(formatError);
 
             XYZ right = doc.ActiveView.RightDirection.Normalize();
             XYZ up = doc.ActiveView.UpDirection.Normalize();
@@ -126,15 +113,13 @@ namespace YangTools.Revit.Commands
                 ? TextLayoutMerger.ReadingText(rows, state.CleanWhitespace, separator)
                 : string.Join(separator, textNotes.Select(note => TextLayoutMerger.Clean(note.Text, state.CleanWhitespace)));
             if (string.IsNullOrWhiteSpace(mergedText))
-            {
-                TaskDialog.Show("提示", "合并后内容为空，已取消。 ");
-                return Result.Cancelled;
-            }
+                throw new InvalidOperationException("合并后的内容为空。");
+            return (textNotes, mergedText);
+        }
 
-            string previewText = mergedText.Length > 320 ? mergedText.Substring(0, 320) + "…" : mergedText;
-            if (TaskDialog.Show("文本合并预览", $"按当前顺序合并 {textNotes.Count} 个文本为 1 个。\n\n{previewText}\n\n该操作删除其余文本，可一次 Ctrl+Z 撤销。", TaskDialogCommonButtons.Ok | TaskDialogCommonButtons.Cancel) != TaskDialogResult.Ok)
-                return Result.Cancelled;
-
+        private static Result ExecuteMerge(UIDocument uiDoc, List<TextNote> textNotes, string mergedText)
+        {
+            Document doc = uiDoc.Document;
             using (var transaction = new Transaction(doc, "文本合并"))
             {
                 try
@@ -156,11 +141,10 @@ namespace YangTools.Revit.Commands
                         throw new InvalidOperationException($"事务提交失败：{status}");
 
                 }
-                catch (Exception ex)
+                catch
                 {
                     if (transaction.GetStatus() == TransactionStatus.Started)
                         transaction.RollBack();
-                    message = ex.ToString();
                     throw;
                 }
             }

@@ -104,13 +104,14 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <Grid Margin="0,0,0,8">
+                    <DockPanel Margin="0,0,0,8">
+                        <CheckBox DockPanel.Dock="Right" Content="显示详情" VerticalAlignment="Center" Margin="12,0,0,0" Click="ShowDiagnostics_Click"/>
                         <StackPanel>
                             <TextBlock x:Name="CurrentGroupTitle" Text="请选择分类" Style="{DynamicResource SectionTitle}"/>
                             <TextBlock Text="勾选用于批量操作；双击“名称 / 内容”可以重命名或修改可编辑文本。"
                                        Margin="0,3,0,0" Style="{DynamicResource SecondaryLabel}"/>
                         </StackPanel>
-                    </Grid>
+                    </DockPanel>
 
                     <DataGrid x:Name="ResultGrid" Grid.Row="1" AutoGenerateColumns="False"
                               CanUserAddRows="False" CanUserDeleteRows="False" CanUserReorderColumns="True"
@@ -129,10 +130,10 @@
                                                 Binding="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=Explicit}"/>
                             <DataGridTextColumn Header="所属 / 说明" Width="1.5*" IsReadOnly="True" Binding="{Binding Owner}"/>
                             <DataGridTextColumn Header="类型" Width="112" IsReadOnly="True" Binding="{Binding Category}"/>
-                            <DataGridTextColumn Header="Element ID" Width="92" IsReadOnly="True" Binding="{Binding IdText}"/>
-                            <DataGridCheckBoxColumn Header="可改名" Width="68" IsReadOnly="True" Binding="{Binding CanRename}"/>
-                            <DataGridCheckBoxColumn Header="可删除" Width="68" IsReadOnly="True" Binding="{Binding CanDelete}"/>
-                            <DataGridTextColumn Header="风险" Width="60" IsReadOnly="True" Binding="{Binding RiskText}"/>
+                            <DataGridTextColumn x:Name="DiagnosticIdColumn" Visibility="Collapsed" Header="图元 ID" Width="92" IsReadOnly="True" Binding="{Binding IdText}"/>
+                            <DataGridCheckBoxColumn x:Name="DiagnosticRenameColumn" Visibility="Collapsed" Header="可改名" Width="68" IsReadOnly="True" Binding="{Binding CanRename}"/>
+                            <DataGridCheckBoxColumn x:Name="DiagnosticDeleteColumn" Visibility="Collapsed" Header="可删除" Width="68" IsReadOnly="True" Binding="{Binding CanDelete}"/>
+                            <DataGridTextColumn x:Name="DiagnosticRiskColumn" Visibility="Collapsed" Header="风险" Width="60" IsReadOnly="True" Binding="{Binding RiskText}"/>
                         </DataGrid.Columns>
                     </DataGrid>
 
