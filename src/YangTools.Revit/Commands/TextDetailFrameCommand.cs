@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
+using System.Windows.Interop;
 using System.Windows.Media;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
@@ -10,14 +11,15 @@ using Autodesk.Revit.DB.ExtensibleStorage;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Selection;
 using YangTools.Revit.Core;
+using YangTools.Revit.UI;
 
 namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
     [RibbonButton(panelName: "文本工具区", buttonText: "文字贴边框",
-        tooltip: "按可见字形为所选文字各画四条详图线。",
+        tooltip: "为所选文字各画四条详图线，可调整纸面留白。",
         largeIcon: "Icons/text_detail_frame_32.png", smallIcon: "Icons/text_detail_frame_16.png",
-        usage: "使用：在二维视图选择文字，再运行命令。重跑可更新边框。\n注意：额外留白为 0，不包含引线。混合格式或含制表符的文字暂时跳过。")]
+        usage: "使用：选择文字，输入纸面留白。默认 0.5 mm，输入 0 按字形贴边。重跑可更新边框。\n注意：引线不计入边框范围。")]
     public sealed class TextDetailFrameCommand : IExternalCommand
     {
         private const string Title = "文字贴边框";
@@ -48,10 +50,22 @@ namespace YangTools.Revit.Commands
                         .Where(note => note.OwnerViewId == view.Id).ToList();
                 }
 
+                int scale = Math.Max(1, view.Scale);
+                var input = new SimpleInputDialog(Title, "向外偏移（纸面 mm）\n0 表示按字形贴边", "0.5");
+                new WindowInteropHelper(input).Owner = commandData.Application.MainWindowHandle;
+                if (input.ShowDialog() != true) return Result.Cancelled;
+                if (!double.TryParse(input.InputText, NumberStyles.Float, CultureInfo.CurrentCulture, out double offsetMm) ||
+                    !(offsetMm >= 0) || double.IsInfinity(offsetMm))
+                {
+                    TaskDialog.Show(Title, "请输入大于或等于 0 的偏移量（纸面 mm）。");
+                    return Result.Cancelled;
+                }
+
+                double paperOffset = offsetMm / 304.8;
                 var frames = new List<(TextNote Note, XYZ[] Corners)>();
                 foreach (TextNote note in notes)
                 {
-                    XYZ[]? corners = FrameCorners(note, Math.Max(1, view.Scale));
+                    XYZ[]? corners = FrameCorners(note, scale, paperOffset);
                     if (corners != null && corners[0].DistanceTo(corners[1]) > doc.Application.ShortCurveTolerance
                                         && corners[1].DistanceTo(corners[2]) > doc.Application.ShortCurveTolerance)
                         frames.Add((note, corners));
@@ -134,7 +148,7 @@ namespace YangTools.Revit.Commands
             return builder.Finish();
         }
 
-        private static XYZ[]? FrameCorners(TextNote note, int scale)
+        private static XYZ[]? FrameCorners(TextNote note, int scale, double paperOffset)
         {
             using var formatted = note.GetFormattedText();
             string text = formatted.GetPlainText();
@@ -188,6 +202,7 @@ namespace YangTools.Revit.Commands
 
             Rect ink = layout.BuildGeometry(new System.Windows.Point(0, 0)).Bounds;
             if (ink.IsEmpty) return null;
+            ink.Inflate(paperOffset * DipPerFoot / widthFactor, paperOffset * DipPerFoot);
             double verticalAnchor = note.VerticalAlignment == VerticalTextAlignment.Middle ? note.Height * 0.5 :
                 note.VerticalAlignment == VerticalTextAlignment.Bottom ? note.Height : 0;
 

@@ -51,7 +51,6 @@ def main() -> int:
         ('<RowDefinition Height="86"/>','实例全局操作区 86px'),
         ('<RowDefinition Height="52"/>','实例底部工具栏 52px'),
         ('<RowDefinition Height="46"/>','实例 Tab 筛选区 46px'),
-        ('FrozenColumnCount="5"','实例固定 5 状态列'),
         ('Header="元素ID" Binding="{Binding InstanceIdValue}" Width="92" MinWidth="82" MaxWidth="110"','元素ID列宽'),
         ('Header="类型" Binding="{Binding TypeName}" Width="190" MinWidth="150" MaxWidth="280"','类型列宽'),
         ('Header="标高" Binding="{Binding LevelName}" Width="130" MinWidth="110" MaxWidth="190"','标高列宽'),
@@ -64,6 +63,10 @@ def main() -> int:
         ('x:Name="BatchParameterComboBox" Width="230"','批量参数控件宽度'),
         ('x:Name="BatchParameterValueBox" Width="190"','批量参数值宽度'),
     ]: req(inst_x,needle,label)
+    forbid(inst_x, 'FrozenColumnCount=', '分组实例表格使用普通列布局')
+    forbid(inst_x, 'EnableColumnVirtualization', '分组实例表格保留全部列')
+    req(inst_c, 'Loaded += SelectInitialFamily;', '窗口加载后再预选族')
+    req(inst_x, 'ItemTemplate="{StaticResource BatchOptionTemplate}"', '批量选项显示名称')
     # Stable parameter key
     for needle,label in [
         ('class StableParameterDescriptor','稳定参数描述符'),('GuidPrefix = "GUID_"','共享参数 GUID key'),

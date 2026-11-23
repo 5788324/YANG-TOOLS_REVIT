@@ -10,6 +10,7 @@
         <ResourceDictionary>
             <Style TargetType="{x:Type DataGrid}">
                 <Setter Property="Background" Value="{DynamicResource WindowBg}"/>
+                <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
                 <Setter Property="BorderBrush" Value="{DynamicResource WindowBorder}"/>
                 <Setter Property="BorderThickness" Value="1"/>
                 <Setter Property="RowBackground" Value="{DynamicResource GridRowBg}"/>
@@ -22,13 +23,16 @@
                 <Setter Property="SelectionMode" Value="Extended"/>
                 <Setter Property="SelectionUnit" Value="FullRow"/>
                 <Setter Property="EnableRowVirtualization" Value="True"/>
-                <Setter Property="EnableColumnVirtualization" Value="True"/>
                 <Setter Property="RowHeight" Value="30"/>
                 <Setter Property="ColumnHeaderHeight" Value="36"/>
                 <Setter Property="MinColumnWidth" Value="82"/>
                 <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
                 <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
             </Style>
+
+            <DataTemplate x:Key="BatchOptionTemplate">
+                <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis"/>
+            </DataTemplate>
 
             <Style TargetType="{x:Type DataGridColumnHeader}">
                 <Setter Property="Background" Value="{DynamicResource GridHeaderBg}"/>
@@ -120,11 +124,11 @@
 
                     <StackPanel Grid.Row="1" Grid.ColumnSpan="7" Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBlock Text="批量换型" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryText}" Margin="0,0,6,0"/>
-                        <ComboBox x:Name="TargetTypeComboBox" Width="220" Height="28" DisplayMemberPath="DisplayName" SelectedValuePath="TypeId"/>
+                        <ComboBox x:Name="TargetTypeComboBox" Width="220" Height="28" ItemTemplate="{StaticResource BatchOptionTemplate}" SelectedValuePath="TypeId"/>
                         <Button Content="应用类型" Width="88" Height="28" Margin="6,0,18,0" Style="{DynamicResource PrimaryButton}" Click="BatchChangeType_Click"/>
 
                         <TextBlock Text="批量参数" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryText}" Margin="0,0,6,0"/>
-                        <ComboBox x:Name="BatchParameterComboBox" Width="230" Height="28" DisplayMemberPath="DisplayName" SelectedValuePath="Key"/>
+                        <ComboBox x:Name="BatchParameterComboBox" Width="230" Height="28" ItemTemplate="{StaticResource BatchOptionTemplate}" SelectedValuePath="Key"/>
                         <TextBox x:Name="BatchParameterValueBox" Width="190" Height="28" Margin="6,0,6,0" Padding="6,3" ToolTip="按项目当前显示单位输入，例如 1500 mm"/>
                         <CheckBox x:Name="OnlyEmptyCheckBox" Content="仅填空值" VerticalAlignment="Center" Margin="4,0,8,0"/>
                         <Button Content="批量写入" Width="88" Height="28" Click="BatchSetParameter_Click"/>
@@ -181,7 +185,7 @@
                             </Grid>
                         </Border>
 
-                        <DataGrid x:Name="InstanceDataGrid" Grid.Row="1" Margin="10" CellEditEnding="InstanceDataGrid_CellEditEnding" SelectionChanged="DataGrid_SelectionChanged" Visibility="Collapsed" FrozenColumnCount="5">
+                        <DataGrid x:Name="InstanceDataGrid" Grid.Row="1" Margin="10" CellEditEnding="InstanceDataGrid_CellEditEnding" SelectionChanged="DataGrid_SelectionChanged" Visibility="Collapsed">
                             <DataGrid.GroupStyle><GroupStyle ContainerStyle="{StaticResource TypeGroupStyle}" /></DataGrid.GroupStyle>
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="元素ID" Binding="{Binding InstanceIdValue}" Width="92" MinWidth="82" MaxWidth="110" IsReadOnly="True"/>
@@ -222,7 +226,7 @@
                             </Grid>
                         </Border>
 
-                        <DataGrid x:Name="SystemDataGrid" Grid.Row="1" Margin="10" CellEditEnding="SystemDataGrid_CellEditEnding" SelectionChanged="DataGrid_SelectionChanged" Visibility="Collapsed" FrozenColumnCount="5">
+                        <DataGrid x:Name="SystemDataGrid" Grid.Row="1" Margin="10" CellEditEnding="SystemDataGrid_CellEditEnding" SelectionChanged="DataGrid_SelectionChanged" Visibility="Collapsed">
                             <DataGrid.GroupStyle><GroupStyle ContainerStyle="{StaticResource TypeGroupStyle}" /></DataGrid.GroupStyle>
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="元素ID" Binding="{Binding InstanceIdValue}" Width="92" MinWidth="82" MaxWidth="110" IsReadOnly="True"/>
