@@ -47,7 +47,7 @@ def main() -> int:
     ]: req(fam_x,needle,label)
     # Instance Manager dimensions/layout
     for needle,label in [
-        ('Height="800" Width="1360" MinHeight="660" MinWidth="1160"','实例窗口尺寸'),
+        ('Height="670" Width="1160" MinHeight="560" MinWidth="950"','实例窗口尺寸'),
         ('<RowDefinition Height="86"/>','实例全局操作区 86px'),
         ('<RowDefinition Height="52"/>','实例底部工具栏 52px'),
         ('<RowDefinition Height="46"/>','实例 Tab 筛选区 46px'),

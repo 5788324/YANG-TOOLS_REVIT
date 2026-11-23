@@ -244,7 +244,8 @@
                                 <Button ToolTip="导出当前族 RFA" Style="{DynamicResource IconButton}" Click="ExportRfa_Click" Foreground="{DynamicResource SuccessColor}"><TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
                                 <Button ToolTip="导出当前列表显示的族类型到 Excel" Style="{DynamicResource IconButton}" Click="ExportExcel_Click"><TextBlock Text="&#xEDE1;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
                                 <Button ToolTip="导入 Excel" Style="{DynamicResource IconButton}" Click="ImportExcel_Click" Foreground="{DynamicResource AccentColor}"><TextBlock Text="&#xE8B5;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
-                                <Button ToolTip="删除选中类型/族" Style="{DynamicResource IconButton}" Click="Delete_Click" Foreground="{DynamicResource DangerBg}"><TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
+                                <Button ToolTip="删除选中类型" Style="{DynamicResource IconButton}" Click="Delete_Click" Foreground="{DynamicResource DangerBg}"><TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
+                                <Button Content="删除整个族" Click="DeleteFamily_Click" Foreground="{DynamicResource DangerBg}" Padding="8,0" Margin="8,0,0,0"/>
                             </StackPanel>
                         </ScrollViewer>
                     </Border>

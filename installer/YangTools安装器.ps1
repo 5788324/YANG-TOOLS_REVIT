@@ -87,6 +87,7 @@ function Install-Version([string]$Version) {
     $sourceManifest = $source.Manifest
 
     $versionRoot = Join-Path $AddinsRoot $Version
+    Assert-NoPendingYangToolsRollback -VersionRoot $versionRoot
     $target = Join-Path $versionRoot 'YangTools'
     $manifest = Join-Path $versionRoot 'YangTools.Revit.addin'
     $staging = Join-Path $versionRoot 'YangTools.installing'
@@ -151,15 +152,14 @@ function Install-Version([string]$Version) {
 
 function Uninstall-Version([string]$Version) {
     $versionRoot = Join-Path $AddinsRoot $Version
-    foreach ($path in @(
-        (Join-Path $versionRoot 'YangTools'),
-        (Join-Path $versionRoot 'YangTools.installing'),
-        (Join-Path $versionRoot 'YangTools.backup')
-    )) {
-        Remove-Item -LiteralPath $path -Recurse -Force -ErrorAction SilentlyContinue
+    Assert-NoPendingYangToolsRollback -VersionRoot $versionRoot
+    foreach ($name in @('YangTools', 'YangTools.installing', 'YangTools.backup',
+            'YangTools.Revit.addin', 'YangTools.Revit.addin.backup')) {
+        $path = Join-Path $versionRoot $name
+        if (Test-Path -LiteralPath $path) {
+            Remove-Item -LiteralPath $path -Recurse -Force -ErrorAction Stop
+        }
     }
-    Remove-Item -LiteralPath (Join-Path $versionRoot 'YangTools.Revit.addin') -Force -ErrorAction SilentlyContinue
-    Remove-Item -LiteralPath (Join-Path $versionRoot 'YangTools.Revit.addin.backup') -Force -ErrorAction SilentlyContinue
 }
 
 $form = New-Object System.Windows.Forms.Form
@@ -310,6 +310,8 @@ $clearSelection.Add_Click({ Refresh-VersionList @('__none__') })
 $refreshButton.Add_Click({ Refresh-VersionList })
 
 $installButton.Add_Click({
+    $installed = @()
+    $current = $null
     try {
         $versions = @(Get-SelectedVersions)
         if ($versions.Count -eq 0) { throw '请至少选择一个 Revit 版本。' }
@@ -332,7 +334,10 @@ $installButton.Add_Click({
         foreach ($version in $available) {
             $source = Get-VersionSource $version
             Add-Log "正在安装 Revit $version（$($source.Label)）..."
+            $current = $version
             Install-Version $version
+            $installed += $version
+            $current = $null
             Add-Log "Revit $version 安装完成。"
         }
         Refresh-VersionList $available
@@ -343,8 +348,12 @@ $installButton.Add_Click({
         [System.Windows.Forms.MessageBox]::Show($message, 'YangTools', 'OK', 'Information') | Out-Null
     }
     catch {
-        Add-Log "失败：$($_.Exception.Message)"
-        [System.Windows.Forms.MessageBox]::Show($_.Exception.Message, '安装失败', 'OK', 'Error') | Out-Null
+        $detail = $_.Exception.Message
+        if ($current) { $detail = "Revit $current 安装失败：$detail" }
+        if ($installed.Count -gt 0) { $detail += "`r`n已完成：$($installed -join '、')。" }
+        Add-Log $detail
+        Refresh-VersionList
+        [System.Windows.Forms.MessageBox]::Show($detail, '安装失败', 'OK', 'Error') | Out-Null
     }
     finally { Set-ControlsEnabled $true }
 })

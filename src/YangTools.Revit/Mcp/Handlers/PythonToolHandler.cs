@@ -35,11 +35,13 @@ namespace YangTools.Revit.Mcp
             Document? document = uiapp.ActiveUIDocument?.Document;
             if (document == null) return Failure("当前没有活动项目。 ");
 
+            if (document.IsReadOnly || document.IsModifiable) return Failure("当前文档无法启动 Python 事务组。");
+
             using (var group = new TransactionGroup(document, "YangTools MCP Python"))
             {
-                group.Start();
                 try
                 {
+                    if (group.Start() != TransactionStatus.Started) return Failure("无法启动 Python 事务组。");
                     ScriptScope scope = pythonEngine.CreateScope();
                     pythonEngine.Runtime.LoadAssembly(typeof(Document).Assembly);
                     pythonEngine.Runtime.LoadAssembly(typeof(UIApplication).Assembly);
@@ -54,15 +56,28 @@ namespace YangTools.Revit.Mcp
                     using (var stream = new MemoryStream())
                     using (var writer = new StreamWriter(stream))
                     {
-                        pythonEngine.Runtime.IO.SetOutput(stream, writer);
-                        pythonEngine.Execute(script, scope);
-                        writer.Flush();
+                        var io = pythonEngine.Runtime.IO;
+                        Stream oldStream = io.OutputStream;
+                        TextWriter oldWriter = io.OutputWriter;
+                        try
+                        {
+                            io.SetOutput(stream, writer);
+                            pythonEngine.Execute(script, scope);
+                            writer.Flush();
+                        }
+                        finally
+                        {
+                            io.SetOutput(oldStream, oldWriter);
+                        }
+
                         stream.Position = 0;
-                        string output = new StreamReader(stream).ReadToEnd();
+                        using var reader = new StreamReader(stream, System.Text.Encoding.UTF8, true, 1024, leaveOpen: true);
+                        string output = reader.ReadToEnd();
                         string value = scope.TryGetVariable("__result__", out object? pythonResult)
                             ? pythonResult?.ToString() ?? string.Empty
                             : string.Empty;
-                        group.Assimilate();
+                        if (group.Assimilate() != TransactionStatus.Committed)
+                            return Failure("Revit 未提交 Python 事务组。");
                         return Success(JsonConvert.SerializeObject(new
                         {
                             output,

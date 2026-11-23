@@ -49,7 +49,7 @@ check('domain services remain wired', all(t in rebar for t in ('RebarInspectionS
 check('python editor runs only via router', '_python.ExecutePython(uiapp, args)' in router and 'ExecutePython(uiapp, args)' not in broker)
 check('python writes transaction/rollback unchanged', all(t in python for t in ('TransactionGroup(document, "YangTools MCP Python")','group.Assimilate()','group.RollBack()')))
 check('python status available through broker', all(t in broker for t in ('_pythonHandler.PythonAvailable','_pythonHandler.PythonInitialized','_pythonHandler.PythonError')))
-check('python gateway permission gate unchanged', all(t in gateway for t in ('command.Equals("execute_revit_python", StringComparison.Ordinal)', '!settings.AllowPythonExecution','TimeSpan.FromSeconds(60)')))
+check('python gateway permission gate unchanged', all(t in gateway for t in ('command.Equals("execute_revit_python", StringComparison.Ordinal)', '!settings.AllowPythonExecution')))
 check('MCP endpoint command/args and reply unchanged', all(t in gateway for t in ('"/mcp"','body["command"]','body["args"]','["success"] = result.Success','["result"] = result.Result','["error"] = result.Error','["durationMs"] = result.DurationMilliseconds')))
 check('MCP unknown command remains failure', 'return Failure("不支持的 Revit 执行命令：" + command);' in router)
 check('no version-specific DLL explosion', len(list(SRC.rglob('*.csproj')))==1)

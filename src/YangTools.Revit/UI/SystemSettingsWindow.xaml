@@ -255,7 +255,7 @@
                                     <TextBox x:Name="McpInstanceFileTextBox" Text="未生成" IsReadOnly="True" Margin="0,4,0,10" TextWrapping="Wrap"/>
 
                                     <CheckBox x:Name="McpAutoStartCheck" Content="随 Revit 启动外部 MCP 网关" Margin="0,0,0,5" Checked="McpSettingsChanged" Unchecked="McpSettingsChanged"/>
-                                    <CheckBox x:Name="McpAllowPythonCheck" Content="允许受信任的本机 MCP 客户端执行 Revit Python" Checked="McpSettingsChanged" Unchecked="McpSettingsChanged"/>
+                                    <CheckBox x:Name="McpAllowPythonCheck" Content="允许受信任的本机 MCP 客户端执行 Revit Python" ToolTip="获准脚本以当前用户身份运行，可修改模型并访问本地文件。" Checked="McpSettingsChanged" Unchecked="McpSettingsChanged"/>
                                     <TextBlock Text="默认关闭。启用 Python 后，本机持有当前会话令牌的客户端才能请求执行。" TextWrapping="Wrap" FontSize="10" Foreground="{DynamicResource SecondaryText}" Margin="20,4,0,10"/>
 
                                     <WrapPanel Margin="0,0,0,10">

@@ -70,11 +70,7 @@ namespace YangTools.Revit.Mcp
                 .Select(item => item.Value<long>());
             foreach (long value in ids.Take(100))
             {
-                #if REVIT2024_OR_GREATER
-                Element? element = document.GetElement(new ElementId(value));
-#else
-                Element? element = document.GetElement(new ElementId(unchecked((int)value)));
-#endif
+                Element? element = document.GetElement(ElementIdExtensions.CreateId(value));
                 if (element == null) continue;
                 var parameters = new JObject();
                 foreach (Parameter parameter in element.GetOrderedParameters().Take(120))

@@ -204,18 +204,13 @@ namespace YangTools.Revit.Core
                         }
                     }
 
-                    try
+                    famDoc.OwnerFamily.FamilyCategory = famDoc.Settings.Categories.get_Item(BuiltInCategory.OST_GenericModel);
+                    foreach (var parameterId in new[] { BuiltInParameter.FAMILY_ALWAYS_VERTICAL, BuiltInParameter.FAMILY_WORK_PLANE_BASED })
                     {
-                        var category = famDoc.Settings.Categories.get_Item(BuiltInCategory.OST_GenericModel);
-                        if (category != null) famDoc.OwnerFamily.FamilyCategory = category;
-
-                        var alwaysVertical = famDoc.OwnerFamily.get_Parameter(BuiltInParameter.FAMILY_ALWAYS_VERTICAL);
-                        if (alwaysVertical != null && !alwaysVertical.IsReadOnly) alwaysVertical.Set(0);
-
-                        var workPlaneBased = famDoc.OwnerFamily.get_Parameter(BuiltInParameter.FAMILY_WORK_PLANE_BASED);
-                        if (workPlaneBased != null && !workPlaneBased.IsReadOnly) workPlaneBased.Set(0);
+                        var parameter = famDoc.OwnerFamily.get_Parameter(parameterId);
+                        if (parameter != null && parameter.AsInteger() != 0 && (parameter.IsReadOnly || !parameter.Set(0)))
+                            throw new InvalidOperationException($"转换后的族无法关闭「{parameter.Definition.Name}」。");
                     }
-                    catch { }
 
                     if (t.Commit() != TransactionStatus.Committed)
                         throw new InvalidOperationException("转换族文档事务提交未成功。");

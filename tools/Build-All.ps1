@@ -1,6 +1,6 @@
 ﻿[CmdletBinding()]
 param(
-    [string[]]$Versions = @('2021','2022','2023','2024','2025','2026','2027'),
+    [string[]]$Versions = @('2021','2022','2023','2024','2025','2026'),
     [switch]$NoRestore,
     [switch]$Deploy
 )
@@ -16,7 +16,7 @@ if ($Deploy) {
 }
 
 if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
-    throw '找不到 dotnet。请安装 .NET 8 SDK、.NET 10 SDK 和 .NET Framework 4.8 Developer Pack。'
+    throw '找不到 dotnet。请安装 .NET 8 SDK 和 .NET Framework 4.8 Developer Pack。显式选择 Revit 2027 时还需 .NET 10 SDK。'
 }
 
 Remove-Item $Artifacts -Recurse -Force -ErrorAction SilentlyContinue

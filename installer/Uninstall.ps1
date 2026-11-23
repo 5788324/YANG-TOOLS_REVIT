@@ -18,6 +18,7 @@ try {
     foreach ($version in $Versions) {
         $removedForVersion = $false
         $versionRoot = Join-Path $AddinsRoot $version
+        Assert-NoPendingYangToolsRollback -VersionRoot $versionRoot
         foreach ($folderName in @('YangTools', 'YangTools.installing', 'YangTools.backup')) {
             $folder = Join-Path $versionRoot $folderName
             if (Test-Path -LiteralPath $folder) {

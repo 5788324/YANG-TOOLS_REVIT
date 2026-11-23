@@ -102,7 +102,8 @@ namespace YangTools.Revit.Mcp
                 _lastDurationMilliseconds = 0;
                 _lastRequestAt = null;
                 _cancellation = new CancellationTokenSource();
-                _listenTask = Task.Run(() => ListenLoopAsync(listener, _cancellation.Token));
+                CancellationToken token = _cancellation.Token;
+                _listenTask = Task.Run(() => ListenLoopAsync(listener, token));
                 WriteInstanceFile();
             }
         }
@@ -121,11 +122,11 @@ namespace YangTools.Revit.Mcp
                 _port = 0;
                 _token = string.Empty;
                 _startedAt = null;
+                DeleteInstanceFile();
             }
             try { cancellation?.Cancel(); } catch { }
             try { listener?.Stop(); } catch { }
             try { cancellation?.Dispose(); } catch { }
-            DeleteInstanceFile();
         }
 
         internal void Restart()
@@ -190,7 +191,7 @@ namespace YangTools.Revit.Mcp
                 try
                 {
                     TcpClient client = await listener.AcceptTcpClientAsync().ConfigureAwait(false);
-                    _ = Task.Run(() => HandleClientAsync(client, cancellationToken), cancellationToken);
+                    _ = HandleClientAsync(client, cancellationToken);
                 }
                 catch (ObjectDisposedException) when (cancellationToken.IsCancellationRequested)
                 {
@@ -210,116 +211,134 @@ namespace YangTools.Revit.Mcp
         private async Task HandleClientAsync(TcpClient client, CancellationToken cancellationToken)
         {
             using (client)
-            using (NetworkStream stream = client.GetStream())
             {
                 try
                 {
-                    HttpRequestData request = await ReadRequestAsync(stream, cancellationToken).ConfigureAwait(false);
-                    if (!IsAuthorized(request))
-                    {
-                        await WriteJsonResponseAsync(stream, 401, new JObject
-                        {
-                            ["success"] = false,
-                            ["error"] = "Unauthorized"
-                        }, cancellationToken).ConfigureAwait(false);
-                        return;
-                    }
-
-                    string normalizedPath = request.Path.TrimEnd('/');
-                    if (request.Method.Equals("GET", StringComparison.OrdinalIgnoreCase) &&
-                        normalizedPath.Equals("/mcp/status", StringComparison.OrdinalIgnoreCase))
-                    {
-                        RecordGatewayActivity("get_gateway_status", true, "状态查询", string.Empty, 0);
-                        await WriteJsonResponseAsync(stream, 200, BuildStatusPayload(), cancellationToken).ConfigureAwait(false);
-                        return;
-                    }
-
-                    if (normalizedPath.Equals("/mcp", StringComparison.OrdinalIgnoreCase) &&
-                        !request.Method.Equals("POST", StringComparison.OrdinalIgnoreCase))
-                    {
-                        await WriteJsonResponseAsync(stream, 405, new JObject
-                        {
-                            ["success"] = false,
-                            ["error"] = "Method Not Allowed; use POST /mcp/"
-                        }, cancellationToken).ConfigureAwait(false);
-                        return;
-                    }
-                    if (!normalizedPath.Equals("/mcp", StringComparison.OrdinalIgnoreCase))
-                    {
-                        await WriteJsonResponseAsync(stream, 404, new JObject
-                        {
-                            ["success"] = false,
-                            ["error"] = "Not Found"
-                        }, cancellationToken).ConfigureAwait(false);
-                        return;
-                    }
-
-                    JObject body = string.IsNullOrWhiteSpace(request.Body) ? new JObject() : JObject.Parse(request.Body);
-                    string command = body["command"]?.ToString() ?? string.Empty;
-                    JObject args = body["args"] as JObject ?? new JObject();
-                    McpGatewaySettings settings = McpGatewaySettingsStore.Load();
-                    if (command.Equals("execute_revit_python", StringComparison.Ordinal) && !settings.AllowPythonExecution)
-                    {
-                        RecordGatewayActivity(command, false, string.Empty, "外部 MCP Python 执行未启用。", 0);
-                        await WriteJsonResponseAsync(stream, 403, new JObject
-                        {
-                            ["success"] = false,
-                            ["error"] = "外部 MCP Python 执行未启用。"
-                        }, cancellationToken).ConfigureAwait(false);
-                        return;
-                    }
-
-                    DateTime started = DateTime.UtcNow;
-                    RevitExecutionResult result = await _broker.ExecuteAsync(
-                        command,
-                        args,
-                        TimeSpan.FromSeconds(60),
-                        cancellationToken).ConfigureAwait(false);
-                    long duration = (long)(DateTime.UtcNow - started).TotalMilliseconds;
-                    RecordGatewayActivity(
-                        command,
-                        result.Success,
-                        result.Result,
-                        result.Error,
-                        result.DurationMilliseconds > 0 ? result.DurationMilliseconds : duration);
-
-                    await WriteJsonResponseAsync(stream, result.Success ? 200 : 500, new JObject
-                    {
-                        ["success"] = result.Success,
-                        ["result"] = result.Result,
-                        ["error"] = result.Error,
-                        ["durationMs"] = result.DurationMilliseconds
-                    }, cancellationToken).ConfigureAwait(false);
+                    using NetworkStream stream = client.GetStream();
+                    await HandleRequestAsync(stream, cancellationToken).ConfigureAwait(false);
                 }
-                catch (JsonException ex)
-                {
-                    await WriteJsonResponseAsync(stream, 400, new JObject
-                    {
-                        ["success"] = false,
-                        ["error"] = "JSON 无效：" + ex.Message
-                    }, cancellationToken).ConfigureAwait(false);
-                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
                 catch (Exception ex)
                 {
-                    lock (_sync) _lastError = ex.Message;
-                    DiagnosticLog.WriteError("MCP 网关请求", ex);
-                    try
-                    {
-                        await WriteJsonResponseAsync(stream, 500, new JObject
-                        {
-                            ["success"] = false,
-                            ["error"] = ex.Message
-                        }, cancellationToken).ConfigureAwait(false);
-                    }
-                    catch { }
+                    if (!cancellationToken.IsCancellationRequested)
+                        DiagnosticLog.WriteError("MCP 连接", ex);
                 }
             }
         }
 
-        private void RecordGatewayActivity(string command, bool success, string result, string error, long durationMilliseconds)
+        private async Task HandleRequestAsync(NetworkStream stream, CancellationToken cancellationToken)
+        {
+            try
+            {
+                HttpRequestData request = await ReadRequestAsync(stream, cancellationToken).ConfigureAwait(false);
+                if (!IsAuthorized(request))
+                {
+                    await WriteJsonResponseAsync(stream, 401, new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = "Unauthorized"
+                    }, cancellationToken).ConfigureAwait(false);
+                    return;
+                }
+
+                string normalizedPath = request.Path.TrimEnd('/');
+                if (request.Method.Equals("GET", StringComparison.OrdinalIgnoreCase) &&
+                    normalizedPath.Equals("/mcp/status", StringComparison.OrdinalIgnoreCase))
+                {
+                    RecordGatewayActivity("get_gateway_status", true, "状态查询", string.Empty, 0, cancellationToken);
+                    await WriteJsonResponseAsync(stream, 200, BuildStatusPayload(), cancellationToken).ConfigureAwait(false);
+                    return;
+                }
+
+                if (normalizedPath.Equals("/mcp", StringComparison.OrdinalIgnoreCase) &&
+                    !request.Method.Equals("POST", StringComparison.OrdinalIgnoreCase))
+                {
+                    await WriteJsonResponseAsync(stream, 405, new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = "Method Not Allowed; use POST /mcp/"
+                    }, cancellationToken).ConfigureAwait(false);
+                    return;
+                }
+                if (!normalizedPath.Equals("/mcp", StringComparison.OrdinalIgnoreCase))
+                {
+                    await WriteJsonResponseAsync(stream, 404, new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = "Not Found"
+                    }, cancellationToken).ConfigureAwait(false);
+                    return;
+                }
+
+                JObject body = string.IsNullOrWhiteSpace(request.Body) ? new JObject() : JObject.Parse(request.Body);
+                string command = body["command"]?.ToString() ?? string.Empty;
+                JObject args = body["args"] as JObject ?? new JObject();
+                McpGatewaySettings settings = McpGatewaySettingsStore.Load();
+                if (command.Equals("execute_revit_python", StringComparison.Ordinal) && !settings.AllowPythonExecution)
+                {
+                    RecordGatewayActivity(command, false, string.Empty, "外部 MCP Python 执行未启用。", 0, cancellationToken);
+                    await WriteJsonResponseAsync(stream, 403, new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = "外部 MCP Python 执行未启用。"
+                    }, cancellationToken).ConfigureAwait(false);
+                    return;
+                }
+
+                DateTime started = DateTime.UtcNow;
+                RevitExecutionResult result = await _broker.ExecuteAsync(
+                    command,
+                    args,
+                    TimeSpan.FromSeconds(Math.Max(15, Math.Min(100, body.Value<int?>("timeoutSeconds") ?? 60))),
+                    cancellationToken).ConfigureAwait(false);
+                long duration = (long)(DateTime.UtcNow - started).TotalMilliseconds;
+                RecordGatewayActivity(
+                    command,
+                    result.Success,
+                    result.Result,
+                    result.Error,
+                    result.DurationMilliseconds > 0 ? result.DurationMilliseconds : duration,
+                    cancellationToken);
+
+                await WriteJsonResponseAsync(stream, result.Success ? 200 : 500, new JObject
+                {
+                    ["success"] = result.Success,
+                    ["result"] = result.Result,
+                    ["error"] = result.Error,
+                    ["durationMs"] = result.DurationMilliseconds
+                }, cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+            catch (JsonException ex)
+            {
+                await WriteJsonResponseAsync(stream, 400, new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "JSON 无效：" + ex.Message
+                }, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                lock (_sync) _lastError = ex.Message;
+                DiagnosticLog.WriteError("MCP 网关请求", ex);
+                try
+                {
+                    await WriteJsonResponseAsync(stream, 500, new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = ex.Message
+                    }, cancellationToken).ConfigureAwait(false);
+                }
+                catch { }
+            }
+        }
+
+        private void RecordGatewayActivity(string command, bool success, string result, string error, long durationMilliseconds,
+            CancellationToken cancellationToken)
         {
             lock (_sync)
             {
+                if (_cancellation?.Token != cancellationToken) return;
                 _lastCommand = command ?? string.Empty;
                 _lastResult = success ? Trim(result, 600) : string.Empty;
                 _lastError = success ? string.Empty : Trim(error, 600);
@@ -385,7 +404,10 @@ namespace YangTools.Revit.Mcp
                 ["lastError"] = _lastError,
                 ["executionReady"] = execution.IsReady
             };
-            File.WriteAllText(path, payload.ToString(Formatting.Indented), Encoding.UTF8);
+            string temporary = path + ".tmp";
+            File.WriteAllText(temporary, payload.ToString(Formatting.Indented), Encoding.UTF8);
+            if (File.Exists(path)) File.Replace(temporary, path, null);
+            else File.Move(temporary, path);
         }
 
         private void DeleteInstanceFile()
@@ -450,12 +472,14 @@ namespace YangTools.Revit.Mcp
             }
 
             int contentLength = 0;
-            if (headers.TryGetValue("Content-Length", out string value)) int.TryParse(value, out contentLength);
+            if (headers.TryGetValue("Content-Length", out string value) &&
+                (!int.TryParse(value, out contentLength) || contentLength < 0 || contentLength > 8 * 1024 * 1024))
+                throw new InvalidDataException("HTTP 请求体长度无效或超过上限。");
             int bodyStart = headerEnd + 4;
             while (bytes.Count - bodyStart < contentLength)
             {
                 int read = await stream.ReadAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false);
-                if (read <= 0) break;
+                if (read <= 0) throw new IOException("HTTP 请求体不完整。");
                 bytes.AddRange(buffer.Take(read));
                 if (bytes.Count > 8 * 1024 * 1024) throw new InvalidOperationException("HTTP 请求体过大。 ");
             }

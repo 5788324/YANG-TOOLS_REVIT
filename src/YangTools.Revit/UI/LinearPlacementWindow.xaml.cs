@@ -46,7 +46,7 @@ namespace YangTools.Revit.UI
 
         private void LoadFamilySymbols()
         {
-            _handler.SetAction(app =>
+            _handler.EnqueueAndRaise(_externalEvent, app =>
             {
                 if (_isClosed) return;
                 var doc = _doc;
@@ -98,7 +98,6 @@ namespace YangTools.Revit.UI
                     }
                 });
                     }, "加载族类型", showSuccess: false);
-            _externalEvent.Raise();
         }
 
         private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -161,6 +160,7 @@ namespace YangTools.Revit.UI
             _isClosed = true;
             ++_placementVersion;
             ++_pathVersion;
+            _externalEvent.Dispose();
             SaveCurrentSettings();
             base.OnClosed(e);
         }
@@ -182,7 +182,7 @@ namespace YangTools.Revit.UI
             // The bound ExternalEvent may be skipped after a document switch.
             // Hide only after RevitEventHandler has validated the original document;
             // otherwise a rejected event could leave this modeless window hidden forever.
-            _handler.SetAction(app =>
+            _handler.EnqueueAndRaise(_externalEvent, app =>
             {
                 if (_isClosed || version != _pathVersion) return;
                 try
@@ -218,7 +218,6 @@ namespace YangTools.Revit.UI
                         Dispatcher.Invoke(() => { Show(); Activate(); });
                 }
                 }, "拾取路线", showSuccess: false);
-            _externalEvent.Raise();
         }
 
         private void StartPlacement_Click(object sender, RoutedEventArgs e)
@@ -244,7 +243,7 @@ namespace YangTools.Revit.UI
             // Freeze the click-time values and invalidate any previous queued placements.
             long version = ++_placementVersion;
             SaveCurrentSettings();
-            _handler.SetAction(app =>
+            _handler.EnqueueAndRaise(_externalEvent, app =>
             {
                 if (_isClosed || version != _placementVersion) return;
                 try
@@ -276,7 +275,6 @@ namespace YangTools.Revit.UI
                         TaskDialog.Show("线性布置结果", ex.Message);
                 }
             }, "线性布置", showSuccess: false);
-            _externalEvent.Raise();
         }
     }
 }

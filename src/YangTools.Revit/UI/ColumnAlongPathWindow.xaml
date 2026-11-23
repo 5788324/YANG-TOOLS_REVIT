@@ -95,12 +95,12 @@
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0">
                                     <TextBlock Text="固定间距（mm）" Style="{DynamicResource SecondaryLabel}" Margin="0,0,0,4"/>
-                                    <TextBox Text="{Binding SpacingMm, UpdateSourceTrigger=PropertyChanged}"
+                                    <TextBox Text="{Binding SpacingMm, UpdateSourceTrigger=LostFocus}"
                                              Style="{DynamicResource StandardTextBox}"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
                                     <TextBlock Text="首柱距路线起点（mm）" Style="{DynamicResource SecondaryLabel}" Margin="0,0,0,4"/>
-                                    <TextBox Text="{Binding StartOffsetMm, UpdateSourceTrigger=PropertyChanged}"
+                                    <TextBox Text="{Binding StartOffsetMm, UpdateSourceTrigger=LostFocus}"
                                              Style="{DynamicResource StandardTextBox}"/>
                                 </StackPanel>
                             </Grid>
@@ -113,12 +113,12 @@
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0">
                                     <TextBlock Text="路线起点里程（m）" Style="{DynamicResource SecondaryLabel}" Margin="0,0,0,4"/>
-                                    <TextBox Text="{Binding RouteStartMileageM, UpdateSourceTrigger=PropertyChanged}"
+                                    <TextBox Text="{Binding RouteStartMileageM, UpdateSourceTrigger=LostFocus}"
                                              Style="{DynamicResource StandardTextBox}"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
                                     <TextBlock Text="旋转偏移角度（°）" Style="{DynamicResource SecondaryLabel}" Margin="0,0,0,4"/>
-                                    <TextBox Text="{Binding RotationOffsetDegrees, UpdateSourceTrigger=PropertyChanged}"
+                                    <TextBox Text="{Binding RotationOffsetDegrees, UpdateSourceTrigger=LostFocus}"
                                              Style="{DynamicResource StandardTextBox}"/>
                                 </StackPanel>
                             </Grid>
@@ -159,7 +159,7 @@
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
                                     <TextBlock Text="Base Offset（mm）" Style="{DynamicResource SecondaryLabel}" Margin="0,0,0,4"/>
-                                    <TextBox Text="{Binding BaseOffsetMm, UpdateSourceTrigger=PropertyChanged}"
+                                    <TextBox Text="{Binding BaseOffsetMm, UpdateSourceTrigger=LostFocus}"
                                              Style="{DynamicResource StandardTextBox}"/>
                                 </StackPanel>
                             </Grid>
@@ -179,7 +179,7 @@
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
                                     <TextBlock Text="Top Offset（mm）" Style="{DynamicResource SecondaryLabel}" Margin="0,0,0,4"/>
-                                    <TextBox Text="{Binding TopOffsetMm, UpdateSourceTrigger=PropertyChanged}"
+                                    <TextBox Text="{Binding TopOffsetMm, UpdateSourceTrigger=LostFocus}"
                                              Style="{DynamicResource StandardTextBox}"/>
                                 </StackPanel>
                             </Grid>

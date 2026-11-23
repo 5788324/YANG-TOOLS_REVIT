@@ -249,12 +249,19 @@ namespace YangTools.Revit.UI
                     : Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory)
             })
             {
-                if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK
+                if (dialog.ShowDialog(new FolderDialogOwner(new System.Windows.Interop.WindowInteropHelper(this).Handle)) == System.Windows.Forms.DialogResult.OK
                     && !string.IsNullOrWhiteSpace(dialog.SelectedPath))
                 {
                     _viewModel.OutputFolder = dialog.SelectedPath;
                 }
             }
+        }
+
+        private sealed class FolderDialogOwner : System.Windows.Forms.IWin32Window
+        {
+            public FolderDialogOwner(IntPtr handle) => Handle = handle;
+
+            public IntPtr Handle { get; }
         }
 
         private void BtnOpenOutput_Click(object sender, RoutedEventArgs e)
@@ -543,7 +550,7 @@ namespace YangTools.Revit.UI
 
         private void FlushUi()
         {
-            Dispatcher.Invoke(new Action(() => { }), System.Windows.Threading.DispatcherPriority.Background);
+            Dispatcher.Invoke(new Action(() => { }), System.Windows.Threading.DispatcherPriority.Render);
         }
 
         private static void OpenFolder(string folder)

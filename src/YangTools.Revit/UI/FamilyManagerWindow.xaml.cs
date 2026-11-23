@@ -1252,110 +1252,68 @@ namespace YangTools.Revit.UI
 
         private void Delete_Click(object sender, RoutedEventArgs e)
         {
-            var selectedItems = TypeDataGrid.SelectedItems.Cast<TypeItemViewModel>().ToList();
-            if (selectedItems.Count == 0)
+            var ids = TypeDataGrid.SelectedItems.Cast<TypeItemViewModel>().Select(item => item.TypeId).ToList();
+            if (ids.Count == 0)
             {
-                // If no type selected, ask if they want to delete the whole family
-                var resultFam = TaskDialog.Show("确认", "没有选中类型，是否删除当前选中的整个族？", TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.No);
-                if (resultFam == TaskDialogResult.Yes && _selectedFamilyId != null)
-                {
-                    ElementId familyIdToDelete = _selectedFamilyId;
-                    _handler.SetAction(app =>
-                    {
-                        var doc = app.ActiveUIDocument.Document;
-                        try
-                        {
-                            using (Transaction t = new Transaction(doc, "Delete Family"))
-                            {
-                                t.Start();
-                                doc.Delete(familyIdToDelete);
-                                if (t.Commit() != TransactionStatus.Committed)
-                                    throw new InvalidOperationException("删除族事务未成功提交。");
-                            }
-                            Dispatcher.Invoke(() => {
-                                if (_selectedFamilyId == familyIdToDelete)
-                                {
-                                    TypeList.Clear();
-                                    TypeDataGrid.Visibility = System.Windows.Visibility.Collapsed;
-                                    EmptyStatePanel.Visibility = System.Windows.Visibility.Visible;
-                                    SelectedFamilyTitle.Text = "请在左侧选择一个族";
-                                    SelectedFamilyStatsText.Text = "实例 0 · 使用类型 0 · 未使用类型 0 · 当前视图 0";
-                                    ManageInstancesBtn.IsEnabled = false;
-                                    _selectedFamilyId = null;
-                                }
-                                RequestRead(() => { LoadFamilyList(); PopulateCategoryFilter(); }, "刷新删除后的族列表");
-                            });
-                        }
-                        catch (Exception ex)
-                        {
-                            Dispatcher.Invoke(() => TaskDialog.Show("错误", "Could not delete: " + ex.Message));
-                        }
-                    });
-                    _externalEvent.Raise();
-                }
+                TaskDialog.Show("删除类型", "请先在右侧选中要删除的类型。");
                 return;
             }
+            QueueFamilyDeletion(ids, "删除类型");
+        }
 
-            var typeIds = selectedItems.Where(x => x.TypeId != ElementId.InvalidElementId).Select(x => x.TypeId).ToList();
-            ElementId familyId = selectedItems[0].FamilyId;
-
-            var result = TaskDialog.Show("确认", $"确定要删除选中的 {selectedItems.Count} 个类型吗？", TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.No);
-            if (result == TaskDialogResult.Yes)
+        private void DeleteFamily_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedFamilyId == null || _selectedFamilyId == ElementId.InvalidElementId)
             {
-                _handler.SetAction(app =>
-                {
-                    var doc = app.ActiveUIDocument.Document;
-                    bool success = false;
-                    int remainingTypeCount = 0;
-                    try
-                    {
-                        using (Transaction t = new Transaction(doc, "Delete Types"))
-                        {
-                            t.Start();
-                            foreach (var id in typeIds)
-                            {
-                                if (doc.GetElement(id) != null)
-                                    doc.Delete(id);
-                            }
-                            if (t.Commit() != TransactionStatus.Committed)
-                                throw new InvalidOperationException("删除族类型事务未成功提交。");
-                            success = true;
-                            var family = doc.GetElement(familyId) as Family;
-                            remainingTypeCount = family?.GetFamilySymbolIds().Count ?? 0;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Dispatcher.Invoke(() => TaskDialog.Show("错误", "Could not delete: " + ex.Message));
-                    }
-
-                    if (success)
-                    {
-                        FamilyUsageSnapshot freshUsage = FamilyUsageService.Build(doc, doc.ActiveView?.Id ?? ElementId.InvalidElementId);
-                        Family remainingFamily = doc.GetElement(familyId) as Family;
-                        int usedTypeCount = remainingFamily?.GetFamilySymbolIds().Count(id => freshUsage.GetTypeCount(id) > 0) ?? 0;
-                        int instanceCount = freshUsage.GetFamilyCount(familyId);
-                        int currentViewCount = freshUsage.GetCurrentViewFamilyCount(familyId);
-                        Dispatcher.Invoke(() =>
-                        {
-                            var currentFamily = FamilyList.FirstOrDefault(x => x.FamilyId == familyId);
-                            if (currentFamily != null)
-                            {
-                                currentFamily.TypeCount = remainingTypeCount;
-                                currentFamily.InstanceCount = instanceCount;
-                                currentFamily.CurrentViewInstanceCount = currentViewCount;
-                                currentFamily.UsedTypeCount = usedTypeCount;
-                                currentFamily.UnusedTypeCount = Math.Max(0, remainingTypeCount - usedTypeCount);
-                                if (_selectedFamilyId == familyId)
-                                    SelectedFamilyStatsText.Text = $"实例 {instanceCount} · 使用类型 {usedTypeCount}/{remainingTypeCount} · 未使用类型 {Math.Max(0, remainingTypeCount - usedTypeCount)} · 当前视图 {currentViewCount}";
-                            }
-                            _familyCollectionView?.Refresh();
-                            if (_selectedFamilyId == familyId) RequestRead(LoadTypeData, "刷新删除后的族类型");
-                        });
-                    }
-                });
-                _externalEvent.Raise();
+                TaskDialog.Show("删除整个族", "请先在左侧选中要删除的族。");
+                return;
             }
+            QueueFamilyDeletion(new[] { _selectedFamilyId }, "删除整个族");
+        }
+
+        private void QueueFamilyDeletion(ICollection<ElementId> ids, string title)
+        {
+            ElementId familyId = _selectedFamilyId;
+            _handler.EnqueueAndRaise(_externalEvent, app =>
+            {
+                if (!IsLoaded) return;
+                Document doc = app.ActiveUIDocument.Document;
+                if (!(doc.GetElement(familyId) is Family family) || ids.Any(id => doc.GetElement(id) == null))
+                    throw new InvalidOperationException("原选中的族或类型已不存在。");
+
+                HashSet<ElementId> affected;
+                using (var trial = new Transaction(doc, title + "预览"))
+                {
+                    if (trial.Start() != TransactionStatus.Started)
+                        throw new InvalidOperationException("无法预览删除范围。");
+                    affected = new HashSet<ElementId>(doc.Delete(ids));
+                    if (trial.RollBack() != TransactionStatus.RolledBack)
+                        throw new InvalidOperationException("无法结束删除预览。");
+                }
+
+                int types = affected.Count(id => doc.GetElement(id) is FamilySymbol);
+                int instances = affected.Count(id => doc.GetElement(id) is FamilyInstance);
+                int others = affected.Count - types - instances - affected.Count(id => doc.GetElement(id) is Family);
+                var confirm = new TaskDialog(title)
+                {
+                    MainInstruction = $"删除族「{family.Name}」中的所选内容？",
+                    MainContent = $"会删除 {types} 个类型、{instances} 个实例和 {others} 个其他图元，可在 Revit 中撤销。",
+                    CommonButtons = TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.No,
+                    DefaultButton = TaskDialogResult.No
+                };
+                if (confirm.Show() != TaskDialogResult.Yes) return;
+
+                using (var transaction = new Transaction(doc, title))
+                {
+                    if (transaction.Start() != TransactionStatus.Started)
+                        throw new InvalidOperationException("无法启动删除事务。");
+                    if (!affected.SetEquals(doc.Delete(ids)))
+                        throw new InvalidOperationException("删除范围与预览不同，已取消。");
+                    if (transaction.Commit() != TransactionStatus.Committed)
+                        throw new InvalidOperationException("Revit 未提交删除操作。");
+                }
+                RequestRead(() => { LoadFamilyList(); PopulateCategoryFilter(); }, "刷新族和类型");
+            }, title, showSuccess: false);
         }
 
         private static string GetUniqueName(ISet<string> existingNames, string baseName)
