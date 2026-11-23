@@ -17,9 +17,9 @@ namespace YangTools.Revit.Commands
 {
     [Transaction(TransactionMode.Manual)]
     [RibbonButton(panelName: "文本工具区", buttonText: "文字贴边框",
-        tooltip: "为所选文字各画四条详图线，可调整纸面留白。",
+        tooltip: "按 Revit 原生文字边框的位置为所选文字画四条详图线。",
         largeIcon: "Icons/text_detail_frame_32.png", smallIcon: "Icons/text_detail_frame_16.png",
-        usage: "使用：选择文字，输入纸面留白。默认 0.5 mm，输入 0 按字形贴边。重跑可更新边框。\n注意：引线不计入边框范围。")]
+        usage: "使用：选择文字，留空确认按原生边框画线。输入 0 按字形贴边，正值按纸面毫米向外扩。重跑可更新边框。\n注意：引线不计入边框范围。")]
     public sealed class TextDetailFrameCommand : IExternalCommand
     {
         private const string Title = "文字贴边框";
@@ -51,21 +51,27 @@ namespace YangTools.Revit.Commands
                 }
 
                 int scale = Math.Max(1, view.Scale);
-                var input = new SimpleInputDialog(Title, "向外偏移（纸面 mm）\n0 表示按字形贴边", "0.5");
+                var input = new SimpleInputDialog(Title, "留空：原生边框\n0：按字形贴边\n正值：从字形向外偏移（纸面 mm）");
                 new WindowInteropHelper(input).Owner = commandData.Application.MainWindowHandle;
                 if (input.ShowDialog() != true) return Result.Cancelled;
-                if (!double.TryParse(input.InputText, NumberStyles.Float, CultureInfo.CurrentCulture, out double offsetMm) ||
-                    !(offsetMm >= 0) || double.IsInfinity(offsetMm))
+                double? paperOffset = null;
+                if (!string.IsNullOrWhiteSpace(input.InputText))
                 {
-                    TaskDialog.Show(Title, "请输入大于或等于 0 的偏移量（纸面 mm）。");
-                    return Result.Cancelled;
+                    if (!double.TryParse(input.InputText, NumberStyles.Float, CultureInfo.CurrentCulture, out double offsetMm) ||
+                        !(offsetMm >= 0) || double.IsInfinity(offsetMm))
+                    {
+                        TaskDialog.Show(Title, "请留空或输入大于或等于 0 的偏移量（纸面 mm）。");
+                        return Result.Cancelled;
+                    }
+                    paperOffset = offsetMm / 304.8;
                 }
 
-                double paperOffset = offsetMm / 304.8;
                 var frames = new List<(TextNote Note, XYZ[] Corners)>();
                 foreach (TextNote note in notes)
                 {
-                    XYZ[]? corners = FrameCorners(note, scale, paperOffset);
+                    XYZ[]? corners = paperOffset.HasValue
+                        ? GlyphFrameCorners(note, scale, paperOffset.Value)
+                        : NativeFrameCorners(note, scale);
                     if (corners != null && corners[0].DistanceTo(corners[1]) > doc.Application.ShortCurveTolerance
                                         && corners[1].DistanceTo(corners[2]) > doc.Application.ShortCurveTolerance)
                         frames.Add((note, corners));
@@ -74,7 +80,9 @@ namespace YangTools.Revit.Commands
                 int skipped = notes.Count - frames.Count;
                 if (frames.Count == 0)
                 {
-                    TaskDialog.Show(Title, "没有可画边框的文字。请选择普通文字，避开空白、混合格式或含制表符的文字。");
+                    TaskDialog.Show(Title, paperOffset.HasValue
+                        ? "没有可按字形画框的文字。混合格式或含制表符的文字可留空，使用原生边框。"
+                        : "没有可画边框的文字。请选择有内容且边框足够长的文字。");
                     return Result.Cancelled;
                 }
 
@@ -148,7 +156,29 @@ namespace YangTools.Revit.Commands
             return builder.Finish();
         }
 
-        private static XYZ[]? FrameCorners(TextNote note, int scale, double paperOffset)
+        private static XYZ[]? NativeFrameCorners(TextNote note, int scale)
+        {
+            if (string.IsNullOrWhiteSpace(note.Text)) return null;
+            var type = (TextNoteType)note.Document.GetElement(note.GetTypeId());
+            double margin = type.get_Parameter(BuiltInParameter.LEADER_OFFSET_SHEET).AsDouble();
+            double width = note.Width;
+            double height = note.Height;
+            double left = note.HorizontalAlignment == HorizontalTextAlignment.Center ? -width * 0.5 :
+                note.HorizontalAlignment == HorizontalTextAlignment.Right ? -width : 0;
+            XYZ right = note.BaseDirection.Normalize();
+            XYZ up = note.UpDirection.Normalize();
+            XYZ origin = note.Coord;
+            XYZ Point(double x, double y) => origin + right * (x * scale) + up * (y * scale);
+            return new[]
+            {
+                Point(left - margin, margin),
+                Point(left + width + margin, margin),
+                Point(left + width + margin, -height - margin),
+                Point(left - margin, -height - margin)
+            };
+        }
+
+        private static XYZ[]? GlyphFrameCorners(TextNote note, int scale, double paperOffset)
         {
             using var formatted = note.GetFormattedText();
             string text = formatted.GetPlainText();
