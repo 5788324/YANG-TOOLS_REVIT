@@ -43,7 +43,7 @@ chk('2026 pinned','<PinnedRevitApiVersion>2026.4.0</PinnedRevitApiVersion>' in p
 chk('both API packages pinned via property',prj.count('Version="$(PinnedRevitApiVersion)"')==2)
 chk('no automatic deployment by default',"'$(DeployAfterBuild)' == 'true'" in prj)
 s=read(R/'tools/Test-UiPanelsStatic.py')
-chk('Ribbon count 41 matches current tools', 'ribbon_count != 41' in s and '预期 41' in s)
+chk('Ribbon count 42 matches current tools', 'ribbon_count != 42' in s and '预期 42' in s)
 chk('no legacy UI checks for test group','expected_rebar_groups = {"创建钢筋"}' in s)
 failed=[n for n,ok in checks.items() if not ok]
 report={'suite':'RC3H Cad/Document identity + 12 test Ribbon removals + minimum API pins','total':len(checks),'passed':len(checks)-len(failed),'failed':failed,'runtime':'NOT_TESTED'}

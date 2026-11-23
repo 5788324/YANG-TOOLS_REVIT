@@ -15,6 +15,7 @@
 | 文本工具区 | 文本合并 | `MergeTextCommand` | 将多个 TextNote 按指定分隔符合并。 |
 | 文本工具区 | 文本编辑 | `TextModifierCommand` | 查找、替换及格式化项目中的文本。 |
 | 文本工具区 | 文字宽度 | `TextParagraphWidthCommand` | 读取或批量设置文字段落的纸面宽度。 |
+| 文本工具区 | 文字贴边框 | `TextDetailFrameCommand` | 沿字形外缘绘制四条可捕捉的详图线，可重跑更新。 |
 | 文本工具区 | 沿线对齐 | `AlignTextToLineCommand` | 将 TextNote 旋转并按需要移动至指定基准线。 |
 | 文本工具区 | 等距分布 | `DistributeTextCommand` | 沿水平或垂直方向等距分布、对齐选中的文字。 |
 | 标注工具区 | 标注替换 | `DimTextOverrideCommand` | 替换标注显示文字，不修改测量几何尺寸。 |

@@ -383,8 +383,8 @@ def main() -> int:
     ribbon_count = 0
     for path in (SOURCE_ROOT / "Commands").glob("*.cs"):
         ribbon_count += read_utf8(path).count("[RibbonButton")
-    if ribbon_count != 41:
-        errors.append({"type": "ribbon-count", "file": "Commands", "detail": f"实际 {ribbon_count}，预期 41（当前 Ribbon 合同）"})
+    if ribbon_count != 42:
+        errors.append({"type": "ribbon-count", "file": "Commands", "detail": f"实际 {ribbon_count}，预期 42（当前 Ribbon 合同）"})
 
     report = {
         "summary": {

@@ -312,6 +312,11 @@ def view_scale_layout(g):
     line(g,22,20,22,25,accent=True)
     poly(g,[(14,17),(19,17),(16,14),(19,17),(16,20)])
 
+def text_detail_frame(g):
+    rect(g,4,6,24,20,0,accent=True)
+    poly(g,[(10,21),(16,11),(22,21)])
+    line(g,12,18,20,18)
+
 def text_paragraph_width(g):
     line(g,7,8,25,8); line(g,7,13,22,13); line(g,7,18,17,18)
     line(g,5,24,27,24,accent=True)
@@ -397,7 +402,7 @@ icons={
 'project_inspector':project_inspector,'parameter_cleanup':parameter_cleanup,'sample_window':settings,'section_line':section_line,'sheet_manager':sheet_manager,
 'text_modifier':text_modifier,'visibility_copier':visibility_copier,'dwg_view_link':dwg_view_link,'cad_to_revit':cad_to_revit,
 'view_scale_layout':view_scale_layout,
-'text_paragraph_width':text_paragraph_width,'align_beam_floor_face':align_beam_floor_face,
+'text_detail_frame':text_detail_frame,'text_paragraph_width':text_paragraph_width,'align_beam_floor_face':align_beam_floor_face,
 'rebar_gradient_set':rebar_gradient_set,
 'merge_lines':merge_lines,'merge_columns':merge_columns,'overlap_lines':overlap_lines,
 'filledregion_invisible':filledregion_invisible,
