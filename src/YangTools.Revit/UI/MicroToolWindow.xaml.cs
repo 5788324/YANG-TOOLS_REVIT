@@ -432,38 +432,21 @@ namespace YangTools.Revit.UI
                 return;
             }
 
-            MessageBoxResult confirm = MessageBox.Show(
-                $"将“{selectedTool.Name}”及其运行依赖复制到收藏/候选转正仓库。\n\n" +
-                "这只是收藏，不会自动变成 Ribbon 独立插件；真正转正仍需源码审查和集成。",
-                "收藏临时插件",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-            if (confirm != MessageBoxResult.Yes)
-                return;
-
             try
             {
-                bool overwrite = false;
+                string collected;
                 try
                 {
-                    string collected = MicroToolEngine.CollectToolPackage(selectedTool.FullPath, false);
-                    MessageBox.Show($"已收藏到：\n{collected}", "临时插件箱",
-                        MessageBoxButton.OK, MessageBoxImage.Information);
+                    collected = MicroToolEngine.CollectToolPackage(selectedTool.FullPath, false);
                 }
                 catch (MicroToolPackageConflictException)
                 {
-                    MessageBoxResult replace = MessageBox.Show(
-                        "收藏仓库中已有同名插件包，是否覆盖更新？",
-                        "更新收藏插件",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Warning);
-                    if (replace != MessageBoxResult.Yes)
+                    if (MessageBox.Show(this, $"收藏中已有“{selectedTool.Name}”，是否覆盖更新？",
+                            "更新收藏", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
                         return;
-                    overwrite = true;
-                    string collected = MicroToolEngine.CollectToolPackage(selectedTool.FullPath, overwrite);
-                    MessageBox.Show($"已更新收藏：\n{collected}", "临时插件箱",
-                        MessageBoxButton.OK, MessageBoxImage.Information);
+                    collected = MicroToolEngine.CollectToolPackage(selectedTool.FullPath, true);
                 }
+                StatusText.Text = $"已收藏到 {collected}";
             }
             catch (Exception ex)
             {

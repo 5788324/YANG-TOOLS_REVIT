@@ -53,12 +53,10 @@ namespace YangTools.Revit.Commands
 
                 // An existing join to a line outside the editable selection couples the two layouts.
                 var curveIds = new HashSet<ElementId>(curves.Select(curve => curve.Id));
-                var excluded = new List<DetailCurve>();
                 while (true)
                 {
                     var connected = curves.Where(curve => Adjacent(curve).Any(id => !curveIds.Contains(id))).ToList();
                     if (connected.Count == 0) break;
-                    excluded.AddRange(connected);
                     foreach (var curve in connected) curveIds.Remove(curve.Id);
                     curves.RemoveAll(curve => !curveIds.Contains(curve.Id));
                 }
@@ -72,19 +70,14 @@ namespace YangTools.Revit.Commands
                 }
 
                 int originalViewScale = view.Scale;
-                var dialog = new ViewScaleLayoutWindow(originalViewScale);
+                int skipped = items.Count - editable.Count;
+                string selectionSummary = $"文字 {notes.Count} 个 · 详图线 {curves.Count} 条 · 符号或构件 {families.Count} 个";
+                if (skipped > 0)
+                    selectionSummary += $" · 跳过 {skipped} 个";
+                var dialog = new ViewScaleLayoutWindow(originalViewScale, selectionSummary, view.ViewType == ViewType.Legend,
+                    families.Any(instance => IsCategory(instance, BuiltInCategory.OST_DetailComponents)));
                 new WindowInteropHelper(dialog).Owner = app.MainWindowHandle;
                 if (dialog.ShowDialog() != true) return Result.Cancelled;
-                if (dialog.OriginalScale == dialog.TargetScale)
-                {
-                    TaskDialog.Show(Title, "原排版比例与目标比例相同，无需补偿。");
-                    return Result.Cancelled;
-                }
-                if (originalViewScale != dialog.OriginalScale && originalViewScale != dialog.TargetScale)
-                {
-                    TaskDialog.Show(Title, $"当前视图是 1:{originalViewScale}。请确保它与原排版比例或目标比例一致。");
-                    return Result.Cancelled;
-                }
 
                 XYZ right = view.RightDirection.Normalize();
                 XYZ up = view.UpDirection.Normalize();
@@ -126,29 +119,6 @@ namespace YangTools.Revit.Commands
                 var noteTargets = notes.ToDictionary(note => note.Id, note => Map(note.Coord));
                 var familyTargets = families.ToDictionary(instance => instance.Id,
                     instance => Map(((LocationPoint)instance.Location).Point));
-                int details = families.Count(instance => IsCategory(instance, BuiltInCategory.OST_DetailComponents));
-                var skipped = items.Where(item => !editableIds.Contains(item.Id)).ToList();
-                string summary = $"原排版 1:{dialog.OriginalScale} → 目标 1:{dialog.TargetScale}；坐标补偿系数 {factor:0.####}。\n" +
-                    $"文字 {notes.Count} 个、详图线 {curves.Count} 条、符号或构件 {families.Count} 个。";
-                if (view.ViewType == ViewType.Legend && originalViewScale != dialog.TargetScale)
-                    summary += "\n同一图例放在多张图纸上时，这些图纸都会显示更新后的图例。";
-                if (details > 0)
-                    summary += $"\n{details} 个详图构件只移动插入点，外形大小需出图核对。";
-                if (skipped.Count > 0)
-                    summary += $"\n跳过 {skipped.Count} 个图元，其中 {excluded.Count} 条详图线与选区外或无法处理的线相连。";
-
-                var confirm = new TaskDialog(Title)
-                {
-                    MainInstruction = originalViewScale == dialog.TargetScale ? "按原比例补偿选区排版？" : "修改当前视图比例并补偿选区排版？",
-                    MainContent = summary,
-                    CommonButtons = TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.No,
-                    DefaultButton = TaskDialogResult.No
-                };
-                if (skipped.Count > 0)
-                    confirm.ExpandedContent = "跳过的图元（含固定、组内、带引线或类型不支持的图元）\n" +
-                        string.Join("\n", skipped.Select(item => $"{item.Id}  {item.Category?.Name ?? item.Name}"));
-                if (confirm.Show() != TaskDialogResult.Yes) return Result.Cancelled;
-
                 using var transaction = new Transaction(doc, Title);
                 if (transaction.Start() != TransactionStatus.Started)
                     throw new InvalidOperationException("无法开始排版调整。");
@@ -168,11 +138,10 @@ namespace YangTools.Revit.Commands
                                         Adjacent(curve).Any(id => !curveIds.Contains(id))) ||
                     notes.Any(note => note.Coord.DistanceTo(noteTargets[note.Id]) > PositionTolerance) ||
                     families.Any(family => ((LocationPoint)family.Location).Point.DistanceTo(familyTargets[family.Id]) > PositionTolerance))
-                    throw new InvalidOperationException("图元受连接或约束影响，调整结果与预览不一致。");
+                    throw new InvalidOperationException("图元受连接或约束影响，无法保持所选图元的排版。");
 
                 if (transaction.Commit() != TransactionStatus.Committed)
                     throw new InvalidOperationException("Revit 未提交排版调整。");
-                TaskDialog.Show(Title, $"排版已调整，当前视图为 1:{view.Scale}。\n可用 Ctrl+Z 撤销。");
                 return Result.Succeeded;
             }
             catch (Autodesk.Revit.Exceptions.OperationCanceledException)

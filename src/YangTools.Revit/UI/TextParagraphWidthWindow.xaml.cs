@@ -39,16 +39,14 @@ namespace YangTools.Revit.UI
 
         public sealed class Row
         {
-            public Row(string text, string id, double widthMm, bool wrapping)
+            public Row(string text, double widthMm, bool wrapping)
             {
                 Text = text.Replace('\r', ' ').Replace('\n', ' ');
-                Id = id;
                 WidthMm = widthMm;
                 Wrapping = wrapping ? "自动" : "无";
             }
 
             public string Text { get; }
-            public string Id { get; }
             public double WidthMm { get; }
             public string Wrapping { get; }
         }

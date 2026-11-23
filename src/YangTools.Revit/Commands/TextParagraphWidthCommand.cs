@@ -55,7 +55,7 @@ namespace YangTools.Revit.Commands
                 else if (min > max)
                     readOnlyReason = "选中文字类型没有共同允许的宽度。";
 
-                var rows = notes.Select(note => new TextParagraphWidthWindow.Row(note.Text, note.Id.ToString(),
+                var rows = notes.Select(note => new TextParagraphWidthWindow.Row(note.Text,
                     note.Width * MillimetresPerFoot, note.IsTextWrappingActive)).ToList();
                 var window = new TextParagraphWidthWindow(rows, min * MillimetresPerFoot, max * MillimetresPerFoot, readOnlyReason);
                 new WindowInteropHelper(window).Owner = app.MainWindowHandle;
@@ -68,9 +68,6 @@ namespace YangTools.Revit.Commands
                 if (transaction.Start() != TransactionStatus.Started)
                     throw new InvalidOperationException("无法开始修改文字宽度。");
                 foreach (TextNote note in changes) note.Width = width;
-                doc.Regenerate();
-                if (changes.Any(note => !note.IsTextWrappingActive || Math.Abs(note.Width - width) > WidthTolerance))
-                    throw new InvalidOperationException("Revit 返回的文字宽度与输入不一致。");
                 if (transaction.Commit() != TransactionStatus.Committed)
                     throw new InvalidOperationException("Revit 未提交文字宽度修改。");
                 return Result.Succeeded;
