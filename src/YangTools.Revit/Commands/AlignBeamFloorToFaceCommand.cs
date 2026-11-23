@@ -14,7 +14,7 @@ namespace YangTools.Revit.Commands
     [RibbonButton(panelName: "模型修改区", buttonText: "梁板贴面",
         tooltip: "把板的现有形状点或直梁定位线两端沿 Z 对齐到选定模型面。",
         largeIcon: "Icons/align_beam_floor_face_32.png", smallIcon: "Icons/align_beam_floor_face_16.png",
-        usage: "使用：在正交三维视图选梁或板，再点选目标面。\n注意：板需已启用形状编辑。未投中的点保留原标高。")]
+        usage: "使用：在正交三维视图选梁或板，再点选目标面。\n注意：可编辑的板会自动启用形状编辑。未投中的点保留原标高。")]
     public sealed class AlignBeamFloorToFaceCommand : IExternalCommand
     {
         private const string Title = "梁板贴面";
@@ -47,16 +47,9 @@ namespace YangTools.Revit.Commands
                 var box = doc.GetElement(target.ElementId).get_BoundingBox(null)
                     ?? throw new InvalidOperationException("无法取得目标面的模型范围。");
                 double top = box.Max.Z + 1;
-                using var intersector = new ReferenceIntersector(target.ElementId, FindReferenceTarget.Face, view);
-                XYZ? Project(XYZ point)
-                {
-                    var origin = new XYZ(point.X, point.Y, top);
-                    double? elevation = intersector.Find(origin, -XYZ.BasisZ)
-                        .Where(hit => hit.GetReference().ConvertToStableRepresentation(doc) == stableFace)
-                        .Select(hit => (double?)(top - hit.Proximity))
-                        .OrderBy(z => Math.Abs(z.GetValueOrDefault() - point.Z)).FirstOrDefault();
-                    return elevation.HasValue ? new XYZ(point.X, point.Y, elevation.Value) : null;
-                }
+                using var tx = new Transaction(doc, Title);
+                if (tx.Start() != TransactionStatus.Started)
+                    throw new InvalidOperationException("无法启动修改事务。");
 
                 SlabShapeEditor? editor = null;
                 List<SlabShapeVertex>? vertices = null;
@@ -68,16 +61,41 @@ namespace YangTools.Revit.Commands
 #else
                     editor = floor.SlabShapeEditor;
 #endif
-                    if (editor == null) throw new InvalidOperationException("此板无法编辑形状点。");
+                    if (editor == null)
+                    {
+                        tx.RollBack();
+                        TaskDialog.Show(Title, "此楼板不支持形状编辑。请选择支持形状编辑的楼板。");
+                        return Result.Cancelled;
+                    }
                     if (!editor.IsEnabled)
-                        throw new InvalidOperationException("此板尚无可编辑的形状点，请先在 Revit 中完成形状编辑。");
+                    {
+                        editor.Enable();
+                        doc.Regenerate();
+                    }
                     vertices = editor.SlabShapeVertices.Cast<SlabShapeVertex>().ToList();
+                    if (vertices.Count == 0)
+                    {
+                        tx.RollBack();
+                        TaskDialog.Show(Title, "Revit 未提供此楼板的可编辑形状点。");
+                        return Result.Cancelled;
+                    }
                     original = vertices.Select(vertex => vertex.Position).ToArray();
                 }
                 else
                 {
                     var line = (Line)((LocationCurve)source.Location).Curve;
                     original = new[] { line.GetEndPoint(0), line.GetEndPoint(1) };
+                }
+
+                using var intersector = new ReferenceIntersector(target.ElementId, FindReferenceTarget.Face, view);
+                XYZ? Project(XYZ point)
+                {
+                    var origin = new XYZ(point.X, point.Y, top);
+                    double? elevation = intersector.Find(origin, -XYZ.BasisZ)
+                        .Where(hit => hit.GetReference().ConvertToStableRepresentation(doc) == stableFace)
+                        .Select(hit => (double?)(top - hit.Proximity))
+                        .OrderBy(z => Math.Abs(z.GetValueOrDefault() - point.Z)).FirstOrDefault();
+                    return elevation.HasValue ? new XYZ(point.X, point.Y, elevation.Value) : null;
                 }
 
                 var projected = original.Select(Project).ToArray();
@@ -87,13 +105,10 @@ namespace YangTools.Revit.Commands
                 int missed = projected.Count(point => point == null);
                 if (changes.Count == 0)
                 {
+                    tx.RollBack();
                     TaskDialog.Show(Title, $"无需移动。{missed} 个点未投到所选面。");
                     return Result.Cancelled;
                 }
-
-                using var tx = new Transaction(doc, Title);
-                if (tx.Start() != TransactionStatus.Started)
-                    throw new InvalidOperationException("无法启动修改事务。");
 
                 if (source is Floor)
                 {
