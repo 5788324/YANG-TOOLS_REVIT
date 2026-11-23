@@ -96,18 +96,7 @@
                         <TextBlock Text="族文档管理" Foreground="{DynamicResource TitleText}" FontSize="16" FontWeight="Bold"/>
                         <TextBlock Text=" Family Manager V2.1" Foreground="{DynamicResource TitleText}" Opacity="0.78" FontSize="13" Margin="6,2,0,0"/>
                     </StackPanel>
-                    <Button HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" Width="30" Height="30" Background="Transparent" BorderThickness="0" Click="CloseButton_Click" Padding="0">
-                        <Button.Template>
-                            <ControlTemplate TargetType="{x:Type Button}">
-                                <Border x:Name="bg" Background="Transparent" CornerRadius="15">
-                                    <Path Data="M 10,10 L 20,20 M 20,10 L 10,20" Stroke="{DynamicResource TitleText}" StrokeThickness="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bg" Property="Background" Value="{DynamicResource DangerBg}"/></Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Button.Template>
-                    </Button>
+                    <Button Style="{DynamicResource CloseButton}" Click="CloseButton_Click"/>
                 </Grid>
             </Border>
 

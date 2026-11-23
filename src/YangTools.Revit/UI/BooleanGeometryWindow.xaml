@@ -51,26 +51,6 @@
             </Setter>
         </Style>
 
-        <Style x:Key="CloseButtonStyle" TargetType="{x:Type Button}">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{DynamicResource TitleText}"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type Button}">
-                        <Border x:Name="bd" Background="{TemplateBinding Background}" Padding="15,5">
-                            <TextBlock Text="X" FontSize="14" Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource DangerBg}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        
         <Style TargetType="{x:Type RadioButton}">
             <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
             <Setter Property="Margin" Value="0,0,15,0"/>
@@ -93,7 +73,7 @@
             <Border Grid.Row="0" CornerRadius="8,8,0,0" Background="{DynamicResource TitleBarGradient}">
                 <Grid>
                     <TextBlock Text="布尔几何" Foreground="{DynamicResource TitleText}" FontSize="14" FontWeight="Bold" Margin="15,10" VerticalAlignment="Center"/>
-                    <Button Style="{StaticResource CloseButtonStyle}" HorizontalAlignment="Right" Click="CloseButton_Click"/>
+                    <Button Style="{DynamicResource CloseButton}" Click="CloseButton_Click"/>
                 </Grid>
             </Border>
 

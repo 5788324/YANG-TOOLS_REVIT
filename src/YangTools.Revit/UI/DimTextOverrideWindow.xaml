@@ -46,8 +46,7 @@
                     <TextBlock Text="标注文本替换" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource TitleText}"/>
                     <TextBlock Text="自定义标注显示文本" FontSize="12" Foreground="{DynamicResource TitleText}" Margin="8,2,0,0"/>
                 </StackPanel>
-                <Button HorizontalAlignment="Right" Content="X" FontSize="14" Foreground="{DynamicResource TitleText}" Click="CloseButton_Click"
-                        Background="Transparent" BorderThickness="0" Cursor="Hand" Width="30" Height="30"/>
+                <Button Style="{DynamicResource CloseButton}" Click="CloseButton_Click"/>
             </Grid>
         </Border>
 

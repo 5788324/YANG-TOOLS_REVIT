@@ -67,28 +67,7 @@
                     Background="{DynamicResource TitleBarGradient}">
                 <Grid>
                     <TextBlock Text="线性布置 (Linear Placement)" Foreground="{DynamicResource TitleText}" VerticalAlignment="Center" Margin="15,0,0,0" FontWeight="SemiBold" FontSize="14"/>
-                    <Button HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" Width="30" Height="30" Padding="0"
-                            Background="Transparent" BorderThickness="0" Click="CloseButton_Click">
-                        <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource TitleText}" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        <Button.Style>
-                            <Style TargetType="{x:Type Button}">
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="{x:Type Button}">
-                                            <Border Background="{TemplateBinding Background}" CornerRadius="15">
-                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            </Border>
-                                            <ControlTemplate.Triggers>
-                                                <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter Property="Background" Value="{DynamicResource DangerBg}"/>
-                                                </Trigger>
-                                            </ControlTemplate.Triggers>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                            </Style>
-                        </Button.Style>
-                    </Button>
+                    <Button Style="{DynamicResource CloseButton}" Click="CloseButton_Click"/>
                 </Grid>
             </Border>
 

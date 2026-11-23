@@ -34,14 +34,28 @@
                 <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis"/>
             </DataTemplate>
 
+            <Style x:Key="BatchOptionPlaceholder" TargetType="{x:Type TextBlock}">
+                <Setter Property="Margin" Value="8,0,24,0"/>
+                <Setter Property="Foreground" Value="{DynamicResource SecondaryText}"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="IsHitTestVisible" Value="False"/>
+                <Setter Property="Visibility" Value="Collapsed"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding SelectedIndex}" Value="-1">
+                        <Setter Property="Visibility" Value="Visible"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
             <Style TargetType="{x:Type DataGridColumnHeader}">
                 <Setter Property="Background" Value="{DynamicResource GridHeaderBg}"/>
                 <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
-                <Setter Property="Padding" Value="8,6"/>
+                <Setter Property="Padding" Value="5,0"/>
                 <Setter Property="BorderBrush" Value="{DynamicResource GridLine}"/>
                 <Setter Property="BorderThickness" Value="0,0,1,1"/>
-                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
             </Style>
 
             <Style x:Key="TypeGroupStyle" TargetType="{x:Type GroupItem}">
@@ -82,18 +96,7 @@
                         <TextBlock Text="族实例管理" Foreground="{DynamicResource TitleText}" FontSize="16" FontWeight="Bold"/>
                         <TextBlock Text=" Instance Manager V2.1" Foreground="{DynamicResource TitleText}" Opacity="0.78" FontSize="13" Margin="6,2,0,0"/>
                     </StackPanel>
-                    <Button HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" Width="30" Height="30" Background="Transparent" BorderThickness="0" Click="CloseButton_Click" Padding="0">
-                        <Button.Template>
-                            <ControlTemplate TargetType="{x:Type Button}">
-                                <Border x:Name="bg" Background="Transparent" CornerRadius="15">
-                                    <Path Data="M 10,10 L 20,20 M 20,10 L 10,20" Stroke="{DynamicResource TitleText}" StrokeThickness="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bg" Property="Background" Value="{DynamicResource DangerBg}"/></Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Button.Template>
-                    </Button>
+                    <Button Style="{DynamicResource CloseButton}" Click="CloseButton_Click"/>
                 </Grid>
             </Border>
 
@@ -124,11 +127,21 @@
 
                     <StackPanel Grid.Row="1" Grid.ColumnSpan="7" Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBlock Text="批量换型" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryText}" Margin="0,0,6,0"/>
-                        <ComboBox x:Name="TargetTypeComboBox" Width="220" Height="28" ItemTemplate="{StaticResource BatchOptionTemplate}" SelectedValuePath="TypeId"/>
+                        <Grid>
+                            <ComboBox x:Name="TargetTypeComboBox" Width="220" Height="28" Padding="7,0" VerticalContentAlignment="Center"
+                                      ItemTemplate="{StaticResource BatchOptionTemplate}" SelectedValuePath="TypeId"/>
+                            <TextBlock DataContext="{Binding ElementName=TargetTypeComboBox}" Text="选择目标类型"
+                                       Style="{StaticResource BatchOptionPlaceholder}"/>
+                        </Grid>
                         <Button Content="应用类型" Width="88" Height="28" Margin="6,0,18,0" Style="{DynamicResource PrimaryButton}" Click="BatchChangeType_Click"/>
 
                         <TextBlock Text="批量参数" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryText}" Margin="0,0,6,0"/>
-                        <ComboBox x:Name="BatchParameterComboBox" Width="230" Height="28" ItemTemplate="{StaticResource BatchOptionTemplate}" SelectedValuePath="Key"/>
+                        <Grid>
+                            <ComboBox x:Name="BatchParameterComboBox" Width="230" Height="28" Padding="7,0" VerticalContentAlignment="Center"
+                                      ItemTemplate="{StaticResource BatchOptionTemplate}" SelectedValuePath="Key"/>
+                            <TextBlock DataContext="{Binding ElementName=BatchParameterComboBox}" Text="选择要修改的参数"
+                                       Style="{StaticResource BatchOptionPlaceholder}"/>
+                        </Grid>
                         <TextBox x:Name="BatchParameterValueBox" Width="190" Height="28" Margin="6,0,6,0" Padding="6,3" ToolTip="按项目当前显示单位输入，例如 1500 mm"/>
                         <CheckBox x:Name="OnlyEmptyCheckBox" Content="仅填空值" VerticalAlignment="Center" Margin="4,0,8,0"/>
                         <Button Content="批量写入" Width="88" Height="28" Click="BatchSetParameter_Click"/>

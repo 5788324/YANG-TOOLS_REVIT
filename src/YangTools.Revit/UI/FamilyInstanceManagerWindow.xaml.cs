@@ -374,10 +374,9 @@ namespace YangTools.Revit.UI
                     ItemsSource = availableParams,
                     SelectedValuePath = "Key",
                     DisplayMemberPath = "DisplayName",
-                    Width = 170,
-                    MinWidth = 140,
-                    MaxWidth = 220,
-                    Margin = new Thickness(0, 0, 4, 0),
+                    Height = 26,
+                    Padding = new Thickness(4, 0, 4, 0),
+                    VerticalContentAlignment = VerticalAlignment.Center,
                     ToolTip = "按稳定 ParameterKey 保存；重复同名参数会显示身份后缀。"
                 };
                 if (!string.IsNullOrEmpty(pKey)) combo.SelectedValue = pKey;

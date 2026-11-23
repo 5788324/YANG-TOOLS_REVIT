@@ -29,17 +29,7 @@
                                Style="{DynamicResource WindowTitle}"
                                VerticalAlignment="Center"
                                Margin="16,0,0,0"/>
-                    <Button HorizontalAlignment="Right"
-                            VerticalAlignment="Center"
-                            Width="34" Height="34"
-                            Margin="0,0,8,0"
-                            Style="{DynamicResource IconButton}"
-                            Click="CloseButton_Click">
-                        <TextBlock Text="&#xE711;"
-                                   FontFamily="Segoe MDL2 Assets"
-                                   Foreground="{DynamicResource TitleText}"
-                                   FontSize="14"/>
-                    </Button>
+                    <Button Style="{DynamicResource CloseButton}" Click="CloseButton_Click"/>
                 </Grid>
             </Border>
 

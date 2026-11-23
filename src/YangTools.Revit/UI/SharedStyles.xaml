@@ -208,12 +208,37 @@
     </Style>
 
     <Style x:Key="CloseButton" TargetType="{x:Type Button}" BasedOn="{StaticResource IconButton}">
-        <Setter Property="Content" Value="×"/>
         <Setter Property="Width" Value="32"/>
         <Setter Property="Height" Value="30"/>
+        <Setter Property="HorizontalAlignment" Value="Right"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Margin" Value="0,0,8,0"/>
         <Setter Property="Padding" Value="0"/>
-        <Setter Property="FontSize" Value="18"/>
         <Setter Property="Foreground" Value="{DynamicResource TitleText}"/>
+        <Setter Property="ToolTip" Value="关闭"/>
+        <Setter Property="AutomationProperties.Name" Value="关闭"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Grid Background="Transparent">
+                        <Border x:Name="Highlight" Width="24" Height="24" CornerRadius="12"
+                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Path x:Name="Glyph" Data="M 1,1 L 9,9 M 1,9 L 9,1"
+                              Stroke="{TemplateBinding Foreground}" StrokeThickness="1.5"
+                              HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Highlight" Property="Background" Value="{DynamicResource DangerBg}"/>
+                            <Setter TargetName="Glyph" Property="Stroke" Value="White"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Highlight" Property="Background" Value="{DynamicResource DangerHover}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <Style x:Key="CardBorder" TargetType="{x:Type Border}">

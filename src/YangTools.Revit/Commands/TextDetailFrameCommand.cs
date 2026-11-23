@@ -24,6 +24,8 @@ namespace YangTools.Revit.Commands
     {
         private const string Title = "文字贴边框";
         private const double DipPerFoot = 12 * 96;
+        private const double GlyphBaselineLiftMm = 0.10;
+        private const double GlyphLeftClearanceMm = 0.05;
         private static readonly Guid FrameSchemaId = new Guid("37bbf82a-9642-48f0-b921-617d3cdf8a36");
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
@@ -238,11 +240,13 @@ namespace YangTools.Revit.Commands
 
             XYZ right = note.BaseDirection.Normalize();
             XYZ up = note.UpDirection.Normalize();
+            double baselineLift = GlyphBaselineLiftMm / 304.8;
+            double leftClearance = GlyphLeftClearanceMm / 304.8 * DipPerFoot / widthFactor;
             XYZ Map(double x, double y) => note.Coord +
                 right * ((x - horizontalAnchor) * widthFactor / DipPerFoot * scale) +
-                up * ((verticalAnchor - y / DipPerFoot) * scale);
-            return new[] { Map(ink.Left, ink.Top), Map(ink.Right, ink.Top),
-                Map(ink.Right, ink.Bottom), Map(ink.Left, ink.Bottom) };
+                up * ((verticalAnchor + baselineLift - y / DipPerFoot) * scale);
+            return new[] { Map(ink.Left - leftClearance, ink.Top), Map(ink.Right, ink.Top),
+                Map(ink.Right, ink.Bottom), Map(ink.Left - leftClearance, ink.Bottom) };
         }
     }
 }
