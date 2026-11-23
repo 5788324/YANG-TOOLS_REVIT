@@ -91,6 +91,14 @@ def main() -> int:
     req(fam_c,'OverwriteExistingFile = approvedOverwrites.Contains(target.Key)','RFA 只允许覆盖已确认路径')
     req(fam_c,'TypeDataGrid.Items.OfType<TypeItemViewModel>().ToList()','类型 Excel 仅导出可见行')
     req(reg_c,'Action<TWindow> configureExisting','已打开实例管理窗口可重定位族')
+    manage = fam_c.split('private void ManageInstances_Click', 1)[1].split('private void ', 1)[0]
+    opens_in_callback = re.search(
+        r'RequestRead\(\(\) =>\s*\{\s*if \(!IsLoaded\) return;\s*'
+        r'ModelessWindowRegistry\.ShowOrActivate\([^;]+new FamilyInstanceManagerWindow', manage)
+    label = '族管理通过 Revit 回调创建实例窗口'
+    checks[label] = opens_in_callback is not None
+    if not checks[label]:
+        failures.append('缺少契约：' + label)
     # Instance actions
     for needle,label in [
         ('new InstanceScopeItem("全项目", InstanceScopeMode.Project)','全项目范围'),

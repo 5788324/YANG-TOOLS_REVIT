@@ -1037,11 +1037,15 @@ namespace YangTools.Revit.UI
             if (selected == null || selected.FamilyId == ElementId.InvalidElementId) return;
             ElementId familyId = selected.FamilyId;
 
-            ModelessWindowRegistry.ShowOrActivate(
-                _doc,
-                _uiapp.MainWindowHandle,
-                () => new FamilyInstanceManagerWindow(_uiapp, familyId),
-                existing => existing.SelectFamily(familyId));
+            RequestRead(() =>
+            {
+                if (!IsLoaded) return;
+                ModelessWindowRegistry.ShowOrActivate(
+                    _doc,
+                    _uiapp.MainWindowHandle,
+                    () => new FamilyInstanceManagerWindow(_uiapp, familyId),
+                    existing => existing.SelectFamily(familyId));
+            }, "打开族实例管理");
         }
 
         private void ExportSelectedRfa_Click(object sender, RoutedEventArgs e)
