@@ -88,6 +88,12 @@
                       VirtualizingPanel.VirtualizationMode="Recycling"
                       CanUserSortColumns="True" CanUserReorderColumns="True"
                       RowHeight="25" ColumnHeaderHeight="30">
+                <DataGrid.ColumnHeaderStyle>
+                    <Style TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource SharedDataGridColumnHeaderStyle}">
+                        <Setter Property="Padding" Value="8,2"/>
+                        <Setter Property="VerticalContentAlignment" Value="Center"/>
+                    </Style>
+                </DataGrid.ColumnHeaderStyle>
                 <DataGrid.Columns>
                     <DataGridTemplateColumn Header="处理" Width="48">
                         <DataGridTemplateColumn.CellTemplate>

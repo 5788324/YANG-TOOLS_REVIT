@@ -299,12 +299,10 @@ namespace YangTools.Revit.UI
                     ItemsSource = availableParams,
                     SelectedValuePath = "Key",
                     DisplayMemberPath = "DisplayName",
-                    Width = 170,
-                    MinWidth = 140,
-                    MaxWidth = 220,
-                    Margin = new Thickness(0, 0, 4, 0),
+                    HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch,
                     ToolTip = "按稳定 ParameterKey 保存。重复同名参数会显示身份后缀。"
                 };
+                combo.SetResourceReference(StyleProperty, "CompactComboBox");
                 if (!string.IsNullOrEmpty(pKey)) combo.SelectedValue = pKey;
 
                 combo.SelectionChanged += (s, ev) =>
@@ -956,7 +954,7 @@ namespace YangTools.Revit.UI
                 }
 
                 categories = categories.OrderBy(c => c.Name).ToList();
-                var selectWindow = new ParameterSelectWindow(categories.Select(c => c.Name).ToList())
+                var selectWindow = new ParameterSelectWindow(categories.Select(c => c.Name).ToList(), allowMultiple: false)
                 {
                     Title = "选择新类别",
                     Owner = this

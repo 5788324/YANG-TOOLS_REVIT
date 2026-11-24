@@ -109,11 +109,36 @@
                                 <TextBox x:Name="SheetSearchBox" Width="150" VerticalContentAlignment="Center" TextChanged="SheetSearchBox_TextChanged"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal">
-                                <Button Style="{DynamicResource IconButton}" Tag="&#xE710;" Content="添加参数列" Click="AddParameterColumn_Click" ToolTip="添加图纸自定义参数" />
-                                <Button Style="{DynamicResource IconButton}" Tag="&#xE896;" Content="导出 Excel" Click="ExportSheetExcel_Click" ToolTip="导出全部图纸数据"/>
-                                <Button Style="{DynamicResource IconButton}" Tag="&#xE8B5;" Content="导入 Excel" Click="ImportSheetExcel_Click" ToolTip="按图号更新。项目中不存在的图号需确认后才新建。"/>
-                                <Button Style="{DynamicResource IconButton}" Tag="&#xE74D;" Content="删除图纸" Click="DeleteSheets_Click" Foreground="{DynamicResource DangerBg}" ToolTip="删除选中的图纸" />
-                                <Button Style="{DynamicResource IconButton}" Tag="&#xE72C;" Content="刷新" Click="Refresh_Click" ToolTip="重新加载图纸"/>
+                                <Button Style="{DynamicResource IconButton}" AutomationProperties.Name="添加参数列" Click="AddParameterColumn_Click" ToolTip="添加图纸自定义参数">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="添加参数列" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Style="{DynamicResource IconButton}" AutomationProperties.Name="导出 Excel" Click="ExportSheetExcel_Click" ToolTip="导出全部图纸数据">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="导出 Excel" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Style="{DynamicResource IconButton}" AutomationProperties.Name="导入 Excel" Click="ImportSheetExcel_Click" ToolTip="按图号更新。项目中不存在的图号需确认后才新建。">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE8B5;" FontFamily="Segoe MDL2 Assets" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="导入 Excel" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Style="{DynamicResource IconButton}" AutomationProperties.Name="删除图纸" Click="DeleteSheets_Click" Foreground="{DynamicResource DangerBg}" ToolTip="删除选中的图纸">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="删除图纸" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Style="{DynamicResource IconButton}" AutomationProperties.Name="刷新" Click="Refresh_Click" ToolTip="重新加载图纸">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="刷新" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
                             </StackPanel>
                         </DockPanel>
                         
@@ -152,10 +177,30 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,10">
-                            <Button Style="{DynamicResource IconButton}" Tag="&#xE896;" Content="导出 Excel" Click="ExportTitleblockExcel_Click" ToolTip="导出图框参数"/>
-                            <Button Style="{DynamicResource IconButton}" Tag="&#xE8B5;" Content="批量导入参数" Click="ImportTitleblockExcel_Click" ToolTip="导入修改后的图框参数"/>
-                            <Button Style="{DynamicResource IconButton}" Tag="&#xE710;" Content="在视图中选择" Click="SelectTitleblockInView_Click" ToolTip="在 Revit 视图中定位选中的图框" />
-                            <Button Style="{DynamicResource IconButton}" Tag="&#xE72C;" Content="刷新" Click="RefreshTitleblock_Click" ToolTip="重新加载图框数据"/>
+                            <Button Style="{DynamicResource IconButton}" AutomationProperties.Name="导出 Excel" Click="ExportTitleblockExcel_Click" ToolTip="导出图框参数">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="导出 Excel" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{DynamicResource IconButton}" AutomationProperties.Name="批量导入参数" Click="ImportTitleblockExcel_Click" ToolTip="导入修改后的图框参数">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE8B5;" FontFamily="Segoe MDL2 Assets" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="批量导入参数" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{DynamicResource IconButton}" AutomationProperties.Name="在视图中选择" Click="SelectTitleblockInView_Click" ToolTip="在 Revit 视图中定位选中的图框">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="在视图中选择" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{DynamicResource IconButton}" AutomationProperties.Name="刷新" Click="RefreshTitleblock_Click" ToolTip="重新加载图框数据">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="刷新" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
                         
                         <DataGrid x:Name="TitleblocksDataGrid" Grid.Row="1">
@@ -166,7 +211,7 @@
                                 <DataGridTemplateColumn Header="图框类型 (换型)" Width="200">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <ComboBox ItemsSource="{Binding DataContext.AvailableTitleblocks, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            <ComboBox Style="{DynamicResource CompactComboBox}" ItemsSource="{Binding DataContext.AvailableTitleblocks, RelativeSource={RelativeSource AncestorType=Window}}"
                                                       DisplayMemberPath="Name" SelectedValuePath="Id"
                                                       SelectedValue="{Binding TypeId, Mode=OneWay}"
                                                       SelectionChanged="TitleblockComboBox_SelectionChanged"/>

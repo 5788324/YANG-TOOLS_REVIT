@@ -182,11 +182,18 @@
                     <!-- Center/Right: DataGrid -->
                     <Border Grid.Column="2" Background="{DynamicResource GridRowBg}" BorderBrush="{DynamicResource BtnBorder}" BorderThickness="1" CornerRadius="4">
                         <Grid>
-                            <DataGrid x:Name="AssetDataGrid" AutoGenerateColumns="False" CanUserAddRows="False" 
+                            <DataGrid x:Name="AssetDataGrid" ColumnHeaderHeight="36" AutoGenerateColumns="False" CanUserAddRows="False" 
                                       HeadersVisibility="Column" Background="Transparent" BorderThickness="0"
                                       RowBackground="{DynamicResource GridRowBg}" AlternatingRowBackground="{DynamicResource GridAltRowBg}"
                                       HorizontalGridLinesBrush="{DynamicResource BtnBg}" VerticalGridLinesBrush="{DynamicResource BtnBg}"
                                       CellEditEnding="AssetDataGrid_CellEditEnding">
+                                <DataGrid.ColumnHeaderStyle>
+                                    <Style TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource SharedDataGridColumnHeaderStyle}">
+                                        <Setter Property="Padding" Value="5,0"/>
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                        <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                    </Style>
+                                </DataGrid.ColumnHeaderStyle>
                                 <DataGrid.ContextMenu>
                                     <ContextMenu>
                                         <MenuItem Header="隐藏当前列" Click="HideCurrentColumn_Click"/>
@@ -218,7 +225,7 @@
                                     <DataGridTemplateColumn Header="前景图案" Width="200">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <ComboBox ItemsSource="{Binding Path=DataContext.AvailableFillPatterns, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                <ComboBox Style="{DynamicResource CompactComboBox}" ItemsSource="{Binding Path=DataContext.AvailableFillPatterns, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           SelectedValue="{Binding ForePatternId, UpdateSourceTrigger=PropertyChanged}"
                                                           SelectedValuePath="Id" DropDownClosed="FillPattern_DropDownClosed" PreviewMouseWheel="PatternComboBox_PreviewMouseWheel" Tag="Fore">
                                                     <ComboBox.ItemTemplate>
@@ -242,7 +249,7 @@
                                     <DataGridTemplateColumn Header="背景图案" Width="200">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <ComboBox ItemsSource="{Binding Path=DataContext.AvailableFillPatterns, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                <ComboBox Style="{DynamicResource CompactComboBox}" ItemsSource="{Binding Path=DataContext.AvailableFillPatterns, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           SelectedValue="{Binding BackPatternId, UpdateSourceTrigger=PropertyChanged}"
                                                           SelectedValuePath="Id" DropDownClosed="FillPattern_DropDownClosed" PreviewMouseWheel="PatternComboBox_PreviewMouseWheel" Tag="Back">
                                                     <ComboBox.ItemTemplate>
@@ -290,7 +297,7 @@
                                     <DataGridTemplateColumn Header="线型图案" Width="250">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <ComboBox ItemsSource="{Binding Path=DataContext.AvailableLinePatterns, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                <ComboBox Style="{DynamicResource CompactComboBox}" ItemsSource="{Binding Path=DataContext.AvailableLinePatterns, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           SelectedValue="{Binding LinePatternId, Mode=TwoWay, UpdateSourceTrigger=Explicit}"
                                                           SelectedValuePath="Id" DropDownClosed="LinePattern_DropDownClosed" PreviewMouseWheel="PatternComboBox_PreviewMouseWheel" Margin="2">
                                                     <ComboBox.ItemTemplate>

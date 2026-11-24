@@ -118,11 +118,11 @@
                     </Grid.ColumnDefinitions>
 
                     <TextBlock Text="范围" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryText}" Margin="0,0,6,0"/>
-                    <ComboBox Grid.Column="1" x:Name="ScopeComboBox" Height="28" SelectionChanged="ScopeChanged"/>
+                    <ComboBox Grid.Column="1" x:Name="ScopeComboBox" Height="28" Style="{DynamicResource CompactComboBox}" SelectionChanged="ScopeChanged"/>
                     <TextBlock Grid.Column="2" Text="类型过滤" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryText}" Margin="16,0,6,0"/>
-                    <ComboBox Grid.Column="3" x:Name="TypeFilterComboBox" Height="28" SelectionChanged="QuickFilterChanged"/>
+                    <ComboBox Grid.Column="3" x:Name="TypeFilterComboBox" Height="28" Style="{DynamicResource CompactComboBox}" SelectionChanged="QuickFilterChanged"/>
                     <TextBlock Grid.Column="4" Text="标高过滤" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryText}" Margin="16,0,6,0"/>
-                    <ComboBox Grid.Column="5" x:Name="LevelFilterComboBox" Height="28" SelectionChanged="QuickFilterChanged"/>
+                    <ComboBox Grid.Column="5" x:Name="LevelFilterComboBox" Height="28" Style="{DynamicResource CompactComboBox}" SelectionChanged="QuickFilterChanged"/>
                     <Button Grid.Column="6" Content="刷新" Width="72" Height="28" HorizontalAlignment="Right" Click="Refresh_Click"/>
 
                     <StackPanel Grid.Row="1" Grid.ColumnSpan="7" Orientation="Horizontal" VerticalAlignment="Center">

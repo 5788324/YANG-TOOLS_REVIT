@@ -27,7 +27,7 @@
                                Foreground="{DynamicResource TitleText}" FontSize="11" Margin="12,3,0,0"/>
                 </StackPanel>
                 <Button Grid.Column="1" Content="?" Width="30" Height="28" Margin="0,0,6,0"
-                        Style="{DynamicResource StandardButton}" ToolTip="功能说明" Click="HelpButton_Click"/>
+                        Style="{DynamicResource StandardButton}" Padding="0" ToolTip="功能说明" Click="HelpButton_Click"/>
                 <Button Grid.Column="2" Style="{DynamicResource CloseButton}" Click="CloseButton_Click"/>
             </Grid>
         </Border>
@@ -45,7 +45,7 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="搜索" VerticalAlignment="Center" Style="{DynamicResource SecondaryLabel}" Margin="0,0,8,0"/>
-                <TextBox x:Name="SearchBox" Grid.Column="1" Height="28" VerticalContentAlignment="Center"
+                <TextBox x:Name="SearchBox" Grid.Column="1" Style="{DynamicResource CompactTextBox}"
                          TextChanged="SearchBox_TextChanged" ToolTip="筛选当前分类中的名称、内容、所属与类型"/>
                 <Button Grid.Column="3" Content="全选" Width="70" Click="BtnSelectAll_Click"/>
                 <Button Grid.Column="4" Content="全不选" Width="76" Margin="8,0,0,0" Click="BtnSelectNone_Click"/>

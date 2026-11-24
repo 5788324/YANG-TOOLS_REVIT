@@ -955,7 +955,11 @@ namespace YangTools.Revit.UI
             {
                 col.Visibility = System.Windows.Visibility.Visible;
             }
-            RequestRead(LoadTitleblocks, "刷新图框");
+            RequestRead(() =>
+            {
+                LoadAvailableTitleblocks();
+                LoadTitleblocks();
+            }, "刷新图框");
         }
 
         private void HideColumn_Click(object sender, RoutedEventArgs e)

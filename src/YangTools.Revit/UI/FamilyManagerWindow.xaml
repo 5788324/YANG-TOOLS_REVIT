@@ -34,10 +34,11 @@
                 <Setter Property="Background" Value="{DynamicResource GridHeaderBg}"/>
                 <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
-                <Setter Property="Padding" Value="8,6"/>
+                <Setter Property="Padding" Value="5,0"/>
                 <Setter Property="BorderBrush" Value="{DynamicResource GridLine}"/>
                 <Setter Property="BorderThickness" Value="0,0,1,1"/>
-                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
             </Style>
 
             <Style TargetType="{x:Type ListBoxItem}">
@@ -181,9 +182,9 @@
                             </Grid.ColumnDefinitions>
                             <Grid VerticalAlignment="Center" Margin="0,0,12,0">
                                 <Grid.RowDefinitions>
-                                    <RowDefinition Height="28"/>
-                                    <RowDefinition Height="22"/>
                                     <RowDefinition Height="24"/>
+                                    <RowDefinition Height="20"/>
+                                    <RowDefinition Height="20"/>
                                 </Grid.RowDefinitions>
                                 <Grid Grid.Row="0">
                                     <Grid.ColumnDefinitions>
@@ -196,7 +197,7 @@
                                     </Button>
                                 </Grid>
                                 <TextBlock Grid.Row="1" x:Name="SelectedFamilyStatsText" Text="实例 0 · 使用类型 0 · 未使用类型 0 · 当前视图 0" Foreground="{DynamicResource SecondaryText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                <CheckBox Grid.Row="2" x:Name="UnusedTypesOnlyCheckBox" Content="类型表仅显示未使用类型" VerticalAlignment="Center" Checked="UnusedTypesOnlyCheckBox_Changed" Unchecked="UnusedTypesOnlyCheckBox_Changed"/>
+                                <CheckBox Grid.Row="2" x:Name="UnusedTypesOnlyCheckBox" Margin="0" Content="类型表仅显示未使用类型" VerticalAlignment="Center" Checked="UnusedTypesOnlyCheckBox_Changed" Unchecked="UnusedTypesOnlyCheckBox_Changed"/>
                             </Grid>
 
                             <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
