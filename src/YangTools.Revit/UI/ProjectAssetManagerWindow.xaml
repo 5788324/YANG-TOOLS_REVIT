@@ -188,7 +188,12 @@
                                       HorizontalGridLinesBrush="{DynamicResource BtnBg}" VerticalGridLinesBrush="{DynamicResource BtnBg}"
                                       CellEditEnding="AssetDataGrid_CellEditEnding">
                                 <DataGrid.ColumnHeaderStyle>
-                                    <Style TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource SharedDataGridColumnHeaderStyle}">
+                                    <Style TargetType="{x:Type DataGridColumnHeader}">
+                                        <Setter Property="Background" Value="{DynamicResource GridHeaderBg}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                        <Setter Property="BorderBrush" Value="{DynamicResource GridLine}"/>
+                                        <Setter Property="BorderThickness" Value="0,0,1,1"/>
                                         <Setter Property="Padding" Value="5,0"/>
                                         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                                         <Setter Property="VerticalContentAlignment" Value="Center"/>

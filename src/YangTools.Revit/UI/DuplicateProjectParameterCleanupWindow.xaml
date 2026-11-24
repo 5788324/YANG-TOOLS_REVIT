@@ -89,7 +89,12 @@
                       CanUserSortColumns="True" CanUserReorderColumns="True"
                       RowHeight="25" ColumnHeaderHeight="30">
                 <DataGrid.ColumnHeaderStyle>
-                    <Style TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource SharedDataGridColumnHeaderStyle}">
+                    <Style TargetType="{x:Type DataGridColumnHeader}">
+                        <Setter Property="Background" Value="{DynamicResource GridHeaderBg}"/>
+                        <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
+                        <Setter Property="FontWeight" Value="SemiBold"/>
+                        <Setter Property="BorderBrush" Value="{DynamicResource GridLine}"/>
+                        <Setter Property="BorderThickness" Value="0,0,1,1"/>
                         <Setter Property="Padding" Value="8,2"/>
                         <Setter Property="VerticalContentAlignment" Value="Center"/>
                     </Style>
