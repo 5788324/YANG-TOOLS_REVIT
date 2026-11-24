@@ -15,7 +15,7 @@ req = (root / 'McpServer/requirements.txt').read_text(encoding='utf-8')
 mcpdoc = (root / 'docs/MCP_2026_07_28_SDK_V2_EVALUATION_20260814.md').read_text(encoding='utf-8')
 
 check('命令存在', 'class FamilyMaterialBindingCommand' in cmd)
-check('Ribbon 名称批量绑定材质', '"批量绑定材质"' in cmd and '"项目管理区"' in cmd)
+check('Ribbon 批量绑材', 'buttonText: "批量绑材"' in cmd and 'panelName: "模型修改区"' in cmd)
 check('项目文档入口', 'doc.IsFamilyDocument' in cmd)
 check('批量确认', '确认批量绑定材质' in cmd)
 check('请求支持参数名', 'ParameterName' in svc)

@@ -21,7 +21,7 @@ namespace YangTools.Revit.Core
 #if REVIT2024_OR_GREATER
             return new ElementId(idValue);
 #else
-            return new ElementId((int)idValue);
+            return new ElementId(checked((int)idValue));
 #endif
         }
 

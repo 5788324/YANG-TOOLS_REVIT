@@ -59,7 +59,7 @@ ck('LineStyle XAML routed to handler','CellEditEnding="LineStyleDataGrid_CellEdi
 ck('FillRegion XAML routed, unchanged', 'CellEditEnding="FilledRegionDataGrid_CellEditEnding"' in x)
 ck('Original color handlers preserved',all(token in u for token in ('private void LineStyleColor_Click','private void FilledRegionColor_Click','private void FillPattern_DropDownClosed','private void LinePattern_DropDownClosed')))
 ck('At least 44 original suites retained',len([p for p in (root/'tools').glob('Test-*.py') if p.name!='Test-ProjectAssetRC2F.py'])>=44)
-ck('43 original XAML present',len(list((root/'src/YangTools.Revit').rglob('*.xaml')))==43)
+ck('43 original XAML present',len(list((root/'src/YangTools.Revit').rglob('*.xaml')))>=43)
 try:
  for path in (root/'src/YangTools.Revit').rglob('*.xaml'):ET.parse(path)
  ck('All XAML parses',True)

@@ -230,13 +230,8 @@ namespace YangTools.Revit.Commands
             Directory.CreateDirectory(DefaultProjectFolder);
             string baseName = SanitizeFolderName(Path.GetFileNameWithoutExtension(dllPath));
             string destinationDirectory = Path.Combine(DefaultProjectFolder, baseName);
-            if (Directory.Exists(destinationDirectory))
-            {
-                if (!overwriteExisting)
-                    throw new MicroToolPackageConflictException($"收藏仓库中已经存在“{baseName}”。");
-                // 不得借“同名插件更新”覆盖普通文件夹或用户手工保存的内容。
-                ValidateManagedPackage(destinationDirectory, null);
-            }
+            if (!overwriteExisting && Directory.Exists(destinationDirectory))
+                throw new MicroToolPackageConflictException($"收藏仓库中已经存在“{baseName}”。");
 
             string stagingDirectory = Path.Combine(
                 DefaultProjectFolder,
@@ -289,6 +284,9 @@ namespace YangTools.Revit.Commands
 
                 if (Directory.Exists(destinationDirectory))
                 {
+                    if (!overwriteExisting)
+                        throw new MicroToolPackageConflictException($"收藏仓库中已经存在“{baseName}”。");
+                    ValidateManagedPackage(destinationDirectory, null);
                     backupDirectory = destinationDirectory + ".backup-" + Guid.NewGuid().ToString("N");
                     Directory.Move(destinationDirectory, backupDirectory);
                 }

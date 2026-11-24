@@ -15,8 +15,8 @@ checks = []
 def check(name, ok): checks.append((name, bool(ok)))
 
 check('简易命令存在', 'class SimpleFamilyMaterialBindingCommand' in cmd)
-check('简易 Ribbon 名称', '"项目管理区"' in cmd and '"绑定材质"' in cmd)
-check('批量 Ribbon 改名', '"批量绑定材质"' in bulk_cmd)
+check('简易 Ribbon 名称', 'panelName: "模型修改区"' in cmd and 'buttonText: "材质绑定"' in cmd)
+check('批量 Ribbon 名称', 'buttonText: "批量绑材"' in bulk_cmd)
 check('预选实例', 'Selection.GetElementIds()' in cmd and 'OfType<FamilyInstance>()' in cmd)
 check('无预选时 PickObjects', 'PickObjects(' in cmd and 'FamilyInstanceSelectionFilter' in cmd)
 check('支持重新选择', 'ReselectRequested' in cmd and 'PickInstances(uidoc)' in cmd)

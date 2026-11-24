@@ -48,7 +48,7 @@ namespace YangTools.Revit.UI
 
         private void LoadColumnTypesAndLevels()
         {
-            _handler.SetAction(app =>
+            _handler.EnqueueAndRaise(_externalEvent, app =>
             {
                 if (_isClosed) return;
                 Document doc = app.ActiveUIDocument.Document;
@@ -129,7 +129,6 @@ namespace YangTools.Revit.UI
                 });
             }, "加载柱类型与标高", showSuccess: false);
 
-            _externalEvent.Raise();
         }
 
         private static bool IsSupportedColumnSymbol(FamilySymbol symbol)
@@ -187,7 +186,7 @@ namespace YangTools.Revit.UI
         private void PickRoute_Click(object sender, RoutedEventArgs e)
         {
             long requestVersion = ++_requestVersion;
-            _handler.SetAction(app =>
+            _handler.EnqueueAndRaise(_externalEvent, app =>
             {
                 if (_isClosed || requestVersion != _requestVersion) return;
                 Dispatcher.Invoke(Hide);
@@ -231,7 +230,6 @@ namespace YangTools.Revit.UI
                 }
             }, "选择沿线布柱路线", showSuccess: false);
 
-            _externalEvent.Raise();
         }
 
         private void StartPlacement_Click(object sender, RoutedEventArgs e)
@@ -251,7 +249,7 @@ namespace YangTools.Revit.UI
             }
 
             long requestVersion = ++_requestVersion;
-            _handler.SetAction(app =>
+            _handler.EnqueueAndRaise(_externalEvent, app =>
             {
                 if (_isClosed || requestVersion != _requestVersion) return;
                 PlacementStatus.Text = string.Empty;
@@ -280,7 +278,6 @@ namespace YangTools.Revit.UI
                             $"{result.CreatedCount} 根柱已提交到模型，但选择或刷新界面失败：{uiError.Message}。请检查模型，不要直接重复布置。");
                 }
             }, "沿线布置柱", showSuccess: false);
-            _externalEvent.Raise();
         }
 
         // Invalid WPF double bindings retain the previous ViewModel value. Reject these
@@ -313,6 +310,7 @@ namespace YangTools.Revit.UI
         {
             _isClosed = true;
             ++_requestVersion;
+            _externalEvent.Dispose();
             SaveCurrentSettings();
             base.OnClosed(e);
         }

@@ -48,7 +48,7 @@ ck('Success result after commit',position(src,'Changed = true') > position(src,'
 ck('No Revit UIDocument drift','app.ActiveUIDocument' not in body)
 ck('Service bound to original Document','ProjectAssetLineColorService.Execute(_doc, request)' in body)
 ck('Dialog once','new ColorSelectionDialog' in body and body.count('new ColorSelectionDialog')==1)
-ck('Dialog before queuing', position(body,'colorDialog.Show()') < position(body,'_handler.SetAction('))
+ck('Dialog before queuing', position(body,'colorDialog.Show()') < position(body,'_handler.EnqueueAndRaise('))
 ck('Cancellation no request','if (colorDialog.Show() != ItemSelectionDialogResult.Confirmed) return;' in body)
 ck('No source UI Transaction','new Transaction(' not in body)
 ck('Request freezes ID','CategoryId = viewModel.Id' in body)
@@ -72,7 +72,7 @@ ck('Existing fill color button retained','Click="FilledRegionColor_Click"' in xa
 ck('Existing line pattern retained','DropDownClosed="LinePattern_DropDownClosed"' in xaml)
 ck('MCP preserved in source', (root/'McpServer/server.py').is_file())
 ck('45 previous test suites retained',len([p for p in (root/'tools').glob('Test-*.py') if p.name != 'Test-ProjectAssetRC2G.py'])>=45)
-ck('43 XAML files preserved',len(list((root/'src/YangTools.Revit').rglob('*.xaml')))==43)
+ck('43 XAML files preserved',len(list((root/'src/YangTools.Revit').rglob('*.xaml')))>=43)
 try:
     for x in (root/'src/YangTools.Revit').rglob('*.xaml'): ET.parse(x)
     ck('All XAML XML parses',True)

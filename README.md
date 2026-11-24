@@ -1,6 +1,16 @@
+# YangTools 4.0.0 PersonalPilot
+
+[当前试用分支与实测记录](https://github.com/5788324/YANG-TOOLS_REVIT/pull/15) · [Ribbon 工具目录](docs/RIBBON_FEATURE_CATALOG_RC3J.md)
+
+试用包使用 Revit 2021–2026 的独立构建。解压后可打开「YangTools安装器.cmd」，或在 PowerShell 用 `Install.ps1 -Versions 2025` 安装指定年份。用 `Rollback.ps1 -Version 2025` 恢复上一版。回退中断时，重新执行同一条回退命令可继续本版本已记录的步骤。
+
+源码构建使用 `tools/Build-All.ps1`，默认编译 2021–2026。Revit 2027 使用 .NET 10 SDK 并须显式选择。编译与实机记录见上方 PR。
+
+以下为历次开发记录。
+
 ## 2026-10-21｜RC3H：删除钢筋测试12入口 / CAD文档语义守卫修复 / 2025-2026 API固定
 
-- **当前唯一源码候选 RC3H**，从 RC3G 派生；RC3G 2021–2026 BUILD GO 是历史编译基线，**不能推断 RC3H 编译/运行通过**。
+- **当时的源码候选 RC3H**，从 RC3G 派生；RC3G 2021–2026 BUILD GO 是历史编译基线，**不能推断 RC3H 编译/运行通过**。
 - 按用户指令删除“钢筋测试”下12个独立 `Rebar*Command` 命令类和26张对应图标，Ribbon 预期 44→32；同时撤销12个不再适用的老静态入口脚本与历史输出。**保留生产 GR01 渐变钢筋集**；被 GR01 或已发布 MCP wire 共同使用的 Rebar Core/业务服务仍保留，避免误伤依赖。MCP 入口没有删除，不要把本轮理解为删除所有钢筋后端能力。
 - “从 CAD 粘贴”修复目标文档判定：原 `ReferenceEquals(Document, Document)` 变为通过 `Document.Equals` 比较 Revit 文档身份，保留原有 `ActiveView.Id`、只读、事务、回读、单次 Undo 防护。同步修正 CAD 转 Revit 图纸（两处）、布尔几何、实体提取、批任务中文档身份比较。**不能仅凭静态修复认定导入实机 PASS**。
 - 2025 API/2026 API NuGet `RevitAPI` 与 `RevitAPIUI` 版本固定到 `2025.4.20` / `2026.4.0`（对应已知最小用户宿主补丁）；包可从 NuGet 精确引用但存在 unlisted 状态，Windows 离线环境能否拿到两个版本必须复测；2021–2024/2027 原有浮动版本待后续严格冻结。
@@ -561,7 +571,7 @@ AI 或开发者接手前必须完整阅读：
 
 每个版本必须解压到**全新的空目录**，禁止覆盖旧版本目录。覆盖解压不会删除已经移除的 `.cs` / `.xaml` 文件，可能把废弃 Ribbon 命令重新编译进 DLL。
 
-解压后先双击 `核验源码.cmd` 或 `Verify-SourceBaseline.cmd`，核验通过后再编译。
+`核验源码.cmd` 和 `Verify-SourceBaseline.cmd` 对应历史源码基线。PersonalPilot 按本页顶部的构建入口编译。
 ## 安装与卸载
 
 正式安装包生成后，优先双击 `YangTools安装器.cmd`：

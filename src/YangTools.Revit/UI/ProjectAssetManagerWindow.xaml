@@ -133,20 +133,7 @@
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,10,0">
                         <TextBlock Text="搜索" VerticalAlignment="Center" Foreground="{DynamicResource TitleText}" Margin="0,0,6,0"/>
                         <TextBox x:Name="SearchBox" Width="150" Margin="0,0,20,0" Padding="2" VerticalAlignment="Center" TextChanged="SearchBox_TextChanged" ToolTip="按名称或图元 ID 搜索当前列表"/>
-                        <Button Click="CloseButton_Click" Width="40" Background="Transparent" BorderThickness="0" Foreground="{DynamicResource TitleText}" FontSize="18" Content="×">
-                            <Button.Template>
-                                <ControlTemplate TargetType="{x:Type Button}">
-                                    <Border x:Name="bg" Background="Transparent" CornerRadius="0,8,0,0">
-                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="bg" Property="Background" Value="{DynamicResource DangerBg}"/>
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Button.Template>
-                        </Button>
+                        <Button Style="{DynamicResource CloseButton}" Click="CloseButton_Click"/>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -195,19 +182,31 @@
                     <!-- Center/Right: DataGrid -->
                     <Border Grid.Column="2" Background="{DynamicResource GridRowBg}" BorderBrush="{DynamicResource BtnBorder}" BorderThickness="1" CornerRadius="4">
                         <Grid>
-                            <DataGrid x:Name="AssetDataGrid" AutoGenerateColumns="False" CanUserAddRows="False" 
+                            <DataGrid x:Name="AssetDataGrid" ColumnHeaderHeight="36" AutoGenerateColumns="False" CanUserAddRows="False" 
                                       HeadersVisibility="Column" Background="Transparent" BorderThickness="0"
                                       RowBackground="{DynamicResource GridRowBg}" AlternatingRowBackground="{DynamicResource GridAltRowBg}"
                                       HorizontalGridLinesBrush="{DynamicResource BtnBg}" VerticalGridLinesBrush="{DynamicResource BtnBg}"
                                       CellEditEnding="AssetDataGrid_CellEditEnding">
+                                <DataGrid.ColumnHeaderStyle>
+                                    <Style TargetType="{x:Type DataGridColumnHeader}">
+                                        <Setter Property="Background" Value="{DynamicResource GridHeaderBg}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                        <Setter Property="BorderBrush" Value="{DynamicResource GridLine}"/>
+                                        <Setter Property="BorderThickness" Value="0,0,1,1"/>
+                                        <Setter Property="Padding" Value="5,0"/>
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                        <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                    </Style>
+                                </DataGrid.ColumnHeaderStyle>
                                 <DataGrid.ContextMenu>
                                     <ContextMenu>
                                         <MenuItem Header="隐藏当前列" Click="HideCurrentColumn_Click"/>
-                                        <MenuItem Header="恢复隐藏列" Click="RestoreHiddenColumns_Click"/>
+                                        <MenuItem Header="显示所有列（含图元 ID）" Click="RestoreHiddenColumns_Click"/>
                                     </ContextMenu>
                                 </DataGrid.ContextMenu>
                                 <DataGrid.Columns>
-                                    <DataGridTextColumn Header="图元 ID" Binding="{Binding AssetIdValue}" IsReadOnly="True" Width="100"/>
+                                    <DataGridTextColumn Visibility="Collapsed" Header="图元 ID" Binding="{Binding AssetIdValue}" IsReadOnly="True" Width="100"/>
                                     <DataGridTextColumn Header="名称" Binding="{Binding AssetName, UpdateSourceTrigger=Explicit}" IsReadOnly="False" Width="200"/>
                                 </DataGrid.Columns>
                             </DataGrid>
@@ -231,12 +230,12 @@
                                     <DataGridTemplateColumn Header="前景图案" Width="200">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <ComboBox ItemsSource="{Binding Path=DataContext.AvailableFillPatterns, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                <ComboBox Style="{DynamicResource CompactComboBox}" ItemsSource="{Binding Path=DataContext.AvailableFillPatterns, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           SelectedValue="{Binding ForePatternId, UpdateSourceTrigger=PropertyChanged}"
                                                           SelectedValuePath="Id" DropDownClosed="FillPattern_DropDownClosed" PreviewMouseWheel="PatternComboBox_PreviewMouseWheel" Tag="Fore">
                                                     <ComboBox.ItemTemplate>
                                                         <DataTemplate>
-                                                            <TextBlock Text="{Binding Name}" Margin="5,2" VerticalAlignment="Center"/>
+                                                            <TextBlock Text="{Binding Name}" Margin="2,0" VerticalAlignment="Center"/>
                                                         </DataTemplate>
                                                     </ComboBox.ItemTemplate>
                                                 </ComboBox>
@@ -255,12 +254,12 @@
                                     <DataGridTemplateColumn Header="背景图案" Width="200">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <ComboBox ItemsSource="{Binding Path=DataContext.AvailableFillPatterns, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                <ComboBox Style="{DynamicResource CompactComboBox}" ItemsSource="{Binding Path=DataContext.AvailableFillPatterns, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           SelectedValue="{Binding BackPatternId, UpdateSourceTrigger=PropertyChanged}"
                                                           SelectedValuePath="Id" DropDownClosed="FillPattern_DropDownClosed" PreviewMouseWheel="PatternComboBox_PreviewMouseWheel" Tag="Back">
                                                     <ComboBox.ItemTemplate>
                                                         <DataTemplate>
-                                                            <TextBlock Text="{Binding Name}" Margin="5,2" VerticalAlignment="Center"/>
+                                                            <TextBlock Text="{Binding Name}" Margin="2,0" VerticalAlignment="Center"/>
                                                         </DataTemplate>
                                                     </ComboBox.ItemTemplate>
                                                 </ComboBox>
@@ -303,12 +302,12 @@
                                     <DataGridTemplateColumn Header="线型图案" Width="250">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <ComboBox ItemsSource="{Binding Path=DataContext.AvailableLinePatterns, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                <ComboBox Style="{DynamicResource CompactComboBox}" ItemsSource="{Binding Path=DataContext.AvailableLinePatterns, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           SelectedValue="{Binding LinePatternId, Mode=TwoWay, UpdateSourceTrigger=Explicit}"
                                                           SelectedValuePath="Id" DropDownClosed="LinePattern_DropDownClosed" PreviewMouseWheel="PatternComboBox_PreviewMouseWheel" Margin="2">
                                                     <ComboBox.ItemTemplate>
                                                         <DataTemplate>
-                                                            <TextBlock Text="{Binding Name}" Margin="5,2" VerticalAlignment="Center"/>
+                                                            <TextBlock Text="{Binding Name}" Margin="2,0" VerticalAlignment="Center"/>
                                                         </DataTemplate>
                                                     </ComboBox.ItemTemplate>
                                                 </ComboBox>

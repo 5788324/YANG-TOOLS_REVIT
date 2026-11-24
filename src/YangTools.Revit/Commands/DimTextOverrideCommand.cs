@@ -89,7 +89,6 @@ public class DimTextOverrideCommand : IExternalCommand
 				catch (Exception ex)
 				{
 					if (val2.GetStatus() == TransactionStatus.Started) val2.RollBack();
-					TaskDialog.Show("错误", $"操作失败，已撤销。\n错误信息: {ex.Message}");
 					message = ex.Message;
 					return Result.Failed;
 				}
@@ -103,7 +102,6 @@ public class DimTextOverrideCommand : IExternalCommand
 		catch (Exception ex)
 		{
 			message = ex.Message;
-			TaskDialog.Show("错误", "执行 [标注替换] 时捕获异常：\n" + ex.Message);
 			return Result.Failed;
 		}
 	}

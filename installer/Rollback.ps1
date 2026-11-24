@@ -15,18 +15,49 @@ $manifest = Join-Path $root 'YangTools.Revit.addin'
 $manifestBackup = Join-Path $root 'YangTools.Revit.addin.backup'
 $tmp = Join-Path $root 'YangTools.rollback_current'
 $tmpManifest = Join-Path $root 'YangTools.Revit.addin.rollback_current'
-foreach ($path in @($target, $backup, $manifest, $manifestBackup)) {
-    if (-not (Test-Path -LiteralPath $path)) { throw "缺少当前版本或上一版备份：$path" }
+$progress = Join-Path $root 'YangTools.rollback_progress'
+$completed = $progress + '.complete'
+if (Test-Path -LiteralPath $completed) {
+    Remove-Item -LiteralPath $completed -Recurse -Force
+    Write-Host "Revit $Version 的回退已完成。" -ForegroundColor Green
+    return
 }
-foreach ($path in @($tmp, $tmpManifest)) {
-    if (Test-Path -LiteralPath $path) { throw "检测到上次未完成的回退临时文件：$path。请先检查，避免覆盖。" }
+if (-not (Test-Path -LiteralPath $progress)) {
+    foreach ($path in @($tmp, $tmpManifest)) {
+        if (Test-Path -LiteralPath $path) {
+            throw "发现旧版回退留下的临时文件：$path。请保留现有目录和 .addin 备份，核对当前版及上一版后再恢复。"
+        }
+    }
+    foreach ($path in @($target, $backup, $manifest, $manifestBackup)) {
+        if (-not (Test-Path -LiteralPath $path)) { throw "缺少当前版本或上一版备份：$path" }
+    }
+    New-Item -ItemType Directory -Path $progress | Out-Null
 }
 
-# 同目录依次交换，不删除任一版本。执行完毕后 .backup 保存刚替换掉的版本。
-Move-Item -LiteralPath $target -Destination $tmp
-Move-Item -LiteralPath $backup -Destination $target
-Move-Item -LiteralPath $tmp -Destination $backup
-Move-Item -LiteralPath $manifest -Destination $tmpManifest
-Move-Item -LiteralPath $manifestBackup -Destination $manifest
-Move-Item -LiteralPath $tmpManifest -Destination $manifestBackup
+$steps = @(
+    @{ From = $target; To = $tmp },
+    @{ From = $backup; To = $target },
+    @{ From = $tmp; To = $backup },
+    @{ From = $manifest; To = $tmpManifest },
+    @{ From = $manifestBackup; To = $manifest },
+    @{ From = $tmpManifest; To = $manifestBackup }
+)
+for ($index = 0; $index -lt $steps.Count; $index++) {
+    $done = Join-Path $progress "$index.done"
+    if (Test-Path -LiteralPath $done) { continue }
+
+    $step = $steps[$index]
+    $sourceExists = Test-Path -LiteralPath $step.From
+    $destinationExists = Test-Path -LiteralPath $step.To
+    if ($sourceExists -eq $destinationExists) {
+        throw "回退第 $($index + 1) 步的文件状态无法确认。请保留当前版本、备份和回退记录：$progress"
+    }
+    if ($sourceExists) {
+        Move-Item -LiteralPath $step.From -Destination $step.To
+    }
+    New-Item -ItemType File -Path $done | Out-Null
+}
+# 完成标记需与交换记录一起消失，避免删除中途丢掉已完成的步骤。
+Move-Item -LiteralPath $progress -Destination $completed
+Remove-Item -LiteralPath $completed -Recurse -Force
 Write-Host "Revit $Version 已恢复上一版；被替换的版本仍在 YangTools.backup 中。" -ForegroundColor Green

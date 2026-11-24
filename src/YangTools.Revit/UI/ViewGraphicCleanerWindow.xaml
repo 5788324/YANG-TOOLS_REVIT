@@ -75,20 +75,7 @@
                     Background="{DynamicResource TitleBarGradient}">
                 <Grid>
                     <TextBlock Text="覆盖清理" Foreground="{DynamicResource TitleText}" VerticalAlignment="Center" Margin="15,0,0,0"/>
-                    <Button HorizontalAlignment="Right" VerticalAlignment="Top" Width="40" Height="40" Click="CloseButton_Click" Background="Transparent" BorderThickness="0">
-                        <Button.Template>
-                            <ControlTemplate TargetType="{x:Type Button}">
-                                <Border x:Name="bg" Background="Transparent" CornerRadius="0,7,0,0">
-                                    <Path Data="M 12,12 L 28,28 M 28,12 L 12,28" Stroke="{DynamicResource TitleText}" StrokeThickness="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter TargetName="bg" Property="Background" Value="{DynamicResource DangerBg}"/>
-                                    </Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Button.Template>
-                    </Button>
+                    <Button Style="{DynamicResource CloseButton}" Click="CloseButton_Click"/>
                 </Grid>
             </Border>
 

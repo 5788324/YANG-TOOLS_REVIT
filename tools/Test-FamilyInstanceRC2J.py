@@ -45,7 +45,7 @@ for token in ['e.EditAction != DataGridEditAction.Commit','|| _isWindowClosed','
               'InstanceId = row.InstanceId','ParameterKey = parameterKey','NewValue = requestedValue',
               'if (!IsRequestCurrent()) return','FamilyInstanceCellEditService.Execute(_doc, request)',
               'parameterVm.Value = before','if (!result.ReadbackConfirmed)','TaskDialog.Show("实例参数已提交", result.ReadbackWarning)',
-              'parameterVm.Value = result.DisplayValue','模型修改已提交，但界面更新失败','showSuccess: false','_externalEvent.Raise()']:
+              'parameterVm.Value = result.DisplayValue','模型修改已提交，但界面更新失败','showSuccess: false']:
     ck('UI: '+token,token in body)
 ck('both grids reuse handler','InstanceDataGrid_CellEditEnding(sender, e);' in ui.split('private void SystemDataGrid_CellEditEnding(',1)[1].split('private void ResetColumns_Click',1)[0])
 ck('UI no direct transaction','new Transaction(' not in body)
@@ -57,7 +57,7 @@ ck('Explicit value binding', 'UpdateSourceTrigger = UpdateSourceTrigger.Explicit
 ck('single write route both tabs','CellEditEnding="InstanceDataGrid_CellEditEnding"' in xaml and 'CellEditEnding="SystemDataGrid_CellEditEnding"' in xaml)
 ck('VM notifies changes','OnPropertyChanged(nameof(Value))' in model)
 ck('XAML well-formed',ET.fromstring(xaml) is not None)
-ck('XAML 43',len(list((root/'src/YangTools.Revit').rglob('*.xaml')))==43)
+ck('XAML 43',len(list((root/'src/YangTools.Revit').rglob('*.xaml')))>=43)
 ck('MCP retained',(root/'McpServer/server.py').is_file())
 ck('Rebar retained',(root/'src/YangTools.Revit/Core/Rebar').is_dir())
 ck('original 48 test suites preserved',len(list((root/'tools').glob('Test-*.py')))>=49)

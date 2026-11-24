@@ -27,7 +27,7 @@
                                Foreground="{DynamicResource TitleText}" FontSize="11" Margin="12,3,0,0"/>
                 </StackPanel>
                 <Button Grid.Column="1" Content="?" Width="30" Height="28" Margin="0,0,6,0"
-                        Style="{DynamicResource StandardButton}" ToolTip="功能说明" Click="HelpButton_Click"/>
+                        Style="{DynamicResource StandardButton}" Padding="0" ToolTip="功能说明" Click="HelpButton_Click"/>
                 <Button Grid.Column="2" Style="{DynamicResource CloseButton}" Click="CloseButton_Click"/>
             </Grid>
         </Border>
@@ -45,7 +45,7 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="搜索" VerticalAlignment="Center" Style="{DynamicResource SecondaryLabel}" Margin="0,0,8,0"/>
-                <TextBox x:Name="SearchBox" Grid.Column="1" Height="28" VerticalContentAlignment="Center"
+                <TextBox x:Name="SearchBox" Grid.Column="1" Style="{DynamicResource CompactTextBox}"
                          TextChanged="SearchBox_TextChanged" ToolTip="筛选当前分类中的名称、内容、所属与类型"/>
                 <Button Grid.Column="3" Content="全选" Width="70" Click="BtnSelectAll_Click"/>
                 <Button Grid.Column="4" Content="全不选" Width="76" Margin="8,0,0,0" Click="BtnSelectNone_Click"/>
@@ -104,13 +104,14 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <Grid Margin="0,0,0,8">
+                    <DockPanel Margin="0,0,0,8">
+                        <CheckBox DockPanel.Dock="Right" Content="显示详情" VerticalAlignment="Center" Margin="12,0,0,0" Click="ShowDiagnostics_Click"/>
                         <StackPanel>
                             <TextBlock x:Name="CurrentGroupTitle" Text="请选择分类" Style="{DynamicResource SectionTitle}"/>
                             <TextBlock Text="勾选用于批量操作；双击“名称 / 内容”可以重命名或修改可编辑文本。"
                                        Margin="0,3,0,0" Style="{DynamicResource SecondaryLabel}"/>
                         </StackPanel>
-                    </Grid>
+                    </DockPanel>
 
                     <DataGrid x:Name="ResultGrid" Grid.Row="1" AutoGenerateColumns="False"
                               CanUserAddRows="False" CanUserDeleteRows="False" CanUserReorderColumns="True"
@@ -129,10 +130,10 @@
                                                 Binding="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=Explicit}"/>
                             <DataGridTextColumn Header="所属 / 说明" Width="1.5*" IsReadOnly="True" Binding="{Binding Owner}"/>
                             <DataGridTextColumn Header="类型" Width="112" IsReadOnly="True" Binding="{Binding Category}"/>
-                            <DataGridTextColumn Header="Element ID" Width="92" IsReadOnly="True" Binding="{Binding IdText}"/>
-                            <DataGridCheckBoxColumn Header="可改名" Width="68" IsReadOnly="True" Binding="{Binding CanRename}"/>
-                            <DataGridCheckBoxColumn Header="可删除" Width="68" IsReadOnly="True" Binding="{Binding CanDelete}"/>
-                            <DataGridTextColumn Header="风险" Width="60" IsReadOnly="True" Binding="{Binding RiskText}"/>
+                            <DataGridTextColumn x:Name="DiagnosticIdColumn" Visibility="Collapsed" Header="图元 ID" Width="92" IsReadOnly="True" Binding="{Binding IdText}"/>
+                            <DataGridCheckBoxColumn x:Name="DiagnosticRenameColumn" Visibility="Collapsed" Header="可改名" Width="68" IsReadOnly="True" Binding="{Binding CanRename}"/>
+                            <DataGridCheckBoxColumn x:Name="DiagnosticDeleteColumn" Visibility="Collapsed" Header="可删除" Width="68" IsReadOnly="True" Binding="{Binding CanDelete}"/>
+                            <DataGridTextColumn x:Name="DiagnosticRiskColumn" Visibility="Collapsed" Header="风险" Width="60" IsReadOnly="True" Binding="{Binding RiskText}"/>
                         </DataGrid.Columns>
                     </DataGrid>
 

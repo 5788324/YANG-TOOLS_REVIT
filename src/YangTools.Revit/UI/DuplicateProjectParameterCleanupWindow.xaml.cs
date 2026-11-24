@@ -41,6 +41,13 @@ namespace YangTools.Revit.UI
             AllowDeleteSharedParameters = AllowDeleteSharedCheckBox.IsChecked == true
         };
 
+        private void ParameterDetails_Changed(object sender, RoutedEventArgs e)
+        {
+            if (ParameterLogPanel == null) return;
+            var visibility = ((System.Windows.Controls.Expander)sender).IsExpanded ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+            KeeperIdColumn.Visibility = SourceIdColumn.Visibility = ReferencesColumn.Visibility = ParameterLogPanel.Visibility = visibility;
+        }
+
         private void ScanButton_Click(object sender, RoutedEventArgs e) => RunSafely(Scan);
         private void MergeButton_Click(object sender, RoutedEventArgs e) => RunSafely(Merge);
         private void QuickButton_Click(object sender, RoutedEventArgs e) => RunSafely(QuickProcess);

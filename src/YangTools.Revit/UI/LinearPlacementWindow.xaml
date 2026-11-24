@@ -67,28 +67,7 @@
                     Background="{DynamicResource TitleBarGradient}">
                 <Grid>
                     <TextBlock Text="线性布置 (Linear Placement)" Foreground="{DynamicResource TitleText}" VerticalAlignment="Center" Margin="15,0,0,0" FontWeight="SemiBold" FontSize="14"/>
-                    <Button HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" Width="30" Height="30" Padding="0"
-                            Background="Transparent" BorderThickness="0" Click="CloseButton_Click">
-                        <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource TitleText}" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        <Button.Style>
-                            <Style TargetType="{x:Type Button}">
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="{x:Type Button}">
-                                            <Border Background="{TemplateBinding Background}" CornerRadius="15">
-                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            </Border>
-                                            <ControlTemplate.Triggers>
-                                                <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter Property="Background" Value="{DynamicResource DangerBg}"/>
-                                                </Trigger>
-                                            </ControlTemplate.Triggers>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                            </Style>
-                        </Button.Style>
-                    </Button>
+                    <Button Style="{DynamicResource CloseButton}" Click="CloseButton_Click"/>
                 </Grid>
             </Border>
 
@@ -120,11 +99,11 @@
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0">
                                     <TextBlock Text="起点高程 (mm):" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
-                                    <TextBox Text="{Binding StartElevationMm, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <TextBox Text="{Binding StartElevationMm, UpdateSourceTrigger=LostFocus}"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
                                     <TextBlock Text="终点高程 (mm):" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
-                                    <TextBox Text="{Binding EndElevationMm, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <TextBox Text="{Binding EndElevationMm, UpdateSourceTrigger=LostFocus}"/>
                                 </StackPanel>
                             </Grid>
                             <TextBlock Text="实际世界高度 = 基准标高的项目坐标高程 + 输入高程；若标高使用共享高程显示，也不会重复加减共享坐标偏移。首尾实例精确对应起/终点高程，中间实例按路线位置线性插值。"
@@ -152,17 +131,17 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0">
                             <TextBlock Text="布置起点 (Start Position):" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
-                            <TextBox Text="{Binding StartValue, UpdateSourceTrigger=PropertyChanged}"/>
+                            <TextBox Text="{Binding StartValue, UpdateSourceTrigger=LostFocus}"/>
                         </StackPanel>
                         <StackPanel Grid.Column="2">
                             <TextBlock Text="布置终点 (End Position):" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
-                            <TextBox Text="{Binding EndValue, UpdateSourceTrigger=PropertyChanged}"/>
+                            <TextBox Text="{Binding EndValue, UpdateSourceTrigger=LostFocus}"/>
                         </StackPanel>
                     </Grid>
 
                     <StackPanel Margin="0,0,0,15">
                         <TextBlock Text="{Binding SpacingOrCountLabel}" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
-                        <TextBox Text="{Binding StepValue, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBox Text="{Binding StepValue, UpdateSourceTrigger=LostFocus}"/>
                     </StackPanel>
 
                     <TextBlock Text="方向选项 (Orientation Options):" FontWeight="SemiBold" Margin="0,0,0,5" Foreground="{DynamicResource PrimaryText}"/>
@@ -174,7 +153,7 @@
 
                     <StackPanel Margin="0,0,0,15">
                         <TextBlock Text="旋转偏移 (Rotation Offset, °):" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
-                        <TextBox Text="{Binding RotationOffset, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBox Text="{Binding RotationOffset, UpdateSourceTrigger=LostFocus}"/>
                         <TextBlock Text="注: 默认朝向(0)对齐垂直方向90至-90" Foreground="{DynamicResource SecondaryText}" FontSize="11" Margin="0,2,0,0"/>
                     </StackPanel>
                 </StackPanel>

@@ -64,17 +64,14 @@ namespace YangTools.Revit.UI
             PopulateFamilyFilter();
             PopulateSystemCategoryFilter();
 
-            // If a family ID was passed (from Family Manager), pre-select it
             if (familyId != null && familyId != ElementId.InvalidElementId)
             {
-                for (int i = 0; i < FamilyFilterComboBox.Items.Count; i++)
+                Loaded += SelectInitialFamily;
+
+                void SelectInitialFamily(object sender, RoutedEventArgs e)
                 {
-                    var item = FamilyFilterComboBox.Items[i] as FamilyFilterItem;
-                    if (item != null && item.FamilyId == familyId)
-                    {
-                        FamilyFilterComboBox.SelectedIndex = i;
-                        break;
-                    }
+                    Loaded -= SelectInitialFamily;
+                    SelectFamily(familyId);
                 }
             }
         }
@@ -246,15 +243,13 @@ namespace YangTools.Revit.UI
                 "YangTools", $"InstanceConfig_{safeName}.txt");
 
             LoadConfig();
+            EmptyStatePanel.Visibility = System.Windows.Visibility.Collapsed;
             RequestRead(() =>
             {
                 CreateDynamicColumns();
                 LoadData();
                 RefreshBatchOptions();
             }, "加载族实例");
-
-            EmptyStatePanel.Visibility = System.Windows.Visibility.Collapsed;
-            InstanceDataGrid.Visibility = System.Windows.Visibility.Visible;
         }
 
         private void SystemCategoryChanged(object sender, SelectionChangedEventArgs e)
@@ -279,15 +274,13 @@ namespace YangTools.Revit.UI
                 "YangTools", $"SystemInstanceConfig_{_selectedSystemCategory}.txt");
 
             LoadConfig();
+            SystemEmptyStatePanel.Visibility = System.Windows.Visibility.Collapsed;
             RequestRead(() =>
             {
                 CreateSystemDynamicColumns();
                 LoadSystemData();
                 RefreshBatchOptions();
             }, "加载系统实例");
-
-            SystemEmptyStatePanel.Visibility = System.Windows.Visibility.Collapsed;
-            SystemDataGrid.Visibility = System.Windows.Visibility.Visible;
         }
 
         private void LoadConfig()
@@ -381,10 +374,9 @@ namespace YangTools.Revit.UI
                     ItemsSource = availableParams,
                     SelectedValuePath = "Key",
                     DisplayMemberPath = "DisplayName",
-                    Width = 170,
-                    MinWidth = 140,
-                    MaxWidth = 220,
-                    Margin = new Thickness(0, 0, 4, 0),
+                    Height = 26,
+                    Padding = new Thickness(4, 0, 4, 0),
+                    VerticalContentAlignment = VerticalAlignment.Center,
                     ToolTip = "按稳定 ParameterKey 保存；重复同名参数会显示身份后缀。"
                 };
                 if (!string.IsNullOrEmpty(pKey)) combo.SelectedValue = pKey;
@@ -462,8 +454,6 @@ namespace YangTools.Revit.UI
             grid.Columns.Add(addCol);
 
             BatchParameterComboBox.ItemsSource = _availableInstanceParameters;
-            BatchParameterComboBox.DisplayMemberPath = "DisplayName";
-            BatchParameterComboBox.SelectedValuePath = "Key";
         }
 
         private List<Element> CollectParameterDiscoveryElements(bool isSystem)
@@ -564,6 +554,7 @@ namespace YangTools.Revit.UI
             _collectionView.GroupDescriptions.Add(new PropertyGroupDescription("TypeName"));
             _collectionView.Filter = FilterItem;
             InstanceDataGrid.ItemsSource = _collectionView;
+            InstanceDataGrid.Visibility = System.Windows.Visibility.Visible;
             UpdateQuickFilterChoices(AllItems);
             UpdateStatusText();
         }
@@ -599,6 +590,7 @@ namespace YangTools.Revit.UI
             _systemCollectionView.GroupDescriptions.Add(new PropertyGroupDescription("TypeName"));
             _systemCollectionView.Filter = FilterSystemItem;
             SystemDataGrid.ItemsSource = _systemCollectionView;
+            SystemDataGrid.Visibility = System.Windows.Visibility.Visible;
             UpdateQuickFilterChoices(SystemAllItems);
             UpdateStatusText();
         }

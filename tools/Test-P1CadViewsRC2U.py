@@ -47,17 +47,15 @@ assert_check('paste_no_wrong_import_fail_return','return Result.Failed;' not in 
 for k,x in {
 'cad_original_document_bound':'DocumentIdentityGuard.IsSameActiveDocument(uiapp, document)',
 'cad_original_view_bound':'document.ActiveView.Id.GetIdValue() != view.Id.GetIdValue()',
-'cad_view_checked_again':'确认期间目标文档或活动视图已改变',
 'cad_readonly_rechecked':'document.IsReadOnly',
-'cad_partial_dialog':'CAD 转 Revit 图纸 - 部分完成',
+'cad_partial_dialog':'CAD 转 Revit 图纸 · 部分完成',
 'cad_partial_count':'result.Failures.Count > 0',
 'cad_original_service':'CadToRevitRebuildService.Execute(document, view, request)',
-'cad_user_yes':'confirm.Show() != TaskDialogResult.Yes',
+'cad_user_accepts_configuration':'window.ShowDialog() != true || window.Request == null',
 'cad_v1_project_only':'document.IsFamilyDocument',
 'cad_view_whitelist':'IsSupportedView(view)',
 }.items():contains(k,cad,x)
-order('cad_confirmation_then_second_context_guard',cad,['confirm.Show() != TaskDialogResult.Yes','确认期间目标文档或活动视图已改变','CadToRevitRebuildService.Execute(document, view, request)'])
-assert_check('cad_context_checks_both_dialogs',cad.count('DocumentIdentityGuard.IsSameActiveDocument(uiapp, document)')==2)
+order('cad_context_checked_after_dialog_before_write',cad,['window.ShowDialog() != true','DocumentIdentityGuard.IsSameActiveDocument(uiapp, document)','CadToRevitRebuildService.Execute(document, view, request)'])
 for k,x in {
 'section_readonly_family_block':'doc.IsFamilyDocument || doc.IsReadOnly',
 'section_short_curve':'doc.Application.ShortCurveTolerance',

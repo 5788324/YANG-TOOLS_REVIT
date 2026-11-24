@@ -75,8 +75,7 @@ namespace YangTools.Revit.Commands
             catch (Exception ex)
             {
                 string log = DiagnosticLog.WriteError("族类别修改", ex);
-                TaskDialog.Show("族类别修改失败", $"{ex.Message}\n\n诊断日志：{log}");
-                message = ex.Message;
+                message = $"族类别修改失败：{ex.Message}\n\n诊断日志：{log}";
                 return Result.Failed;
             }
         }

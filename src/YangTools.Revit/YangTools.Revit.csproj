@@ -117,11 +117,11 @@
       <Link>Icons\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </Content>
     <Content Include="UI\Themes\**\*.*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Link>UI\Themes\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </Content>
     <Content Include="UI\SharedStyles.xaml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Link>UI\SharedStyles.xaml</Link>
     </Content>
     <Content Include="..\..\MicroTool_Developer_Guide V3.md">
@@ -185,19 +185,19 @@
     <Message Text="[Auto Deploy] 正在部署至 Revit $(Configuration) Addins 目录..." Importance="high" />
     
     <ItemGroup>
-      <DeployDlls Include="$(TargetDir)*.dll" />
+      <DeployDlls Include="$(TargetDir)*.dll" Exclude="$(TargetDir)RevitAPI.dll;$(TargetDir)RevitAPIUI.dll" />
       <DeployPdbs Include="$(TargetDir)*.pdb" />
       <IconFiles Include="$(TargetDir)Icons\**\*.*" />
       <UiFiles Include="$(TargetDir)UI\**\*.*" />
       <DocFiles Include="$(TargetDir)Docs\**\*.*" />
     </ItemGroup>
     
-    <Copy SourceFiles="YangTools.Revit.addin" DestinationFolder="$(RevitAddinsDir)\$(Configuration)\" ContinueOnError="true" />
-    <Copy SourceFiles="@(DeployDlls)" DestinationFolder="$(RevitAddinsDir)\$(Configuration)\YangTools\" ContinueOnError="true" />
-    <Copy SourceFiles="@(DeployPdbs)" DestinationFolder="$(RevitAddinsDir)\$(Configuration)\YangTools\" ContinueOnError="true" />
-    <Copy SourceFiles="@(IconFiles)" DestinationFolder="$(RevitAddinsDir)\$(Configuration)\YangTools\Icons\%(RecursiveDir)" ContinueOnError="true" />
-    <Copy SourceFiles="@(UiFiles)" DestinationFolder="$(RevitAddinsDir)\$(Configuration)\YangTools\UI\%(RecursiveDir)" ContinueOnError="true" />
-    <Copy SourceFiles="@(DocFiles)" DestinationFolder="$(RevitAddinsDir)\$(Configuration)\YangTools\Docs\%(RecursiveDir)" ContinueOnError="true" />
+    <Copy SourceFiles="YangTools.Revit.addin" DestinationFolder="$(RevitAddinsDir)\$(Configuration)\" />
+    <Copy SourceFiles="@(DeployDlls)" DestinationFolder="$(RevitAddinsDir)\$(Configuration)\YangTools\" />
+    <Copy SourceFiles="@(DeployPdbs)" DestinationFolder="$(RevitAddinsDir)\$(Configuration)\YangTools\" />
+    <Copy SourceFiles="@(IconFiles)" DestinationFolder="$(RevitAddinsDir)\$(Configuration)\YangTools\Icons\%(RecursiveDir)" />
+    <Copy SourceFiles="@(UiFiles)" DestinationFolder="$(RevitAddinsDir)\$(Configuration)\YangTools\UI\%(RecursiveDir)" />
+    <Copy SourceFiles="@(DocFiles)" DestinationFolder="$(RevitAddinsDir)\$(Configuration)\YangTools\Docs\%(RecursiveDir)" />
   </Target>
 
 </Project>

@@ -3,7 +3,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="批处理与云链接"
-        Height="860" Width="1320" MinHeight="720" MinWidth="1120"
+        Height="680" Width="1150" MinHeight="580" MinWidth="980"
         WindowStartupLocation="CenterOwner"
         Closing="Window_Closing"
         Background="{DynamicResource WindowBg}"
@@ -28,7 +28,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="190"/>
+            <RowDefinition Height="150"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -43,7 +43,7 @@
 
         <Border Grid.Row="1" Style="{DynamicResource CardBorder}" Margin="0,0,0,8" Padding="10,7">
             <TextBlock TextWrapping="Wrap"
-                       Text="云模型：点击“添加已打开模型（含云）”可加入当前 Revit 会话中已打开的 Autodesk Docs/BIM 360 模型；YangTools 会保存其 Cloud ModelPath 信息，批处理时可直接使用或重新打开。原生 ACC 项目浏览不在 Revit API 本身能力范围内。外部本地工作共享模型仅为导出而分离打开，完成后不保存关闭。"/>
+                       Text="云模型请先在 Revit 中打开，再点「添加已打开模型（含云）」。本地中心模型会分离打开，导出后不保存。"/>
         </Border>
 
         <Border Grid.Row="2" Style="{DynamicResource CardBorder}" Margin="0,0,0,8">
@@ -68,7 +68,7 @@
                         <DataGridCheckBoxColumn Header="启用" Binding="{Binding Enabled}" Width="54" MinWidth="50"/>
                         <DataGridTextColumn Header="模型" Binding="{Binding DisplayName}" Width="250" MinWidth="180"/>
                         <DataGridTextColumn Header="来源" Binding="{Binding SourceDescription}" Width="100" MinWidth="90"/>
-                        <DataGridTextColumn Header="路径 / Cloud ModelPath" Binding="{Binding LocationDescription}" Width="*" MinWidth="260"/>
+                        <DataGridTextColumn Header="模型位置" Binding="{Binding LocationDescription}" Width="*" MinWidth="260"/>
                         <DataGridTemplateColumn Header="操作" Width="64" MinWidth="60">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
@@ -127,7 +127,7 @@
                     </StackPanel>
                     <DataGrid Grid.Row="2" ItemsSource="{Binding Links}" AutoGenerateColumns="False"
                               CanUserAddRows="False" Style="{DynamicResource SharedDataGridStyle}"
-                              RowHeight="30" ColumnHeaderHeight="34" MinHeight="170">
+                              RowHeight="30" ColumnHeaderHeight="34" MinHeight="110">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="文件名" Binding="{Binding FileName}" Width="*" MinWidth="220"/>
                             <DataGridTemplateColumn Header="移除" Width="60">

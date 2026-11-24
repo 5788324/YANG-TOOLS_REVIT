@@ -131,7 +131,7 @@ def main() -> int:
 
     # UI dimensions
     for tok,label in [
-        ('Height="860" Width="1320" MinHeight="720" MinWidth="1120"','window dimensions'),
+        ('Height="680" Width="1150" MinHeight="580" MinWidth="980"','window dimensions'),
         ('RowHeight="30" ColumnHeaderHeight="34"','document grid dimensions'),
         ('<ColumnDefinition Width="360"/>','left panel width'),
         ('<ColumnDefinition Width="*" MinWidth="300"/>','output path min width'),

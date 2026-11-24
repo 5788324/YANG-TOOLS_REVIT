@@ -577,8 +577,8 @@ namespace YangTools.Revit.UI
                 combo.ItemsSource = availableParams;
                 combo.SelectedValuePath = "Name";
                 if (!string.IsNullOrEmpty(pName)) combo.SelectedValue = pName;
-                combo.Width = 125;
-                combo.Margin = new Thickness(0, 0, 5, 0);
+                combo.HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch;
+                combo.SetResourceReference(StyleProperty, "CompactComboBox");
 
                 var template = new DataTemplate();
                 var factory = new FrameworkElementFactory(typeof(TextBlock));

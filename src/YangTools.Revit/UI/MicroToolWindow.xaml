@@ -23,7 +23,7 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="插件箱" Style="{DynamicResource WindowTitle}" VerticalAlignment="Center"/>
                 <Button Grid.Column="1" Content="?" Width="30" Height="28" Margin="0,0,6,0"
-                        VerticalAlignment="Center" Style="{DynamicResource StandardButton}"
+                        VerticalAlignment="Center" Style="{DynamicResource StandardButton}" Padding="0"
                         ToolTip="临时插件箱功能说明" Click="HelpButton_Click"/>
                 <Button Grid.Column="2" Style="{DynamicResource CloseButton}" Click="CloseButton_Click"/>
             </Grid>

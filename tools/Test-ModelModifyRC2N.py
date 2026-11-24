@@ -48,7 +48,7 @@ for label,source,tokens in [
  'long version = ++_placementVersion','version != _placementVersion','if (_isClosed) return',
  '++_pathVersion','version != _pathVersion','_isClosed = true','TaskDialog.Show("线性布置结果"',
  'result.ReadbackConfirmed','result.ReadbackWarning','已提交','DiagnosticLog.WriteInfo',
- 'SetAction(app =>','showSuccess: false','SaveCurrentSettings();']),
+ 'EnqueueAndRaise(_externalEvent, app =>','showSuccess: false','SaveCurrentSettings();']),
 ('xaml',xaml,['Click="StartPlacement_Click"','Click="PickPath_Click"','Binding SelectedLevel',
  'Binding StartElevationMm','Binding EndElevationMm','Binding StepValue','Binding ReversePath',
  'Binding IncludeRemainderEndpoint'])]:

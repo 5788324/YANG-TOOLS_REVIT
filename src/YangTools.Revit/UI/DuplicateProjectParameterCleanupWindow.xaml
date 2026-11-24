@@ -14,7 +14,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="190"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
@@ -22,7 +22,7 @@
             <Grid Margin="16,0,10,0">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="重复项目参数清理" Style="{DynamicResource WindowTitle}"/>
-                    <TextBlock Text="按参数 ID 原位合并绑定和值，清理同名重复项目参数"
+                    <TextBlock Text="先扫描，再选择要合并的参数"
                                Foreground="{DynamicResource TitleText}" FontSize="11" Margin="12,3,0,0"/>
                 </StackPanel>
                 <Button HorizontalAlignment="Right" Style="{DynamicResource CloseButton}" Click="CloseButton_Click"/>
@@ -31,31 +31,31 @@
 
         <Border Grid.Row="1" Margin="14,12,14,0" Style="{DynamicResource CardBorder}" Padding="12">
             <StackPanel>
-                <TextBlock Text="建议先另存 RVT 副本。工具保留一个原参数并合并其他同名参数；不会采用全部删除重建，也不会用显示字符串转存数值。"
-                           TextWrapping="Wrap" FontWeight="SemiBold"/>
-                <TextBlock Text="删除时允许 Revit 预先报告的参数伴随对象；只有未预期级联对象才回滚定位，不影响其他参数继续处理。"
-                           Style="{DynamicResource SecondaryLabel}" Margin="0,5,0,0" TextWrapping="Wrap"/>
+                <TextBlock Text="扫描同名参数，选中后可合并绑定和值。删除前会显示影响范围。" TextWrapping="Wrap"/>
             </StackPanel>
         </Border>
 
         <Grid Grid.Row="2" Margin="14,10,14,8">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <WrapPanel Grid.Column="0" VerticalAlignment="Center">
-                <Button x:Name="ScanButton" Content="1. 扫描重复参数" Width="132" Margin="0,0,8,6" Click="ScanButton_Click"/>
-                <Button x:Name="MergeButton" Content="2. 仅合并绑定和值" Width="145" Margin="0,0,8,6" Click="MergeButton_Click" IsEnabled="False"/>
-                <Button x:Name="QuickButton" Content="快速处理：合并并清理" Width="168" Margin="0,0,8,6"
-                        Style="{DynamicResource PrimaryButton}" Click="QuickButton_Click" IsEnabled="False"/>
-                <Button x:Name="DeleteButton" Content="3. 仅删除可删除项" Width="145" Margin="0,0,8,6" Click="DeleteButton_Click" IsEnabled="False"/>
-                <Button x:Name="ReportButton" Content="打开 CSV 报告" Width="116" Margin="0,0,8,6" Click="ReportButton_Click" IsEnabled="False"/>
-            </WrapPanel>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                <CheckBox x:Name="AllowDeleteSharedCheckBox" Content="允许删除共享参数（高风险）"
-                          Margin="12,0,12,6"/>
-                <TextBlock Text="保留有值冲突的来源参数" Style="{DynamicResource SecondaryLabel}"
-                           VerticalAlignment="Center" Margin="0,0,0,6"/>
+            <StackPanel>
+                <WrapPanel>
+                    <Button x:Name="ScanButton" Content="扫描重复参数" Width="132" Margin="0,0,8,6" Click="ScanButton_Click"/>
+                    <Button x:Name="MergeButton" Content="合并所选参数" Width="145" Margin="0,0,8,6"
+                            Style="{DynamicResource PrimaryButton}" Click="MergeButton_Click" IsEnabled="False"/>
+                </WrapPanel>
+                <Expander x:Name="DetailsExpander" Header="更多操作与详情" Expanded="ParameterDetails_Changed" Collapsed="ParameterDetails_Changed">
+                    <WrapPanel Margin="0,6,0,0">
+                        <Button x:Name="QuickButton" Content="合并并清理" Width="130" Margin="0,0,8,6"
+                                Click="QuickButton_Click" IsEnabled="False"/>
+                        <Button x:Name="DeleteButton" Content="仅删除可删除项" Width="145" Margin="0,0,8,6"
+                                Click="DeleteButton_Click" IsEnabled="False"/>
+                        <Button x:Name="ReportButton" Content="打开 CSV 报告" Width="116" Margin="0,0,8,6"
+                                Click="ReportButton_Click" IsEnabled="False"/>
+                        <Button x:Name="SelectFirstTenButton" Content="试选前 10 个来源参数" Width="162" Margin="0,0,8,6"
+                                Click="SelectFirstTenButton_Click" IsEnabled="False"/>
+                        <CheckBox x:Name="AllowDeleteSharedCheckBox" Content="允许删除共享参数（高风险）"
+                                  Margin="0,0,0,6" VerticalAlignment="Center"/>
+                    </WrapPanel>
+                </Expander>
             </StackPanel>
         </Grid>
 
@@ -74,8 +74,6 @@
                                 Click="SelectNoneButton_Click" IsEnabled="False"/>
                         <Button x:Name="InvertSelectionButton" Content="反选" Width="82" Margin="0,0,7,0"
                                 Click="InvertSelectionButton_Click" IsEnabled="False"/>
-                        <Button x:Name="SelectFirstTenButton" Content="测试：最多 10 个来源参数" Width="162"
-                                Click="SelectFirstTenButton_Click" IsEnabled="False"/>
                     </StackPanel>
                     <TextBlock x:Name="SelectionSummaryText" HorizontalAlignment="Right" VerticalAlignment="Center"
                                Style="{DynamicResource SecondaryLabel}" Text="未选择参数组"/>
@@ -90,6 +88,17 @@
                       VirtualizingPanel.VirtualizationMode="Recycling"
                       CanUserSortColumns="True" CanUserReorderColumns="True"
                       RowHeight="25" ColumnHeaderHeight="30">
+                <DataGrid.ColumnHeaderStyle>
+                    <Style TargetType="{x:Type DataGridColumnHeader}">
+                        <Setter Property="Background" Value="{DynamicResource GridHeaderBg}"/>
+                        <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
+                        <Setter Property="FontWeight" Value="SemiBold"/>
+                        <Setter Property="BorderBrush" Value="{DynamicResource GridLine}"/>
+                        <Setter Property="BorderThickness" Value="0,0,1,1"/>
+                        <Setter Property="Padding" Value="8,2"/>
+                        <Setter Property="VerticalContentAlignment" Value="Center"/>
+                    </Style>
+                </DataGrid.ColumnHeaderStyle>
                 <DataGrid.Columns>
                     <DataGridTemplateColumn Header="处理" Width="48">
                         <DataGridTemplateColumn.CellTemplate>
@@ -102,17 +111,18 @@
                     </DataGridTemplateColumn>
                     <DataGridTextColumn Header="参数名称" Width="210" Binding="{Binding Name}" IsReadOnly="True"/>
                     <DataGridTextColumn Header="绑定" Width="62" Binding="{Binding BindingText}" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="保留 ID" Width="82" Binding="{Binding KeeperIdText}" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="来源 ID" Width="220" Binding="{Binding SourceIdsText}" IsReadOnly="True"/>
+                    <DataGridTextColumn x:Name="KeeperIdColumn" Visibility="Collapsed" Header="保留 ID" Width="82" Binding="{Binding KeeperIdText}" IsReadOnly="True"/>
+                    <DataGridTextColumn x:Name="SourceIdColumn" Visibility="Collapsed" Header="来源 ID" Width="220" Binding="{Binding SourceIdsText}" IsReadOnly="True"/>
                     <DataGridTextColumn Header="总数" Width="54" Binding="{Binding Records.Count}" IsReadOnly="True"/>
                     <DataGridTextColumn Header="共享参数" Width="105" Binding="{Binding SharedSummary}" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="引用关系" Width="170" Binding="{Binding ReferenceSummary}" IsReadOnly="True"/>
+                    <DataGridTextColumn x:Name="ReferencesColumn" Visibility="Collapsed" Header="引用关系" Width="170" Binding="{Binding ReferenceSummary}" IsReadOnly="True"/>
                     <DataGridTextColumn Header="状态" Width="*" MinWidth="260" Binding="{Binding Status}" IsReadOnly="True"/>
                 </DataGrid.Columns>
             </DataGrid>
         </Grid>
 
-        <Border Grid.Row="4" Margin="14,0,14,10" Style="{DynamicResource CardBorder}" Padding="0">
+        <Border x:Name="ParameterLogPanel" Grid.Row="4" Margin="14,0,14,10" Height="165"
+                Style="{DynamicResource CardBorder}" Visibility="Collapsed" Padding="0">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="34"/>

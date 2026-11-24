@@ -14,6 +14,7 @@ import json
 import os
 import urllib.error
 import urllib.request
+from urllib.parse import urlsplit, urlunsplit
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -30,6 +31,25 @@ class GatewayEndpoint:
     instance_file: str
 
 
+def _local_url(url: str) -> str:
+    parts = urlsplit(url)
+    if (parts.scheme != "http" or parts.hostname not in {"127.0.0.1", "::1", "localhost"}
+            or parts.username is not None or parts.password is not None
+            or parts.query or parts.fragment or not parts.port):
+        raise ValueError("Revit MCP 只接受带端口的本机 HTTP 地址。")
+    if parts.hostname == "localhost":
+        return urlunsplit(parts._replace(netloc=f"127.0.0.1:{parts.port}"))
+    return url
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+_local_opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect())
+
+
 def _instance_directory() -> Path:
     local = os.environ.get("LOCALAPPDATA")
     if not local:
@@ -44,7 +64,7 @@ def _read_instance(path: Path) -> GatewayEndpoint | None:
         token = str(payload.get("token") or "").strip()
         if not url or not token:
             return None
-        return GatewayEndpoint(url=url, token=token, instance_file=str(path))
+        return GatewayEndpoint(url=_local_url(url), token=token, instance_file=str(path))
     except (OSError, ValueError, TypeError):
         return None
 
@@ -57,7 +77,7 @@ def _status_request(endpoint: GatewayEndpoint, timeout: int = 2) -> bool:
         headers={"Authorization": f"Bearer {endpoint.token}"},
     )
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
+        with _local_opener.open(request, timeout=timeout) as response:
             return 200 <= int(response.status) < 300
     except Exception:
         return False
@@ -74,7 +94,7 @@ def _discover_gateway() -> GatewayEndpoint:
     if explicit_url:
         if not explicit_token:
             raise RuntimeError("已设置 REVIT_MCP_URL，但缺少 REVIT_MCP_TOKEN。")
-        return GatewayEndpoint(explicit_url, explicit_token, explicit_instance)
+        return GatewayEndpoint(_local_url(explicit_url), explicit_token, explicit_instance)
 
     if explicit_instance:
         endpoint = _read_instance(Path(explicit_instance))
@@ -112,7 +132,7 @@ def _discover_gateway() -> GatewayEndpoint:
 def _send_sync(command_name: str, args: dict[str, Any], timeout: int) -> str:
     endpoint = _discover_gateway()
     payload = json.dumps(
-        {"command": command_name, "args": args},
+        {"command": command_name, "args": args, "timeoutSeconds": timeout},
         ensure_ascii=False,
     ).encode("utf-8")
     request = urllib.request.Request(
@@ -125,7 +145,7 @@ def _send_sync(command_name: str, args: dict[str, Any], timeout: int) -> str:
         },
     )
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
+        with _local_opener.open(request, timeout=timeout + 10) as response:
             body = response.read().decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
         body = exc.read().decode("utf-8", errors="replace")

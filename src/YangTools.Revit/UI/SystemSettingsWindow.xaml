@@ -42,29 +42,7 @@
             <Border Grid.Row="0" CornerRadius="8,8,0,0" Background="{DynamicResource TitleBarGradient}">
                 <Grid>
                     <TextBlock Text="系统设置" Foreground="{DynamicResource TitleText}" VerticalAlignment="Center" Margin="15,0" FontWeight="Bold" FontSize="14"/>
-                    <Button HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0"
-                            Width="30" Height="24" Content="✕" Foreground="{DynamicResource TitleText}" BorderThickness="0"
-                            Click="CloseButton_Click" FontSize="14" Cursor="Hand">
-                        <Button.Style>
-                            <Style TargetType="{x:Type Button}">
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="{x:Type Button}">
-                                            <Border Background="{TemplateBinding Background}" CornerRadius="4">
-                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            </Border>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                                <Style.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Background" Value="{DynamicResource DangerBg}"/>
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
+                    <Button Style="{DynamicResource CloseButton}" Click="CloseButton_Click"/>
                 </Grid>
             </Border>
 
@@ -255,7 +233,7 @@
                                     <TextBox x:Name="McpInstanceFileTextBox" Text="未生成" IsReadOnly="True" Margin="0,4,0,10" TextWrapping="Wrap"/>
 
                                     <CheckBox x:Name="McpAutoStartCheck" Content="随 Revit 启动外部 MCP 网关" Margin="0,0,0,5" Checked="McpSettingsChanged" Unchecked="McpSettingsChanged"/>
-                                    <CheckBox x:Name="McpAllowPythonCheck" Content="允许受信任的本机 MCP 客户端执行 Revit Python" Checked="McpSettingsChanged" Unchecked="McpSettingsChanged"/>
+                                    <CheckBox x:Name="McpAllowPythonCheck" Content="允许受信任的本机 MCP 客户端执行 Revit Python" ToolTip="获准脚本以当前用户身份运行，可修改模型并访问本地文件。" Checked="McpSettingsChanged" Unchecked="McpSettingsChanged"/>
                                     <TextBlock Text="默认关闭。启用 Python 后，本机持有当前会话令牌的客户端才能请求执行。" TextWrapping="Wrap" FontSize="10" Foreground="{DynamicResource SecondaryText}" Margin="20,4,0,10"/>
 
                                     <WrapPanel Margin="0,0,0,10">

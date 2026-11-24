@@ -34,10 +34,11 @@
                 <Setter Property="Background" Value="{DynamicResource GridHeaderBg}"/>
                 <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
-                <Setter Property="Padding" Value="8,6"/>
+                <Setter Property="Padding" Value="5,0"/>
                 <Setter Property="BorderBrush" Value="{DynamicResource GridLine}"/>
                 <Setter Property="BorderThickness" Value="0,0,1,1"/>
-                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
             </Style>
 
             <Style TargetType="{x:Type ListBoxItem}">
@@ -96,18 +97,7 @@
                         <TextBlock Text="族文档管理" Foreground="{DynamicResource TitleText}" FontSize="16" FontWeight="Bold"/>
                         <TextBlock Text=" Family Manager V2.1" Foreground="{DynamicResource TitleText}" Opacity="0.78" FontSize="13" Margin="6,2,0,0"/>
                     </StackPanel>
-                    <Button HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" Width="30" Height="30" Background="Transparent" BorderThickness="0" Click="CloseButton_Click" Padding="0">
-                        <Button.Template>
-                            <ControlTemplate TargetType="{x:Type Button}">
-                                <Border x:Name="bg" Background="Transparent" CornerRadius="15">
-                                    <Path Data="M 10,10 L 20,20 M 20,10 L 10,20" Stroke="{DynamicResource TitleText}" StrokeThickness="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bg" Property="Background" Value="{DynamicResource DangerBg}"/></Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Button.Template>
-                    </Button>
+                    <Button Style="{DynamicResource CloseButton}" Click="CloseButton_Click"/>
                 </Grid>
             </Border>
 
@@ -184,7 +174,7 @@
                         <RowDefinition Height="52"/>
                     </Grid.RowDefinitions>
 
-                    <Border Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource WindowBorder}" BorderThickness="0,0,0,1" Padding="12,8">
+                    <Border Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource WindowBorder}" BorderThickness="0,0,0,1" Padding="12,6">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -193,8 +183,8 @@
                             <Grid VerticalAlignment="Center" Margin="0,0,12,0">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="28"/>
-                                    <RowDefinition Height="22"/>
-                                    <RowDefinition Height="24"/>
+                                    <RowDefinition Height="20"/>
+                                    <RowDefinition Height="20"/>
                                 </Grid.RowDefinitions>
                                 <Grid Grid.Row="0">
                                     <Grid.ColumnDefinitions>
@@ -202,12 +192,12 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <TextBlock x:Name="SelectedFamilyTitle" Text="请在左侧选择一个族" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                    <Button Grid.Column="1" x:Name="RenameFamilyBtn" ToolTip="重命名族" Style="{DynamicResource IconButton}" Click="RenameFamily_Click" Visibility="Collapsed" Margin="6,0,0,0">
+                                    <Button Grid.Column="1" x:Name="RenameFamilyBtn" ToolTip="重命名族" Style="{DynamicResource IconButton}" Click="RenameFamily_Click" Visibility="Collapsed" Margin="6,0,0,0" Padding="4,2" VerticalAlignment="Center">
                                         <TextBlock Text="&#xE8AC;" FontFamily="Segoe MDL2 Assets" FontSize="16"/>
                                     </Button>
                                 </Grid>
                                 <TextBlock Grid.Row="1" x:Name="SelectedFamilyStatsText" Text="实例 0 · 使用类型 0 · 未使用类型 0 · 当前视图 0" Foreground="{DynamicResource SecondaryText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                <CheckBox Grid.Row="2" x:Name="UnusedTypesOnlyCheckBox" Content="类型表仅显示未使用类型" VerticalAlignment="Center" Checked="UnusedTypesOnlyCheckBox_Changed" Unchecked="UnusedTypesOnlyCheckBox_Changed"/>
+                                <CheckBox Grid.Row="2" x:Name="UnusedTypesOnlyCheckBox" Margin="0" Content="类型表仅显示未使用类型" VerticalAlignment="Center" Checked="UnusedTypesOnlyCheckBox_Changed" Unchecked="UnusedTypesOnlyCheckBox_Changed"/>
                             </Grid>
 
                             <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
@@ -244,7 +234,8 @@
                                 <Button ToolTip="导出当前族 RFA" Style="{DynamicResource IconButton}" Click="ExportRfa_Click" Foreground="{DynamicResource SuccessColor}"><TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
                                 <Button ToolTip="导出当前列表显示的族类型到 Excel" Style="{DynamicResource IconButton}" Click="ExportExcel_Click"><TextBlock Text="&#xEDE1;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
                                 <Button ToolTip="导入 Excel" Style="{DynamicResource IconButton}" Click="ImportExcel_Click" Foreground="{DynamicResource AccentColor}"><TextBlock Text="&#xE8B5;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
-                                <Button ToolTip="删除选中类型/族" Style="{DynamicResource IconButton}" Click="Delete_Click" Foreground="{DynamicResource DangerBg}"><TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
+                                <Button ToolTip="删除选中类型" Style="{DynamicResource IconButton}" Click="Delete_Click" Foreground="{DynamicResource DangerBg}"><TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="18"/></Button>
+                                <Button Content="删除整个族" Click="DeleteFamily_Click" Foreground="{DynamicResource DangerBg}" Padding="8,0" Margin="8,0,0,0"/>
                             </StackPanel>
                         </ScrollViewer>
                     </Border>

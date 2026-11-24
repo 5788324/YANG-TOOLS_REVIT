@@ -121,7 +121,7 @@ def source_contract_checks() -> List[str]:
     failures: List[str] = []
 
     required = {
-        "window_xaml": ["全选可处理项", "全不选", "反选", "测试：最多 10 个来源参数"],
+        "window_xaml": ["全选可处理项", "全不选", "反选", "试选前 10 个来源参数"],
         "window_code": ["ApplySelection", "remainingSources = 10", "UpdateSelectionSummary", "snapshot.ValueIndex", "DispatcherPriority.Render"],
         "merge": ["MergeValuesIndexed", "operationsByElementId", "TryGetParameterByIdentity", "ParameterValueUtil.TrySetFrom", "快速值索引", "IdentityFailureAbortThreshold", "值引擎提前停止"],
         "value_index": ["WhereElementIsNotElementType", "WhereElementIsElementType", "GetElementIds", "HasGlobalParameterAssociation"],

@@ -31,10 +31,10 @@ check('Linear saved level missing is not replaced','savedLevel ?? activeLevel ??
 check('Linear warning visible in XAML', 'Text="{Binding PathInfoText}"' in linear_xaml and 'TextWrapping="Wrap"' in linear_xaml)
 check('Linear path pick no prequeue Hide', 'long version = ++_pathVersion;\n            this.Hide();' not in linear)
 pick=linear[linear.index('private void PickPath_Click'):linear.index('private void StartPlacement_Click')]
-for token in ['SetAction(app =>','if (_isClosed || version != _pathVersion) return;','Hide();',
-              'new LinearPlacementEngine(app.ActiveUIDocument)','finally','Show(); Activate();','_externalEvent.Raise()']:
+for token in ['EnqueueAndRaise(_externalEvent, app =>','if (_isClosed || version != _pathVersion) return;','Hide();',
+              'new LinearPlacementEngine(app.ActiveUIDocument)','finally','Show(); Activate();']:
  check('Pick path '+token,token in pick)
-check('Pick path hide only after handler begins action',pick.index('SetAction(app =>') < pick.index('Hide();'))
+check('Pick path hide only after handler begins action',pick.index('EnqueueAndRaise(_externalEvent, app =>') < pick.index('Hide();'))
 check('Pick path shows again in finally',pick.index('Hide();') < pick.index('finally') < pick.index('Show(); Activate();'))
 check('Linear close does not duplicate settings save', 'private void CloseButton_Click(object sender, RoutedEventArgs e)\n        {\n            Close();\n        }' in linear)
 for token in ['new RevitEventHandler(_doc,','wrapInTransactionGroup: false','_isClosed = true','++_pathVersion','++_placementVersion',

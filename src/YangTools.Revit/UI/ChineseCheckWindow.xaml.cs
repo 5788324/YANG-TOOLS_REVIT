@@ -181,6 +181,13 @@ namespace YangTools.Revit.UI
             }
         }
 
+        private void ShowDiagnostics_Click(object sender, RoutedEventArgs e)
+        {
+            var visibility = ((System.Windows.Controls.CheckBox)sender).IsChecked == true ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+            DiagnosticIdColumn.Visibility = DiagnosticRenameColumn.Visibility =
+                DiagnosticDeleteColumn.Visibility = DiagnosticRiskColumn.Visibility = visibility;
+        }
+
         public ChineseCheckWindow(Document doc, UIDocument uiDoc)
         {
             ThemeHelper.InitializeWithTheme(this, InitializeComponent);

@@ -312,6 +312,24 @@ def view_scale_layout(g):
     line(g,22,20,22,25,accent=True)
     poly(g,[(14,17),(19,17),(16,14),(19,17),(16,20)])
 
+def text_detail_frame(g):
+    rect(g,4,6,24,20,0,accent=True)
+    poly(g,[(10,21),(16,11),(22,21)])
+    line(g,12,18,20,18)
+
+def text_paragraph_width(g):
+    line(g,7,8,25,8); line(g,7,13,22,13); line(g,7,18,17,18)
+    line(g,5,24,27,24,accent=True)
+    poly(g,[(8,21),(5,24),(8,27)],accent=True)
+    poly(g,[(24,21),(27,24),(24,27)],accent=True)
+
+def align_beam_floor_face(g):
+    poly(g,[(6,10),(16,6),(26,10),(16,14),(6,10)])
+    poly(g,[(6,10),(6,15),(16,19),(26,15),(26,10)])
+    line(g,16,14,16,19)
+    poly(g,[(4,22),(16,27),(28,22)],accent=True)
+    line(g,16,20,16,25,accent=True)
+
 def visibility_copier(g):
     path(g,'M3 15s5-7 13-7 13 7 13 7-5 7-13 7S3 15 3 15z')
     circle(g,16,15,3,accent=True)
@@ -384,6 +402,7 @@ icons={
 'project_inspector':project_inspector,'parameter_cleanup':parameter_cleanup,'sample_window':settings,'section_line':section_line,'sheet_manager':sheet_manager,
 'text_modifier':text_modifier,'visibility_copier':visibility_copier,'dwg_view_link':dwg_view_link,'cad_to_revit':cad_to_revit,
 'view_scale_layout':view_scale_layout,
+'text_detail_frame':text_detail_frame,'text_paragraph_width':text_paragraph_width,'align_beam_floor_face':align_beam_floor_face,
 'rebar_gradient_set':rebar_gradient_set,
 'merge_lines':merge_lines,'merge_columns':merge_columns,'overlap_lines':overlap_lines,
 'filledregion_invisible':filledregion_invisible,

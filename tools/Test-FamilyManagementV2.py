@@ -47,11 +47,10 @@ def main() -> int:
     ]: req(fam_x,needle,label)
     # Instance Manager dimensions/layout
     for needle,label in [
-        ('Height="800" Width="1360" MinHeight="660" MinWidth="1160"','实例窗口尺寸'),
+        ('Height="670" Width="1160" MinHeight="560" MinWidth="950"','实例窗口尺寸'),
         ('<RowDefinition Height="86"/>','实例全局操作区 86px'),
         ('<RowDefinition Height="52"/>','实例底部工具栏 52px'),
         ('<RowDefinition Height="46"/>','实例 Tab 筛选区 46px'),
-        ('FrozenColumnCount="5"','实例固定 5 状态列'),
         ('Header="元素ID" Binding="{Binding InstanceIdValue}" Width="92" MinWidth="82" MaxWidth="110"','元素ID列宽'),
         ('Header="类型" Binding="{Binding TypeName}" Width="190" MinWidth="150" MaxWidth="280"','类型列宽'),
         ('Header="标高" Binding="{Binding LevelName}" Width="130" MinWidth="110" MaxWidth="190"','标高列宽'),
@@ -64,6 +63,10 @@ def main() -> int:
         ('x:Name="BatchParameterComboBox" Width="230"','批量参数控件宽度'),
         ('x:Name="BatchParameterValueBox" Width="190"','批量参数值宽度'),
     ]: req(inst_x,needle,label)
+    forbid(inst_x, 'FrozenColumnCount=', '分组实例表格使用普通列布局')
+    forbid(inst_x, 'EnableColumnVirtualization', '分组实例表格保留全部列')
+    req(inst_c, 'Loaded += SelectInitialFamily;', '窗口加载后再预选族')
+    req(inst_x, 'ItemTemplate="{StaticResource BatchOptionTemplate}"', '批量选项显示名称')
     # Stable parameter key
     for needle,label in [
         ('class StableParameterDescriptor','稳定参数描述符'),('GuidPrefix = "GUID_"','共享参数 GUID key'),
@@ -91,6 +94,14 @@ def main() -> int:
     req(fam_c,'OverwriteExistingFile = approvedOverwrites.Contains(target.Key)','RFA 只允许覆盖已确认路径')
     req(fam_c,'TypeDataGrid.Items.OfType<TypeItemViewModel>().ToList()','类型 Excel 仅导出可见行')
     req(reg_c,'Action<TWindow> configureExisting','已打开实例管理窗口可重定位族')
+    manage = fam_c.split('private void ManageInstances_Click', 1)[1].split('private void ', 1)[0]
+    opens_in_callback = re.search(
+        r'RequestRead\(\(\) =>\s*\{\s*if \(!IsLoaded\) return;\s*'
+        r'ModelessWindowRegistry\.ShowOrActivate\([^;]+new FamilyInstanceManagerWindow', manage)
+    label = '族管理通过 Revit 回调创建实例窗口'
+    checks[label] = opens_in_callback is not None
+    if not checks[label]:
+        failures.append('缺少契约：' + label)
     # Instance actions
     for needle,label in [
         ('new InstanceScopeItem("全项目", InstanceScopeMode.Project)','全项目范围'),

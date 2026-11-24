@@ -61,6 +61,7 @@ function Install-Version([string]$version) {
     $sourceManifest = $source.Manifest
 
     $versionRoot = Join-Path $AddinsRoot $version
+    Assert-NoPendingYangToolsRollback -VersionRoot $versionRoot
     $target = Join-Path $versionRoot 'YangTools'
     $manifest = Join-Path $versionRoot 'YangTools.Revit.addin'
     $staging = Join-Path $versionRoot 'YangTools.installing'
@@ -131,7 +132,10 @@ try {
     if ($available.Count -eq 0) { throw '所选版本均没有独立编译文件。' }
     Assert-TargetRevitClosed -Versions $available
     Write-Host "将安装：Revit $($available -join '、Revit ')"
-    foreach ($version in $available) { Install-Version $version }
+    foreach ($version in $available) {
+        try { Install-Version $version }
+        catch { throw "Revit $version 安装失败：$($_.Exception.Message)" }
+    }
     Write-Host 'YangTools 安装完成，请启动 Revit。' -ForegroundColor Cyan
 }
 catch {
