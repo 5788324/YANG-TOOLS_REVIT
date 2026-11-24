@@ -117,11 +117,11 @@
       <Link>Icons\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </Content>
     <Content Include="UI\Themes\**\*.*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Link>UI\Themes\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </Content>
     <Content Include="UI\SharedStyles.xaml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Link>UI\SharedStyles.xaml</Link>
     </Content>
     <Content Include="..\..\MicroTool_Developer_Guide V3.md">

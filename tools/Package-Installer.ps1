@@ -81,6 +81,21 @@ if ($Versions -and $Versions.Count -gt 0) {
 }
 if ($AvailableVersions.Count -eq 0) { throw '没有任何可打包的真实构建版本。' }
 
+$SourceUi = Join-Path $ProjectRoot 'src\YangTools.Revit\UI'
+$StyleFiles = @('SharedStyles.xaml') + @(Get-ChildItem -LiteralPath (Join-Path $SourceUi 'Themes') -File -Recurse | ForEach-Object {
+    $_.FullName.Substring($SourceUi.Length).TrimStart('\')
+})
+foreach ($RelativePath in $StyleFiles) {
+    $SourceHash = (Get-FileHash -LiteralPath (Join-Path $SourceUi $RelativePath) -Algorithm SHA256).Hash
+    foreach ($RevitVersion in $AvailableVersions) {
+        $PackagedStyle = Join-Path (Join-Path $Payload $RevitVersion) "YangTools\UI\$RelativePath"
+        if (-not (Test-Path -LiteralPath $PackagedStyle -PathType Leaf) -or
+            (Get-FileHash -LiteralPath $PackagedStyle -Algorithm SHA256).Hash -ne $SourceHash) {
+            throw "Revit $RevitVersion 的 UI 样式与源码不一致或缺失：$RelativePath。请重新构建该年份后打包。"
+        }
+    }
+}
+
 Remove-Item -LiteralPath $Package -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -LiteralPath $Zip -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force -Path $Package | Out-Null

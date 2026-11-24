@@ -174,7 +174,7 @@
                         <RowDefinition Height="52"/>
                     </Grid.RowDefinitions>
 
-                    <Border Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource WindowBorder}" BorderThickness="0,0,0,1" Padding="12,8">
+                    <Border Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource WindowBorder}" BorderThickness="0,0,0,1" Padding="12,6">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -182,7 +182,7 @@
                             </Grid.ColumnDefinitions>
                             <Grid VerticalAlignment="Center" Margin="0,0,12,0">
                                 <Grid.RowDefinitions>
-                                    <RowDefinition Height="24"/>
+                                    <RowDefinition Height="28"/>
                                     <RowDefinition Height="20"/>
                                     <RowDefinition Height="20"/>
                                 </Grid.RowDefinitions>
@@ -192,7 +192,7 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <TextBlock x:Name="SelectedFamilyTitle" Text="请在左侧选择一个族" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                    <Button Grid.Column="1" x:Name="RenameFamilyBtn" ToolTip="重命名族" Style="{DynamicResource IconButton}" Click="RenameFamily_Click" Visibility="Collapsed" Margin="6,0,0,0">
+                                    <Button Grid.Column="1" x:Name="RenameFamilyBtn" ToolTip="重命名族" Style="{DynamicResource IconButton}" Click="RenameFamily_Click" Visibility="Collapsed" Margin="6,0,0,0" Padding="4,2" VerticalAlignment="Center">
                                         <TextBlock Text="&#xE8AC;" FontFamily="Segoe MDL2 Assets" FontSize="16"/>
                                     </Button>
                                 </Grid>
