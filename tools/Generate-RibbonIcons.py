@@ -419,6 +419,12 @@ def dwg_to_pipe(g):
     circle(g,18,25,2.5,accent=True)
     circle(g,18,11,2.5,accent=True)
 
+def micro_tool_repeat(g):
+    # Circular repeat arrow around compact lightning/run spark.
+    path(g,'M24 14a8.5 8.5 0 1 1-2.5-6.2',accent=True)
+    poly(g,[(20,5),(23.5,8.2),(19.5,10.5)],accent=True)
+    poly(g,[(14,12.5),(20,16),(14,19.5)])
+
 icons={
 'align_line':align_line,'align_text':align_text,'batch_task':batch_task,'boolean_geometry':boolean_geometry,
 'cn_check':cn_check,'column_along_path':column_path,'dim_override':dim_override,
@@ -434,7 +440,7 @@ icons={
 'filledregion_invisible':filledregion_invisible,
 'material_binding':material_binding,'batch_material_binding':batch_material_binding,
 'family_category':family_category,
-'pipe_elevation_ref':pipe_elevation_ref,'export_text_ai':export_text_ai,'dwg_to_pipe':dwg_to_pipe,
+'pipe_elevation_ref':pipe_elevation_ref,'export_text_ai':export_text_ai,'dwg_to_pipe':dwg_to_pipe,'micro_tool_repeat':micro_tool_repeat,
 }
 
 # Remove existing icon assets; write only the currently referenced set.

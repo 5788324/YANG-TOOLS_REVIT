@@ -41,6 +41,7 @@
 | 钢筋工具区 | 渐变钢筋 | `RebarGradientSetCommand` | 按首末控制钢筋生成渐变 Free Form 钢筋集。 |
 | 项目信息区 | 文件信息 | `ProjectInfoCommand` | 查看当前项目文件信息和清理预估。 |
 | 项目工具区 | 插件箱 | `MicroToolCommand` | 管理、加载及运行临时 Revit 插件。 |
+| 项目工具区 | 重跑微工具 | `MicroToolRepeatCommand` | 直接重新运行最近一次执行过的临时插件，无需再次打开插件箱，支持绑定快捷键与 Enter 重复。 |
 | 项目管理区 | 中文检查 | `ChineseCheckCommand` | 检查项目中含中文的可处理内容，支持定位与批量处理。 |
 | 项目管理区 | 参数去重 | `DuplicateProjectParameterCleanupCommand` | 扫描重复项目参数并尝试保留绑定与取值。 |
 | 项目管理区 | 图纸管理 | `SheetManagerCommand` | 集中管理 Revit 图纸、修订与图框信息。 |

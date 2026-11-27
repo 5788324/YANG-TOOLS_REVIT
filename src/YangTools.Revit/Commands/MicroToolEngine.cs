@@ -27,7 +27,9 @@ namespace YangTools.Revit.Commands
 
         private static readonly string DefaultProjectFolder = Path.Combine(YangToolsFolder, "MicroProjects");
         private static readonly string RegistryFilePath = Path.Combine(YangToolsFolder, "micro-projects.json");
+        private static readonly string LastRunFilePath = Path.Combine(YangToolsFolder, "microtool_last_run.txt");
         private static readonly string LegacyConfigFilePath = Path.Combine(DefaultProjectFolder, "projects.txt");
+        private static string? _lastExecutedDllPath;
 
         private static readonly string CacheRoot = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -377,6 +379,37 @@ namespace YangTools.Revit.Commands
             return removed;
         }
 
+        public static string? GetLastExecutedDllPath()
+        {
+            if (!string.IsNullOrWhiteSpace(_lastExecutedDllPath) && File.Exists(_lastExecutedDllPath))
+                return _lastExecutedDllPath;
+            try
+            {
+                if (File.Exists(LastRunFilePath))
+                {
+                    string saved = File.ReadAllText(LastRunFilePath).Trim();
+                    if (!string.IsNullOrWhiteSpace(saved) && File.Exists(saved))
+                    {
+                        _lastExecutedDllPath = saved;
+                        return saved;
+                    }
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        private static void SaveLastExecutedDllPath(string dllPath)
+        {
+            _lastExecutedDllPath = dllPath;
+            try
+            {
+                Directory.CreateDirectory(YangToolsFolder);
+                File.WriteAllText(LastRunFilePath, dllPath);
+            }
+            catch { }
+        }
+
         public static Result ExecuteMicroTool(
             string dllPath,
             ExternalCommandData commandData,
@@ -389,6 +422,8 @@ namespace YangTools.Revit.Commands
                 TaskDialog.Show("临时插件箱", message);
                 return Result.Failed;
             }
+
+            SaveLastExecutedDllPath(dllPath);
 
             if (!string.Equals(Path.GetExtension(dllPath), ".dll", StringComparison.OrdinalIgnoreCase))
             {
