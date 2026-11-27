@@ -306,7 +306,7 @@
                                      Style="{x:Null}"
                                      Visibility="Hidden"
                                      Focusable="True"
-                                     IsReadOnly="{TemplateBinding IsReadOnly}"
+                                     IsReadOnly="{Binding Path=IsReadOnly, RelativeSource={RelativeSource TemplatedParent}}"
                                      Background="Transparent"
                                      BorderThickness="0"
                                      Foreground="{TemplateBinding Foreground}"
