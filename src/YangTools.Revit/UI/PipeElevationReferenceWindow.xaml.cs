@@ -1,4 +1,5 @@
 using System.Windows;
+using YangTools.Revit.UI.Controls;
 
 namespace YangTools.Revit.UI
 {
@@ -9,7 +10,7 @@ namespace YangTools.Revit.UI
         Top
     }
 
-    public partial class PipeElevationReferenceWindow : Window
+    public partial class PipeElevationReferenceWindow : YangWindow
     {
         public PipeElevationTargetReference TargetReference { get; private set; } = PipeElevationTargetReference.Invert;
         public bool IncludeInsulation { get; private set; }

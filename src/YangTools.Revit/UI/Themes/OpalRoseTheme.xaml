@@ -1,0 +1,114 @@
+<!--
+    YangTools 主题：粉晶欧泊 (Opal Rose)
+    核心材质：窗口顶部极细珠光渐变带 + 深紫莓实色主按钮 (#7A4F86) + 冷红 Danger 防语义混淆
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:po="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options">
+
+    <!-- ===== 基础色板 ===== -->
+    <Color x:Key="Color_WindowBg">#FDFAFD</Color>
+    <Color x:Key="Color_WindowBorder">#E1D6E3</Color>
+    <Color x:Key="Color_PanelBg">#FFFFFF</Color>
+    <Color x:Key="Color_SidePanelBg">#F6F0F7</Color>
+    <Color x:Key="Color_BottomBarBg">#F6F0F7</Color>
+
+    <Color x:Key="Color_PrimaryText">#2E2231</Color>
+    <Color x:Key="Color_SecondaryText">#68566F</Color>
+    <Color x:Key="Color_DisabledText">#A091A6</Color>
+
+    <Color x:Key="Color_Accent">#7A4F86</Color>
+    <Color x:Key="Color_AccentHover">#8D5F9A</Color>
+    <Color x:Key="Color_AccentText">#FFFFFF</Color>
+    <Color x:Key="Color_AccentLight">#9E629C</Color>
+    <Color x:Key="Color_AccentSoft">#1A9E629C</Color>
+    <Color x:Key="Color_PrimaryBtnBorder">#38FFFFFF</Color>
+
+    <Color x:Key="Color_BtnBg">#FFFFFF</Color>
+    <Color x:Key="Color_BtnBorder">#DACDDE</Color>
+    <Color x:Key="Color_BtnHover">#F6EEF7</Color>
+    <Color x:Key="Color_BtnPressed">#EDE0F0</Color>
+    <Color x:Key="Color_BtnText">#2E2231</Color>
+
+    <Color x:Key="Color_DangerBg">#D14343</Color>
+    <Color x:Key="Color_DangerHover">#B63434</Color>
+    <Color x:Key="Color_Success">#237A55</Color>
+    <Color x:Key="Color_Warning">#B7791F</Color>
+    <Color x:Key="Color_Info">#9E629C</Color>
+
+    <Color x:Key="Color_TitleBarStart">#FDFAFD</Color>
+    <Color x:Key="Color_TitleBarEnd">#F6EFF7</Color>
+    <Color x:Key="Color_TitleText">#2E2231</Color>
+    <Color x:Key="Color_TitleCloseHover">#D14343</Color>
+
+    <Color x:Key="Color_InputBg">#FFFFFF</Color>
+    <Color x:Key="Color_InputBorder">#DACDDE</Color>
+    <Color x:Key="Color_InputFocusBorder">#9E629C</Color>
+    <Color x:Key="Color_InputText">#2E2231</Color>
+    <Color x:Key="Color_Placeholder">#A091A6</Color>
+
+    <Color x:Key="Color_GridHeaderBg">#F6F0F7</Color>
+    <Color x:Key="Color_GridRowBg">#FDFAFD</Color>
+    <Color x:Key="Color_GridAltRowBg">#FDFAFD</Color>
+    <Color x:Key="Color_GridLine">#ECE3EE</Color>
+    <Color x:Key="Color_GridSelected">#F2E7F4</Color>
+    <Color x:Key="Color_GridHover">#F8F2F9</Color>
+
+    <!-- ===== 冻结笔刷 ===== -->
+    <SolidColorBrush x:Key="WindowBg" Color="{StaticResource Color_WindowBg}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="WindowBorder" Color="{StaticResource Color_WindowBorder}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="PanelBg" Color="{StaticResource Color_PanelBg}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="SidePanelBg" Color="{StaticResource Color_SidePanelBg}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="BottomBarBg" Color="{StaticResource Color_BottomBarBg}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="PrimaryText" Color="{StaticResource Color_PrimaryText}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="SecondaryText" Color="{StaticResource Color_SecondaryText}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="DisabledText" Color="{StaticResource Color_DisabledText}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="AccentColor" Color="{StaticResource Color_Accent}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="AccentHover" Color="{StaticResource Color_AccentHover}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="AccentLight" Color="{StaticResource Color_AccentLight}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="AccentSoft" Color="{StaticResource Color_AccentSoft}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="AccentText" Color="{StaticResource Color_AccentText}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="PrimaryBtnBorder" Color="{StaticResource Color_PrimaryBtnBorder}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="BtnBg" Color="{StaticResource Color_BtnBg}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="BtnBorder" Color="{StaticResource Color_BtnBorder}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="BtnHover" Color="{StaticResource Color_BtnHover}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="BtnPressed" Color="{StaticResource Color_BtnPressed}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="BtnText" Color="{StaticResource Color_BtnText}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="DangerBg" Color="{StaticResource Color_DangerBg}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="DangerHover" Color="{StaticResource Color_DangerHover}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="SuccessColor" Color="{StaticResource Color_Success}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="WarningColor" Color="{StaticResource Color_Warning}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="InfoColor" Color="{StaticResource Color_Info}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="TitleBarStart" Color="{StaticResource Color_TitleBarStart}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="TitleBarEnd" Color="{StaticResource Color_TitleBarEnd}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="TitleText" Color="{StaticResource Color_TitleText}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="TitleCloseHover" Color="{StaticResource Color_TitleCloseHover}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="InputBg" Color="{StaticResource Color_InputBg}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="InputBorder" Color="{StaticResource Color_InputBorder}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="InputFocusBorder" Color="{StaticResource Color_InputFocusBorder}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="InputText" Color="{StaticResource Color_InputText}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="Placeholder" Color="{StaticResource Color_Placeholder}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="GridHeaderBg" Color="{StaticResource Color_GridHeaderBg}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="GridRowBg" Color="{StaticResource Color_GridRowBg}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="GridAltRowBg" Color="{StaticResource Color_GridAltRowBg}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="GridLine" Color="{StaticResource Color_GridLine}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="GridSelected" Color="{StaticResource Color_GridSelected}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="GridHover" Color="{StaticResource Color_GridHover}" po:Freeze="True"/>
+
+    <!-- 顶栏与标志性材质：顶部极细珠光渐变带 -->
+    <LinearGradientBrush x:Key="TitleBarGradient" StartPoint="0,0" EndPoint="1,0" po:Freeze="True">
+        <GradientStop Color="#FDFAFD" Offset="0"/>
+        <GradientStop Color="#F6EFF7" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="ShellTopHairline" StartPoint="0,0" EndPoint="1,0" po:Freeze="True">
+        <GradientStop Color="#00ECB8D6" Offset="0"/>
+        <GradientStop Color="#CCECB8D6" Offset="0.35"/>
+        <GradientStop Color="#CCC4B8F4" Offset="0.68"/>
+        <GradientStop Color="#00C4B8F4" Offset="1"/>
+    </LinearGradientBrush>
+    <RadialGradientBrush x:Key="ShellHighlightArc" Center="0,0" GradientOrigin="0,0" RadiusX="0.5" RadiusY="0.4" po:Freeze="True">
+        <GradientStop Color="#CCFFFFFF" Offset="0"/>
+        <GradientStop Color="#00FFFFFF" Offset="1"/>
+    </RadialGradientBrush>
+
+</ResourceDictionary>

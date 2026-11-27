@@ -17,6 +17,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using YangTools.Revit.Core;
 using YangTools.Revit.Mcp;
+using YangTools.Revit.UI.Controls;
 using Autodesk.Revit.UI;
 
 namespace YangTools.Revit.UI
@@ -49,7 +50,8 @@ namespace YangTools.Revit.UI
     {
         public string Id { get; set; } = "";
         public string DisplayName { get; set; } = "";
-        public string PreviewColor { get; set; } = "#808080";
+        public string PreviewColor { get; set; } = "#FBFCFE";
+        public string AccentPreviewColor { get; set; } = "#243B55";
         public string Description { get; set; } = "";
 
         private bool _isSelected;
@@ -64,7 +66,7 @@ namespace YangTools.Revit.UI
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 
-    public partial class SystemSettingsWindow : Window
+    public partial class SystemSettingsWindow : YangWindow
     {
         private Dictionary<string, List<CommandSettingItem>> _panelSettings = new();
         private List<ThemeOptionItem> _themeOptions = new();
@@ -251,6 +253,7 @@ namespace YangTools.Revit.UI
                 Id = t.Id,
                 DisplayName = t.DisplayName,
                 PreviewColor = t.PreviewColor,
+                AccentPreviewColor = t.AccentPreviewColor,
                 Description = t.Description,
                 IsSelected = t.Id == ThemeManager.CurrentTheme.Id
             }).ToList();

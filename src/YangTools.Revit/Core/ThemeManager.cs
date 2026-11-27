@@ -17,12 +17,22 @@ namespace YangTools.Revit.Core
     {
         private const string ThemeConfigFileName = "yangtools_theme.json";
 
+        private const string DefaultThemeId = "liquid_white";
+
+        private static readonly Dictionary<string, string> LegacyThemeIdMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["apple_frost"] = "liquid_white",
+            ["light_warm"] = "gilded_ivory",
+            ["prof_blue"] = "ice_silk",
+            ["dark_modern"] = "opal_rose"
+        };
+
         public static readonly IReadOnlyList<ThemeInfo> Presets = new List<ThemeInfo>
         {
-            new ThemeInfo { Id = "light_warm", DisplayName = "暖光米白", Uri = "Themes/LightTheme.xaml", PreviewColor = "#A0734A", Description = "温暖舒适的浅色调，适合长时间工作" },
-            new ThemeInfo { Id = "dark_modern", DisplayName = "深色现代", Uri = "Themes/DarkTheme.xaml", PreviewColor = "#2D2D30", Description = "护眼深色模式，适合暗光环境" },
-            new ThemeInfo { Id = "prof_blue", DisplayName = "专业蓝灰", Uri = "Themes/ProfBlueTheme.xaml", PreviewColor = "#2C5F8A", Description = "专业的蓝灰色调，适合企业环境" },
-            new ThemeInfo { Id = "apple_frost", DisplayName = "🍎 苹果水滴", Uri = "Themes/AppleTheme.xaml", PreviewColor = "#F2F2F7", Description = "毛玻璃质感，圆润轻盈，macOS/iOS 风格" }
+            new ThemeInfo { Id = "liquid_white", DisplayName = "云雾水滴白", Uri = "Themes/LiquidWhiteTheme.xaml", PreviewColor = "#FBFCFE", AccentPreviewColor = "#243B55", Description = "纯白水滴折射 · 冷蓝发丝线（默认）" },
+            new ThemeInfo { Id = "gilded_ivory", DisplayName = "宣纸鎏金", Uri = "Themes/GildedIvoryTheme.xaml", PreviewColor = "#FCF9F3", AccentPreviewColor = "#B88A4E", Description = "暖白宣纸底 · 1px 烫金细线" },
+            new ThemeInfo { Id = "ice_silk", DisplayName = "浮光冰晶", Uri = "Themes/IceSilkTheme.xaml", PreviewColor = "#F8FBFE", AccentPreviewColor = "#1F6FBF", Description = "制图发丝线 · 深海军蓝主操作" },
+            new ThemeInfo { Id = "opal_rose", DisplayName = "粉晶欧泊", Uri = "Themes/OpalRoseTheme.xaml", PreviewColor = "#FDFAFD", AccentPreviewColor = "#7A4F86", Description = "顶部珠光细带 · 深紫莓主操作" }
         };
 
         private sealed class ThemeRootRegistration
@@ -92,8 +102,14 @@ namespace YangTools.Revit.Core
 
         public static void Initialize()
         {
-            string savedThemeId = LoadSavedThemeId();
+            string savedThemeId = NormalizeThemeId(LoadSavedThemeId());
             CurrentTheme = Presets.FirstOrDefault(t => t.Id == savedThemeId) ?? Presets[0];
+        }
+
+        private static string NormalizeThemeId(string? themeId)
+        {
+            if (string.IsNullOrWhiteSpace(themeId)) return DefaultThemeId;
+            return LegacyThemeIdMap.TryGetValue(themeId!, out string? mapped) ? mapped : themeId!;
         }
 
         /// <summary>
@@ -273,7 +289,7 @@ namespace YangTools.Revit.Core
                 if (File.Exists(path))
                 {
                     ThemeConfig? config = JsonConvert.DeserializeObject<ThemeConfig>(File.ReadAllText(path));
-                    return config?.ThemeId ?? "light_warm";
+                    return NormalizeThemeId(config?.ThemeId);
                 }
             }
             catch (Exception ex)
@@ -281,7 +297,7 @@ namespace YangTools.Revit.Core
                 System.Diagnostics.Debug.WriteLine("[YangTools] ThemeManager Load: {0}", ex.Message);
             }
 
-            return "light_warm";
+            return DefaultThemeId;
         }
 
         private static void SaveThemeId(string themeId)
@@ -302,7 +318,7 @@ namespace YangTools.Revit.Core
 
         private class ThemeConfig
         {
-            public string ThemeId { get; set; } = "light_warm";
+            public string ThemeId { get; set; } = DefaultThemeId;
         }
     }
 
@@ -311,7 +327,8 @@ namespace YangTools.Revit.Core
         public string Id { get; set; } = "";
         public string DisplayName { get; set; } = "";
         public string Uri { get; set; } = "";
-        public string PreviewColor { get; set; } = "#808080";
+        public string PreviewColor { get; set; } = "#FBFCFE";
+        public string AccentPreviewColor { get; set; } = "#243B55";
         public string Description { get; set; } = "";
     }
 }

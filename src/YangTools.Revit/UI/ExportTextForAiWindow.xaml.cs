@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 using Microsoft.Win32;
+using YangTools.Revit.UI.Controls;
 
 namespace YangTools.Revit.UI
 {
@@ -31,7 +32,7 @@ namespace YangTools.Revit.UI
         public long ElementId { get; }
     }
 
-    public partial class ExportTextForAiWindow : Window
+    public partial class ExportTextForAiWindow : YangWindow
     {
         private readonly Func<TextExportScope, bool, bool, IReadOnlyList<ExportedTextRecord>> _collector;
         private readonly string _documentTitle;
