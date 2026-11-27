@@ -345,7 +345,7 @@ def main() -> int:
     build_all_text = read_utf8(PROJECT_ROOT / "tools" / "Build-All.ps1")
     if "RevitParameterDeduplicator.addin" not in installer_text:
         errors.append({"type": "parameter-cleanup-legacy-entry", "file": "installer", "detail": "缺少历史独立插件检测"})
-    if "if ($Deploy) {\n    throw" not in build_all_text or "-p:DeployAfterBuild=false" not in build_all_text:
+    if "if ($Deploy) {\n    throw" not in build_all_text.replace("\r\n", "\n") or "-p:DeployAfterBuild=false" not in build_all_text:
         errors.append({"type": "build-all-deploy", "file": "tools/Build-All.ps1", "detail": "编译不得写入生产 Addins"})
 
     # Ribbon 分组门禁：删除12个钢筋测试入口，仅保留“创建钢筋”下的 GR01。
@@ -383,8 +383,8 @@ def main() -> int:
     ribbon_count = 0
     for path in (SOURCE_ROOT / "Commands").glob("*.cs"):
         ribbon_count += read_utf8(path).count("[RibbonButton")
-    if ribbon_count != 42:
-        errors.append({"type": "ribbon-count", "file": "Commands", "detail": f"实际 {ribbon_count}，预期 42（当前 Ribbon 合同）"})
+    if ribbon_count != 44:
+        errors.append({"type": "ribbon-count", "file": "Commands", "detail": f"实际 {ribbon_count}，预期 44（当前 Ribbon 合同）"})
 
     report = {
         "summary": {

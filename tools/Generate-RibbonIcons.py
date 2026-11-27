@@ -393,6 +393,25 @@ def family_category(g):
     path(g,'M21 7h6v6l-7 7-4-4z',accent=True)
     circle(g,24.5,10,1,accent=True)
 
+def pipe_elevation_ref(g):
+    # Pipe cross-section ring with inner invert datum line and vertical shift arrow.
+    circle(g,12,15,7.5)
+    circle(g,12,15,4.2)
+    line(g,4,19.2,20,19.2,accent=True)
+    line(g,25,7,25,24,accent=True)
+    poly(g,[(22,10.5),(25,7),(28,10.5)],accent=True)
+    line(g,22,24,28,24)
+
+def export_text_ai(g):
+    # Text sheet with outward export arrow and compact AI review spark.
+    path(g,'M5 5h13l4 4v18H5z')
+    line(g,8,12,16,12)
+    line(g,8,16.5,15,16.5)
+    line(g,8,21,13,21)
+    line(g,18,19,27,19,accent=True)
+    poly(g,[(24,16),(27.5,19),(24,22)],accent=True)
+    path(g,'M24 6l.9 2.3L27.2 9.2l-2.3.9-.9 2.3-.9-2.3-2.3-.9 2.3-.9z',accent=True)
+
 icons={
 'align_line':align_line,'align_text':align_text,'batch_task':batch_task,'boolean_geometry':boolean_geometry,
 'cn_check':cn_check,'column_along_path':column_path,'dim_override':dim_override,
@@ -408,6 +427,7 @@ icons={
 'filledregion_invisible':filledregion_invisible,
 'material_binding':material_binding,'batch_material_binding':batch_material_binding,
 'family_category':family_category,
+'pipe_elevation_ref':pipe_elevation_ref,'export_text_ai':export_text_ai,
 }
 
 # Remove existing icon assets; write only the currently referenced set.

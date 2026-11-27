@@ -1,0 +1,30 @@
+<Window x:Class="YangTools.Revit.UI.PipeElevationReferenceWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="管道高程基准转换" Width="440" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize" WindowStyle="ToolWindow"
+        Background="{DynamicResource WindowBg}" Foreground="{DynamicResource PrimaryText}">
+    <StackPanel Margin="18">
+        <TextBlock x:Name="SummaryText" TextWrapping="Wrap" FontWeight="SemiBold" Margin="0,0,0,10"/>
+
+        <Border Style="{DynamicResource CardBorder}" Padding="12" Margin="0,0,0,10">
+            <StackPanel>
+                <TextBlock Text="将当前管中心标高数值转换为：" Foreground="{DynamicResource SecondaryText}" FontSize="12" Margin="0,0,0,6"/>
+                <RadioButton x:Name="RbInvert" Content="管内底（Invert）— 管道上移 +内径/2（推荐给排水）" IsChecked="True" Margin="0,4"/>
+                <RadioButton x:Name="RbBottom" Content="管外底（Bottom）— 管道上移 +外径/2" Margin="0,4"/>
+                <RadioButton x:Name="RbTop" Content="管外顶（Top）— 管道下移 -外径/2" Margin="0,4"/>
+            </StackPanel>
+        </Border>
+
+        <CheckBox x:Name="ChkIncludeInsulation" Content="管外底 / 管外顶计入保温层厚度" Margin="0,2"/>
+        <CheckBox x:Name="ChkDeleteBlockingFittings" Content="弯头等管件连接无法保留时自动删除阻挡管件" IsChecked="True" Margin="0,4,0,8"/>
+
+        <TextBlock x:Name="HintText" Foreground="{DynamicResource SecondaryText}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,12"
+                   Text="示例：原管中心 = 1200 mm，选「管内底」后管道上移半个内径，使管内底 = 1200 mm。支持单次 Ctrl+Z 撤销。"/>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="应用" Style="{DynamicResource PrimaryButton}" Width="84" IsDefault="True" Click="Apply_Click" Margin="0,0,8,0"/>
+            <Button Content="取消" Style="{DynamicResource StandardButton}" Width="84" IsCancel="True"/>
+        </StackPanel>
+    </StackPanel>
+</Window>
