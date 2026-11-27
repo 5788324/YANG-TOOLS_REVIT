@@ -89,7 +89,7 @@ namespace YangTools.Revit.Commands
                 var originalMidZ = new Dictionary<ElementId, double>();
                 foreach (Pipe pipe in adjustable)
                 {
-                    double dz = ComputeDeltaZFeet(pipe, dialog.TargetReference, dialog.IncludeInsulation);
+                    double dz = ComputeDeltaZFeet(pipe, dialog.SourceReference, dialog.TargetReference, dialog.IncludeInsulation);
                     if (Math.Abs(dz) < 1e-6) continue;
                     pipeDeltas[pipe.Id] = dz;
                     originalMidZ[pipe.Id] = GetPipeMidZ(pipe);
@@ -235,14 +235,10 @@ namespace YangTools.Revit.Commands
                 if (tg.Assimilate() != TransactionStatus.Committed)
                     throw new InvalidOperationException("Revit 未合并管道高程事务组。");
 
-                string refLabel = dialog.TargetReference switch
-                {
-                    PipeElevationTargetReference.Invert => "管内底",
-                    PipeElevationTargetReference.Bottom => "管外底",
-                    _ => "管外顶"
-                };
+                string srcLabel = GetReferenceLabel(dialog.SourceReference);
+                string dstLabel = GetReferenceLabel(dialog.TargetReference);
 
-                var parts = new List<string> { $"已将 {movedCount} 根管道的中心数值转换为「{refLabel}」。" };
+                var parts = new List<string> { $"已将 {movedCount} 根管道的「{srcLabel}」数值转换为「{dstLabel}」。" };
                 if (deletedFittingsCount > 0) parts.Add($"已移除 {deletedFittingsCount} 个无法保留连接的阻挡管件。");
                 if (skippedCount > 0) parts.Add($"跳过 {skippedCount} 根立管/固定/组内管道。");
                 if (failedCount > 0) parts.Add($"另有 {failedCount} 根管道因模型约束未能移动。");
@@ -276,8 +272,41 @@ namespace YangTools.Revit.Commands
             return pipe.get_Parameter(BuiltInParameter.RBS_PIPE_DIAMETER_PARAM)?.AsDouble() ?? 0.0;
         }
 
-        private static double ComputeDeltaZFeet(Pipe pipe, PipeElevationTargetReference target, bool includeInsulation)
+        private static string GetReferenceLabel(PipeElevationReference reference) => reference switch
         {
+            PipeElevationReference.Center => "中心高度",
+            PipeElevationReference.Invert => "管内底",
+            PipeElevationReference.Bottom => "管外底",
+            PipeElevationReference.InnerTop => "管内顶",
+            PipeElevationReference.OuterTop => "管外顶",
+            _ => "中心高度"
+        };
+
+        private static double GetReferenceOffsetFromCenterFeet(
+            PipeElevationReference reference,
+            double inner,
+            double outer,
+            double insul)
+        {
+            return reference switch
+            {
+                PipeElevationReference.Center => 0.0,
+                PipeElevationReference.Invert => -inner * 0.5,
+                PipeElevationReference.Bottom => -((outer * 0.5) + insul),
+                PipeElevationReference.InnerTop => inner * 0.5,
+                PipeElevationReference.OuterTop => (outer * 0.5) + insul,
+                _ => 0.0
+            };
+        }
+
+        private static double ComputeDeltaZFeet(
+            Pipe pipe,
+            PipeElevationReference source,
+            PipeElevationReference target,
+            bool includeInsulation)
+        {
+            if (source == target) return 0.0;
+
             double nominal = GetNominalDiameterFeet(pipe);
             double inner = pipe.get_Parameter(BuiltInParameter.RBS_PIPE_INNER_DIAM_PARAM)?.AsDouble() ?? 0.0;
             double outer = pipe.get_Parameter(BuiltInParameter.RBS_PIPE_OUTER_DIAMETER)?.AsDouble() ?? 0.0;
@@ -288,13 +317,9 @@ namespace YangTools.Revit.Commands
                 ? (pipe.get_Parameter(BuiltInParameter.RBS_REFERENCE_INSULATION_THICKNESS)?.AsDouble() ?? 0.0)
                 : 0.0;
 
-            return target switch
-            {
-                PipeElevationTargetReference.Invert => inner * 0.5,
-                PipeElevationTargetReference.Bottom => (outer * 0.5) + insul,
-                PipeElevationTargetReference.Top => -((outer * 0.5) + insul),
-                _ => 0.0
-            };
+            double srcOffset = GetReferenceOffsetFromCenterFeet(source, inner, outer, insul);
+            double dstOffset = GetReferenceOffsetFromCenterFeet(target, inner, outer, insul);
+            return srcOffset - dstOffset;
         }
 
         private static double GetPipeMidZ(Pipe pipe)
