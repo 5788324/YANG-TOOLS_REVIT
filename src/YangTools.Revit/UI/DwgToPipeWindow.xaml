@@ -94,12 +94,15 @@
 
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="高程处理方式" Style="{DynamicResource SecondaryLabel}" Margin="0,0,0,6"/>
-                    <RadioButton x:Name="RbPreserve3D" Content="保留 3D 多段线/斜管实际高程（2D 图元用下方偏移）" IsChecked="True" Margin="0,3"/>
-                    <RadioButton x:Name="RbForceFlat" Content="全部统一按参照标高 + 偏移拍平生成" Margin="0,3,0,8"/>
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="中心偏移 (mm)：" Style="{DynamicResource FieldLabel}" Margin="0,0,8,0"/>
+                    <CheckBox x:Name="ChkIgnoreDwgZ" Content="忽略 DWG 自身 Z 值（按参照标高 + 偏移拍平）"
+                              IsChecked="False" Margin="0,3,0,8"
+                              Checked="IgnoreDwgZ_Changed" Unchecked="IgnoreDwgZ_Changed"/>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,6">
+                        <TextBlock x:Name="OffsetLabel" Text="Z 附加偏移 (mm)：" Style="{DynamicResource FieldLabel}" Margin="0,0,8,0"/>
                         <TextBox x:Name="OffsetBox" Text="0" Width="92" Height="28" Padding="6,2"/>
                     </StackPanel>
+                    <TextBlock x:Name="ElevationHintText" Style="{DynamicResource SecondaryLabel}" TextWrapping="Wrap"
+                               Text="默认直接采用 DWG 图元的实际 Z 坐标（支持 3D 多段线坡度与立管）。"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="2">

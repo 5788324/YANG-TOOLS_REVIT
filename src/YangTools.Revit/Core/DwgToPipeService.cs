@@ -6,12 +6,6 @@ using Autodesk.Revit.DB.Plumbing;
 
 namespace YangTools.Revit.Core
 {
-    public enum DwgPipeElevationMode
-    {
-        Preserve3DOrUseOffset,
-        ForceLevelOffset
-    }
-
     public sealed class DwgCurveChain
     {
         public string LayerName { get; set; } = "(未分层)";
@@ -38,7 +32,7 @@ namespace YangTools.Revit.Core
         public ElementId PipeTypeId { get; set; } = ElementId.InvalidElementId;
         public ElementId LevelId { get; set; } = ElementId.InvalidElementId;
         public double DiameterMm { get; set; } = 100.0;
-        public DwgPipeElevationMode ElevationMode { get; set; } = DwgPipeElevationMode.Preserve3DOrUseOffset;
+        public bool IgnoreDwgZ { get; set; } = false;
         public double OffsetMm { get; set; } = 0.0;
         public bool ConnectPolyLineCorners { get; set; } = true;
         public bool ConnectSharedEndpoints { get; set; } = true;
@@ -195,9 +189,6 @@ namespace YangTools.Revit.Core
 
             if (selectedChains.Count == 0) return result;
 
-            // Detect dominant flat Z plane for 2D chains so Preserve3DOrUseOffset can distinguish true 3D chains from flat 2D ones.
-            double dominantFlatZ = EstimateDominantZ(selectedChains);
-
             using var tg = new TransactionGroup(doc, "DWG 转管道");
             if (tg.Start() != TransactionStatus.Started)
                 throw new InvalidOperationException("无法启动事务组。");
@@ -216,7 +207,7 @@ namespace YangTools.Revit.Core
 
                 foreach (DwgCurveChain chain in selectedChains)
                 {
-                    List<XYZ> pts = PrepareChainPoints(chain, request, targetFlatZ, dominantFlatZ);
+                    List<XYZ> pts = PrepareChainPoints(chain, request, targetFlatZ, offsetFeet);
                     if (pts.Count < 2) continue;
 
                     Pipe? prevPipe = null;
@@ -279,29 +270,18 @@ namespace YangTools.Revit.Core
             return result;
         }
 
-        private static double EstimateDominantZ(List<DwgCurveChain> chains)
-        {
-            var flatZs = chains
-                .Where(c => !c.Is3D && c.Points.Count > 0)
-                .Select(c => Math.Round(c.Points[0].Z, 4))
-                .ToList();
-            if (flatZs.Count == 0) return 0.0;
-            return flatZs.GroupBy(z => z).OrderByDescending(g => g.Count()).First().Key;
-        }
-
         private static List<XYZ> PrepareChainPoints(
             DwgCurveChain chain,
             DwgToPipeRequest request,
             double targetFlatZ,
-            double dominantFlatZ)
+            double offsetFeet)
         {
-            bool preserveZ = request.ElevationMode == DwgPipeElevationMode.Preserve3DOrUseOffset &&
-                             (chain.Is3D || chain.Points.Any(p => Math.Abs(p.Z - dominantFlatZ) > ZVariationToleranceFeet));
-
             var raw = new List<XYZ>(chain.Points.Count);
             foreach (XYZ p in chain.Points)
             {
-                XYZ mapped = preserveZ ? p : new XYZ(p.X, p.Y, targetFlatZ);
+                XYZ mapped = request.IgnoreDwgZ
+                    ? new XYZ(p.X, p.Y, targetFlatZ)
+                    : (Math.Abs(offsetFeet) < 1e-9 ? p : new XYZ(p.X, p.Y, p.Z + offsetFeet));
                 if (raw.Count == 0 || raw[raw.Count - 1].DistanceTo(mapped) > DuplicatePointToleranceFeet)
                     raw.Add(mapped);
             }

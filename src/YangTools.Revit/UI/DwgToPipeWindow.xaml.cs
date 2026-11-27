@@ -119,6 +119,16 @@ namespace YangTools.Revit.UI
             UpdateSelectionSummary();
         }
 
+        private void IgnoreDwgZ_Changed(object sender, RoutedEventArgs e)
+        {
+            if (OffsetLabel == null || ElevationHintText == null) return;
+            bool ignoreZ = ChkIgnoreDwgZ.IsChecked == true;
+            OffsetLabel.Text = ignoreZ ? "标高偏移 (mm)：" : "Z 附加偏移 (mm)：";
+            ElevationHintText.Text = ignoreZ
+                ? "已勾选：忽略 DWG 自身 Z 值，全部按「参照标高 + 标高偏移」拍平生成。"
+                : "默认直接采用 DWG 图元的实际 Z 坐标（支持 3D 多段线坡度与立管）。";
+        }
+
         private void LayerSelection_Changed(object sender, RoutedEventArgs e)
         {
             UpdateSelectionSummary();
@@ -173,9 +183,7 @@ namespace YangTools.Revit.UI
                 PipeTypeId = pipeType.Id,
                 LevelId = level.Id,
                 DiameterMm = diameterMm,
-                ElevationMode = RbForceFlat.IsChecked == true
-                    ? DwgPipeElevationMode.ForceLevelOffset
-                    : DwgPipeElevationMode.Preserve3DOrUseOffset,
+                IgnoreDwgZ = ChkIgnoreDwgZ.IsChecked == true,
                 OffsetMm = offsetMm,
                 ConnectPolyLineCorners = ChkConnectPoly.IsChecked == true,
                 ConnectSharedEndpoints = ChkConnectEndpoints.IsChecked == true,
