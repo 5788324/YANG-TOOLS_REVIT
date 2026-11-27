@@ -347,11 +347,6 @@ namespace YangTools.Revit.UI
             RibbonConfigManager.ReplacePanelSettings(snapshot);
         }
 
-        private void CloseButton_Click(object sender, RoutedEventArgs e)
-        {
-            Close();
-        }
-
         private void BtnSavePanel_Click(object sender, RoutedEventArgs e)
         {
             if (!ValidatePanelSettings(out string error))
@@ -395,12 +390,6 @@ namespace YangTools.Revit.UI
         {
             foreach (var item in _panelSettings.Values.SelectMany(x => x))
                 item.IsVisible = item.DefaultVisible;
-        }
-
-        private void Window_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (e.LeftButton == MouseButtonState.Pressed)
-                this.DragMove();
         }
     }
 }

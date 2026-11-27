@@ -53,6 +53,8 @@
     <Color x:Key="Color_GridLine">#E4ECF4</Color>
     <Color x:Key="Color_GridSelected">#E6F0FA</Color>
     <Color x:Key="Color_GridHover">#F1F6FC</Color>
+    <Color x:Key="Color_ScrollbarThumb">#C5D2E0</Color>
+    <Color x:Key="Color_ScrollbarHover">#9FB3C8</Color>
 
     <!-- ===== 冻结笔刷（全冻结 60fps） ===== -->
     <SolidColorBrush x:Key="WindowBg" Color="{StaticResource Color_WindowBg}" po:Freeze="True"/>
@@ -94,6 +96,8 @@
     <SolidColorBrush x:Key="GridLine" Color="{StaticResource Color_GridLine}" po:Freeze="True"/>
     <SolidColorBrush x:Key="GridSelected" Color="{StaticResource Color_GridSelected}" po:Freeze="True"/>
     <SolidColorBrush x:Key="GridHover" Color="{StaticResource Color_GridHover}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="ScrollbarThumb" Color="{StaticResource Color_ScrollbarThumb}" po:Freeze="True"/>
+    <SolidColorBrush x:Key="ScrollbarHover" Color="{StaticResource Color_ScrollbarHover}" po:Freeze="True"/>
 
     <!-- 顶栏与标志性材质：左上纯白高光弧 + 顶部 1px 冷蓝发丝线 -->
     <LinearGradientBrush x:Key="TitleBarGradient" StartPoint="0,0" EndPoint="1,0" po:Freeze="True">

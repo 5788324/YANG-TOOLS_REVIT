@@ -188,6 +188,16 @@ def main() -> int:
             if len({value for value in types.values() if value is not None}) > 1:
                 errors.append({"type": "theme-resource-type", "file": "UI/Themes", "detail": f"{key}: {types}"})
 
+    if shared_file in parsed:
+        shared_text = read_utf8(shared_file)
+        shared_available = set(shared_defs) | theme_keys
+        for match in RESOURCE_REF.finditer(shared_text):
+            key = match.group(1).strip()
+            if key.startswith("{x:Type"):
+                continue
+            if key not in shared_available:
+                errors.append({"type": "undefined-shared-resource", "file": "src/YangTools.Revit/UI/SharedStyles.xaml", "detail": key})
+
     normal_xaml = [path for path in xaml_files if path not in theme_files and path != shared_file]
     for path in normal_xaml:
         root = parsed.get(path)

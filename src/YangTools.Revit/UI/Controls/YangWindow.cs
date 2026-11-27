@@ -28,7 +28,14 @@ namespace YangTools.Revit.UI.Controls
         private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int pvAttribute, int cbAttribute);
 
         public static readonly DependencyProperty SubtitleProperty =
-            DependencyProperty.Register(nameof(Subtitle), typeof(string), typeof(YangWindow), new PropertyMetadata(string.Empty));
+            DependencyProperty.Register(nameof(Subtitle), typeof(string), typeof(YangWindow),
+                new PropertyMetadata(string.Empty, OnSubtitleChanged));
+
+        private static void OnSubtitleChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is YangWindow window)
+                window.SyncSubtitleText();
+        }
 
         public static readonly DependencyProperty ShowMinimizeButtonProperty =
             DependencyProperty.Register(nameof(ShowMinimizeButton), typeof(bool), typeof(YangWindow), new PropertyMetadata(false));
@@ -151,7 +158,7 @@ namespace YangTools.Revit.UI.Controls
             {
                 CaptionHeight = 42,
                 CornerRadius = new CornerRadius(12),
-                GlassFrameThickness = new Thickness(0),
+                GlassFrameThickness = new Thickness(0, 0, 0, 1),
                 ResizeBorderThickness = new Thickness(6),
                 UseAeroCaptionButtons = false
             });
@@ -193,20 +200,24 @@ namespace YangTools.Revit.UI.Controls
                 _maxButton.Click += MaxButton_Click;
             }
 
-            if (_subtitleBlock != null)
-            {
-                if (!string.IsNullOrWhiteSpace(Subtitle))
-                {
-                    _subtitleBlock.Text = Subtitle;
-                    _subtitleBlock.Visibility = Visibility.Visible;
-                }
-                else
-                {
-                    _subtitleBlock.Visibility = Visibility.Collapsed;
-                }
-            }
+            SyncSubtitleText();
 
             UpdateMaximizedMargin();
+        }
+
+        private void SyncSubtitleText()
+        {
+            if (_subtitleBlock == null) return;
+            if (!string.IsNullOrWhiteSpace(Subtitle))
+            {
+                _subtitleBlock.Text = Subtitle;
+                _subtitleBlock.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                _subtitleBlock.Text = string.Empty;
+                _subtitleBlock.Visibility = Visibility.Collapsed;
+            }
         }
 
         protected override void OnSourceInitialized(EventArgs e)
@@ -255,18 +266,18 @@ namespace YangTools.Revit.UI.Controls
 
         private void PlaySubtleFadeIn()
         {
-            if (SystemParameters.IsRemoteSession) return;
+            if (SystemParameters.IsRemoteSession || _shellBorder == null) return;
             try
             {
                 var anim = new DoubleAnimation(0.0, 1.0, new Duration(TimeSpan.FromMilliseconds(160)))
                 {
                     EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
                 };
-                BeginAnimation(OpacityProperty, anim);
+                _shellBorder.BeginAnimation(UIElement.OpacityProperty, anim);
             }
             catch
             {
-                Opacity = 1.0;
+                _shellBorder.Opacity = 1.0;
             }
         }
 
