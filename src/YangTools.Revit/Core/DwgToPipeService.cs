@@ -36,7 +36,7 @@ namespace YangTools.Revit.Core
         public double OffsetMm { get; set; } = 0.0;
         public bool ConnectPolyLineCorners { get; set; } = true;
         public bool ConnectSharedEndpoints { get; set; } = true;
-        public bool MergeCollinearSegments { get; set; } = true;
+        public bool MergeCollinearSegments { get; set; } = false;
         public double ConnectToleranceMm { get; set; } = 20.0;
         public double MinSegmentLengthMm { get; set; } = 50.0;
     }

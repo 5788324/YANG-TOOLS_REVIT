@@ -109,7 +109,7 @@
                     <TextBlock Text="自动连接与过滤" Style="{DynamicResource SecondaryLabel}" Margin="0,0,0,6"/>
                     <CheckBox x:Name="ChkConnectPoly" Content="自动连接多段线转角（弯头）" IsChecked="True" Margin="0,2"/>
                     <CheckBox x:Name="ChkConnectEndpoints" Content="自动连接共端点（弯头 / 三通 / 四通）" IsChecked="True" Margin="0,2"/>
-                    <CheckBox x:Name="ChkMergeCollinear" Content="自动合并共线连续短段" IsChecked="True" Margin="0,2,0,6"/>
+                    <CheckBox x:Name="ChkMergeCollinear" Content="自动合并共线连续短段" IsChecked="False" Margin="0,2,0,6"/>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBlock Text="连接容差：" Style="{DynamicResource FieldLabel}" Margin="0,0,4,0"/>
                         <TextBox x:Name="ToleranceBox" Text="20" Width="52" Height="26" Padding="4,2" Margin="0,0,10,0"/>
