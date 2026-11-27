@@ -412,6 +412,13 @@ def export_text_ai(g):
     poly(g,[(24,16),(27.5,19),(24,22)],accent=True)
     path(g,'M24 6l.9 2.3L27.2 9.2l-2.3.9-.9 2.3-.9-2.3-2.3-.9 2.3-.9z',accent=True)
 
+def dwg_to_pipe(g):
+    # DWG polyline guide turning into an L-shaped pipe with elbow joints.
+    poly(g,[(6,23),(14,23),(14,10)],accent=True)
+    poly(g,[(8,25),(18,25),(18,11),(26,11)])
+    circle(g,18,25,2.5,accent=True)
+    circle(g,18,11,2.5,accent=True)
+
 icons={
 'align_line':align_line,'align_text':align_text,'batch_task':batch_task,'boolean_geometry':boolean_geometry,
 'cn_check':cn_check,'column_along_path':column_path,'dim_override':dim_override,
@@ -427,7 +434,7 @@ icons={
 'filledregion_invisible':filledregion_invisible,
 'material_binding':material_binding,'batch_material_binding':batch_material_binding,
 'family_category':family_category,
-'pipe_elevation_ref':pipe_elevation_ref,'export_text_ai':export_text_ai,
+'pipe_elevation_ref':pipe_elevation_ref,'export_text_ai':export_text_ai,'dwg_to_pipe':dwg_to_pipe,
 }
 
 # Remove existing icon assets; write only the currently referenced set.

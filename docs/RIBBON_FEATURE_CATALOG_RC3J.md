@@ -28,6 +28,7 @@
 | 模型修改区 | 标高修改 | `LevelModifierCommand` | 修改图元关联标高并尽量保持模型世界位置。 |
 | 模型修改区 | 梁板贴面 | `AlignBeamFloorToFaceCommand` | 沿竖直方向对齐直梁定位线两端或板的现有形状点，保留平面位置。 |
 | 模型修改区 | 管道高程 | `PipeElevationReferenceCommand` | 保持管道当前标高数值不变，将管中心基准转换为管内底、管外底或管外顶。 |
+| 模型修改区 | DWG生管 | `DwgToPipeCommand` | 选择导入或链接的 DWG，识别指定图层的直线、多段线和三维多段线并自动创建管道与管件连接。 |
 | 模型修改区 | 族坐标 | `FamilyInstanceCoordinatesCommand` | 查看并设置点定位族的测量、项目基点及内部原点坐标。 |
 | 模型修改区 | 沿线布柱 | `ColumnAlongPathCommand` | 沿连续模型线按固定间距放置柱。 |
 | 模型修改区 | 沿线布置 | `LinearPlacementCommand` | 沿选定路径重复布置指定族实例。 |
